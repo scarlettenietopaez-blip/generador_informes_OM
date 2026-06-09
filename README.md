@@ -1,36 +1,24 @@
-# Generador de Informes de Obras Mayores - V28
+# Generador de Informes de Obras Mayores - v29
 
-Esta versión mantiene el diseño y funcionamiento del HTML v27, pero carga catálogos y plantillas desde archivos CSV ubicados en la carpeta `data`.
+Esta versión usa como base directa el HTML v27 original y carga los catálogos desde CSV en la carpeta `data`.
 
-## Importante
+## Para publicar en GitHub Pages
 
-Sube TODO el contenido de esta carpeta al repositorio de GitHub Pages. No subas solo el `index.html`; también deben subirse:
+Sube todo el contenido de esta carpeta al repositorio:
 
-- `data/`
-- `assets/`
-- `Generador_Informes_Obras_Mayores_Maestro_v28.xlsx`
+- index.html
+- carpeta data
+- README.md
+- Generador_Informes_Obras_Mayores_Maestro_v29.xlsx
 
-## Actualizar información
+## Para actualizar catálogos
 
 1. Edita el Excel maestro.
-2. Guarda la hoja que modificaste como CSV.
-3. Reemplaza el CSV correspondiente dentro de `data`.
+2. Guarda la hoja modificada como CSV.
+3. Reemplaza el CSV correspondiente en `data`.
 4. Sube el cambio a GitHub.
-5. Abre la página y usa Ctrl + F5 para evitar caché.
+5. En el navegador usa Ctrl + F5.
 
-## Archivos CSV principales
+## Nota sobre guardado
 
-- `observaciones.csv`
-- `tecnicos.csv`
-- `tecnicos_estructurales.csv`
-- `codigos_pit.csv`
-- `requisitos.csv`
-- `informacion_formulario.csv`
-- `plantilla_observaciones.csv`
-- `plantilla_aprobatorio.csv`
-- `estudios_complementarios.csv`
-- `conclusion_tecnica_base.csv`
-
-## Informes guardados
-
-Los informes guardados y observaciones manuales se guardan en el navegador del computador. Para moverlos entre equipos, usar Exportar/Importar respaldo.
+Los informes guardados y observaciones manuales se guardan en el navegador. Para moverlos entre computadores, usa Exportar/Importar respaldo.

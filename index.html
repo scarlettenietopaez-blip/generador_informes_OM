@@ -969,74 +969,162 @@ INFORME TÉCNICO FAVORABLE, de conformidad al siguiente detalle:
       "Mostrar": "si",
       "Observación_Interna": "{{Área Bruta}} se toma de la información anterior"
     }
-  ]
+  ],
+  "estudios": [
+    {
+      "Estudio": "EERSA",
+      "Documento": "",
+      "Fecha": "",
+      "Evidencia": "",
+      "Activo": "Sí"
+    },
+    {
+      "Estudio": "EP-EMAPAR",
+      "Documento": "",
+      "Fecha": "",
+      "Evidencia": "",
+      "Activo": "Sí"
+    },
+    {
+      "Estudio": "CNT",
+      "Documento": "",
+      "Fecha": "",
+      "Evidencia": "",
+      "Activo": "Sí"
+    },
+    {
+      "Estudio": "BOMBEROS",
+      "Documento": "",
+      "Fecha": "",
+      "Evidencia": "",
+      "Activo": "Sí"
+    }
+  ],
+  "conclusionBase": [
+    {
+      "Descripción": "Área del predio (IPRUS)",
+      "Niveles": "",
+      "Cantidad": "",
+      "Unidad": "m2",
+      "Activo": "Sí"
+    },
+    {
+      "Descripción": "Área útil planta baja",
+      "Niveles": "",
+      "Cantidad": "",
+      "Unidad": "m2",
+      "Activo": "Sí"
+    },
+    {
+      "Descripción": "Área bruta planta baja",
+      "Niveles": "",
+      "Cantidad": "",
+      "Unidad": "m2",
+      "Activo": "Sí"
+    },
+    {
+      "Descripción": "Área Bruta total de construcción",
+      "Niveles": "",
+      "Cantidad": "",
+      "Unidad": "m2",
+      "Activo": "Sí"
+    },
+    {
+      "Descripción": "Número de pisos",
+      "Niveles": "",
+      "Cantidad": "",
+      "Unidad": "U",
+      "Activo": "Sí"
+    },
+    {
+      "Descripción": "Unidades Habitacionales",
+      "Niveles": "",
+      "Cantidad": "",
+      "Unidad": "U",
+      "Activo": "Sí"
+    },
+    {
+      "Descripción": "Unidades Comerciales",
+      "Niveles": "",
+      "Cantidad": "",
+      "Unidad": "U",
+      "Activo": "Sí"
+    },
+    {
+      "Descripción": "COS PB",
+      "Niveles": "",
+      "Cantidad": "",
+      "Unidad": "%",
+      "Activo": "Sí"
+    },
+    {
+      "Descripción": "COS Total",
+      "Niveles": "",
+      "Cantidad": "",
+      "Unidad": "%",
+      "Activo": "Sí"
+    }
+  ],
+  "sourceFile": "Generador_Informes_Obras_Mayores.xlsx"
 }</script>
 
 <script>
 /* ==========================================================
-   CARGA CSV EXTERNA - V28
-   Mantiene el diseño y funciones del HTML v27.
-   Los CSV se leen desde la carpeta /data.
-   Si un CSV falla, se usa la base embebida.
+   CARGA CSV EXTERNA - V29
+   Base: HTML v27 original. Si falla la carga CSV, la página
+   conserva la información embebida y sigue funcionando.
    ========================================================== */
-async function fetchCSVTextV28(url){
+async function fetchCSVTextV29(url){
   try{
-    const res = await fetch(url + '?v=' + Date.now(), {cache:'no-store'});
-    if(!res.ok) throw new Error(res.status + ' ' + res.statusText);
-    return await res.text();
-  }catch(err){
-    console.warn('No se pudo cargar CSV:', url, err.message);
+    const r = await fetch(url + '?v=' + Date.now(), {cache:'no-store'});
+    if(!r.ok) throw new Error(r.status + ' ' + r.statusText);
+    return await r.text();
+  }catch(e){
+    console.warn('CSV no cargado:', url, e.message);
     return null;
   }
 }
-function parseCSVV28(text){
+function parseCSVV29(text){
   if(!text) return [];
   text = text.replace(/^\uFEFF/, '');
-  const rows = [];
-  let row = [], cell = '', q = false;
+  const rows=[]; let row=[], cell='', q=false;
   for(let i=0;i<text.length;i++){
-    const ch = text[i], next = text[i+1];
+    const ch=text[i], next=text[i+1];
     if(q){
       if(ch === '"' && next === '"'){ cell += '"'; i++; }
-      else if(ch === '"'){ q = false; }
+      else if(ch === '"'){ q=false; }
       else cell += ch;
     }else{
-      if(ch === '"') q = true;
-      else if(ch === ','){ row.push(cell); cell = ''; }
-      else if(ch === '\n'){ row.push(cell); rows.push(row); row = []; cell = ''; }
+      if(ch === '"') q=true;
+      else if(ch === ','){ row.push(cell); cell=''; }
+      else if(ch === '\n'){ row.push(cell); rows.push(row); row=[]; cell=''; }
       else if(ch !== '\r') cell += ch;
     }
   }
   if(cell.length || row.length){ row.push(cell); rows.push(row); }
   if(!rows.length) return [];
   const headers = rows.shift().map(h=>String(h||'').trim());
-  return rows
-    .filter(r=>r.some(c=>String(c||'').trim() !== ''))
-    .map(r=>{
-      const obj = {};
-      headers.forEach((h,i)=>obj[h] = r[i] ?? '');
-      return obj;
-    });
+  return rows.filter(r=>r.some(c=>String(c||'').trim() !== '')).map(r=>{
+    const obj={}; headers.forEach((h,i)=>obj[h]=r[i] ?? ''); return obj;
+  });
 }
-function splitCSVOptionsV28(v){
-  return String(v||'').split('|').map(x=>x.trim()).filter(Boolean);
-}
-function isActiveCSVV28(row){
+function splitOptV29(v){ return String(v||'').split('|').map(x=>x.trim()).filter(Boolean); }
+function activeV29(row){
   const v = String(row.Activo || row.activo || '').trim().toLowerCase();
   return !v || v === 'sí' || v === 'si' || v === 'true' || v === '1';
 }
-function normalizeCSVLabelV28(v){
+function normLabelV29(v){
   return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[:.]/g,'').replace(/\s+/g,' ').trim().toUpperCase();
 }
-function inferInfoSectionV28(label){
-  const u = normalizeCSVLabelV28(label);
+function inferSectionV29(label){
+  const u = normLabelV29(label);
   if(u === 'X' || u === 'Y' || u.includes('REFERENCIA')) return 'Referencia ubicación';
-  const construction = ['USO PRINCIPAL','ALTURA EDIFICACION','PARROQUIA','DIRECCION','CODIGO PIT','CLAVE CATASTRAL','AREA BRUTA','BARRIO/SECTOR'];
-  if(construction.some(k=>u.includes(k))) return 'Datos de la construcción';
+  const c = ['USO PRINCIPAL','ALTURA EDIFICACION','PARROQUIA','DIRECCION','CODIGO PIT','CLAVE CATASTRAL','AREA BRUTA','BARRIO/SECTOR'];
+  if(c.some(k=>u.includes(k))) return 'Datos de la construcción';
   return 'Datos del trámite';
 }
-async function loadExternalCSVsV28(){
-  const files = {
+async function loadExternalCSVsV29(){
+  const files={
     observaciones:'data/observaciones.csv',
     tecnicos:'data/tecnicos.csv',
     tecnicosEstructurales:'data/tecnicos_estructurales.csv',
@@ -1048,13 +1136,11 @@ async function loadExternalCSVsV28(){
     estudios:'data/estudios_complementarios.csv',
     conclusionBase:'data/conclusion_tecnica_base.csv'
   };
-  const loaded = {};
-  for(const [key,url] of Object.entries(files)){
-    loaded[key] = parseCSVV28(await fetchCSVTextV28(url));
-  }
+  const loaded={};
+  for(const [k,u] of Object.entries(files)){ loaded[k]=parseCSVV29(await fetchCSVTextV29(u)); }
 
   if(loaded.observaciones.length){
-    DATA.observaciones = loaded.observaciones.map(r=>({
+    DATA.observaciones=loaded.observaciones.map(r=>({
       "Código": r["Código"] || r["Codigo"] || '',
       "Componente": r["Componente"] || '',
       "Tema": r["Tema"] || '',
@@ -1063,69 +1149,54 @@ async function loadExternalCSVsV28(){
       "Norma / criterio": r["Norma / criterio"] || r["Norma"] || ''
     }));
   }
-
   if(loaded.tecnicos.length){
-    const techRows = loaded.tecnicos.filter(isActiveCSVV28);
-    DATA.tecnicos = techRows.map(r=>String(r.Nombre || '').trim()).filter(Boolean);
-    if(typeof TECNICOS_INFO !== 'undefined' && Array.isArray(TECNICOS_INFO)){
-      TECNICOS_INFO.splice(0, TECNICOS_INFO.length, ...techRows.map(r=>({
+    const tech=loaded.tecnicos.filter(activeV29);
+    DATA.tecnicos=tech.map(r=>String(r.Nombre||'').trim()).filter(Boolean);
+    if(typeof TECNICOS_INFO !== 'undefined'){
+      TECNICOS_INFO.splice(0, TECNICOS_INFO.length, ...tech.map(r=>({
         nombre:String(r.Nombre||'').trim(),
-        cargo:String(r["Cargo para firma"] || r.Cargo || 'TÉCNICO REVISOR').trim()
+        cargo:String(r["Cargo para firma"]||'TÉCNICO REVISOR').trim() || 'TÉCNICO REVISOR'
       })).filter(x=>x.nombre));
     }
   }
-
   if(loaded.tecnicosEstructurales.length && typeof TECNICOS_ESTRUCTURALES !== 'undefined'){
-    const arr = loaded.tecnicosEstructurales.filter(isActiveCSVV28).map(r=>String(r.Nombre||'').trim()).filter(Boolean);
-    TECNICOS_ESTRUCTURALES.splice(0, TECNICOS_ESTRUCTURALES.length, ...arr);
-    if(typeof TECNICOS_INFO !== 'undefined' && Array.isArray(TECNICOS_INFO)){
-      const structuralInfo = loaded.tecnicosEstructurales.filter(isActiveCSVV28).map(r=>({
-        nombre:String(r.Nombre||'').trim(),
-        cargo:String(r["Cargo para firma"] || r.Cargo || 'TÉCNICO REVISOR ESTRUCTURAL').trim()
-      })).filter(x=>x.nombre);
-      structuralInfo.forEach(s=>{
-        if(!TECNICOS_INFO.some(t=>upper(t.nombre)===upper(s.nombre))) TECNICOS_INFO.push(s);
+    const techE=loaded.tecnicosEstructurales.filter(activeV29);
+    TECNICOS_ESTRUCTURALES.splice(0, TECNICOS_ESTRUCTURALES.length, ...techE.map(r=>String(r.Nombre||'').trim()).filter(Boolean));
+    if(typeof TECNICOS_INFO !== 'undefined'){
+      techE.forEach(r=>{
+        const item={nombre:String(r.Nombre||'').trim(), cargo:String(r["Cargo para firma"]||'TÉCNICO REVISOR ESTRUCTURAL').trim() || 'TÉCNICO REVISOR ESTRUCTURAL'};
+        if(item.nombre && !TECNICOS_INFO.some(t=>upper(t.nombre)===upper(item.nombre))) TECNICOS_INFO.push(item);
       });
     }
   }
-
   if(loaded.codigosPit.length && typeof CODIGOS_PIT !== 'undefined'){
-    const arr = loaded.codigosPit.filter(isActiveCSVV28).map(r=>String(r["Código PIT"] || r["Codigo PIT"] || r.Código || '').trim()).filter(Boolean);
-    CODIGOS_PIT.splice(0, CODIGOS_PIT.length, ...arr);
+    CODIGOS_PIT.splice(0, CODIGOS_PIT.length, ...loaded.codigosPit.filter(activeV29).map(r=>String(r["Código PIT"]||r["Codigo PIT"]||'').trim()).filter(Boolean));
   }
-
   if(loaded.requisitos.length){
-    DATA.requisitos = loaded.requisitos
-      .filter(r=>r.id || r.ID)
-      .map(r=>({
-        id: r.id || r.ID || '',
-        grupo: r.grupo || r.Grupo || '',
-        texto: r.texto || r.Requisito || r.requisito || '',
-        opciones: splitCSVOptionsV28(r.opciones || r.Opciones || '')
-      }));
+    DATA.requisitos=loaded.requisitos.filter(r=>r.id||r.ID).map(r=>({
+      id:r.id||r.ID||'',
+      grupo:r.grupo||r.Grupo||'',
+      texto:r.texto||r.Requisito||r.requisito||'',
+      opciones:splitOptV29(r.opciones||r.Opciones||'')
+    }));
   }
-
   if(loaded.infoFields.length){
-    DATA.infoFields = loaded.infoFields
-      .filter(r=>r.key || r.Key)
-      .map(r=>{
-        const label = r.label || r.Campo || r.Label || '';
-        return {
-          key: r.key || r.Key || '',
-          section: r.section || r.Sección || r.Seccion || inferInfoSectionV28(label),
-          label,
-          type: r.type || r.Tipo || 'text',
-          options: splitCSVOptionsV28(r.options || r.Opciones || ''),
-          placeholder: r.placeholder || r.Placeholder || ''
-        };
-      });
+    DATA.infoFields=loaded.infoFields.filter(r=>r.key||r.Key).map(r=>{
+      const label=r.label||r.Campo||r.Label||'';
+      return {
+        key:r.key||r.Key||'',
+        section:r.section||r.Sección||r.Seccion||inferSectionV29(label),
+        label,
+        type:r.type||r.Tipo||'text',
+        options:splitOptV29(r.options||r.Opciones||''),
+        placeholder:r.placeholder||r.Placeholder||''
+      };
+    });
   }
-
-  if(loaded.plantillaObservaciones.length) DATA.plantillaObservaciones = loaded.plantillaObservaciones;
-  if(loaded.plantillaAprobatorio.length) DATA.plantillaAprobatorio = loaded.plantillaAprobatorio;
-
-  DATA.estudios = loaded.estudios.length ? loaded.estudios.filter(isActiveCSVV28) : (DATA.estudios || []);
-  DATA.conclusionBase = loaded.conclusionBase.length ? loaded.conclusionBase.filter(isActiveCSVV28) : (DATA.conclusionBase || []);
+  if(loaded.plantillaObservaciones.length) DATA.plantillaObservaciones=loaded.plantillaObservaciones;
+  if(loaded.plantillaAprobatorio.length) DATA.plantillaAprobatorio=loaded.plantillaAprobatorio;
+  if(loaded.estudios.length) DATA.estudios=loaded.estudios.filter(activeV29);
+  if(loaded.conclusionBase.length) DATA.conclusionBase=loaded.conclusionBase.filter(activeV29);
 }
 </script>
 
@@ -1135,12 +1206,21 @@ const DB_NAME='BD_Informes_Obras_Mayores'; const DB_VERSION=2; const STORE='form
 let db=null;
 let state = defaultState();
 const PARROQUIAS = ['LIZARZABURU','MALDONADO','VELASCO','VELOZ','YARUQUÍES','CACHA','CALPI','CUBIJÍES','FLORES','LICÁN','LICTO','PUNGALÁ','PUNÍN','QUIMIAG','SAN JUAN','SAN LUIS'];
-const CODIGOS_PIT = ['Z1','AR2'];
-const TECNICOS_ESTRUCTURALES = ['MARGOTH TENESACA'];
+const CODIGOS_PIT = ["Z1", "AR2"];
+const TECNICOS_ESTRUCTURALES = ["MARGOTH TENESACA"];
 const TECNICOS_INFO = [
-  {nombre:'HORNA MONTESINOS WILSON JAVIER', cargo:'TÉCNICO REVISOR'},
-  {nombre:'ANDOCILLA TORRES VICTOR HUGO', cargo:'TÉCNICO REVISOR'},
-  {nombre:'MARGOTH TENESACA', cargo:'TÉCNICO REVISOR ESTRUCTURAL'}
+  {
+    "nombre": "HORNA MONTESINOS WILSON JAVIER",
+    "cargo": "TÉCNICO REVISOR"
+  },
+  {
+    "nombre": "ANDOCILLA TORRES VICTOR HUGO",
+    "cargo": "TÉCNICO REVISOR"
+  },
+  {
+    "nombre": "MARGOTH TENESACA",
+    "cargo": "TÉCNICO REVISOR ESTRUCTURAL"
+  }
 ];
 const REQUIRED_LABELS = ['TRÁMITE EGOB','NOMBRE DEL PROPIETARIO','CI/RUC','PROYECTISTA','REGISTRO SENESCYT','REGISTRO MUNICIPAL','PROYECTO DEFINITIVO','NOMBRE DEL PROYECTO','USO PRINCIPAL','ALTURA EDIFICACIÓN','PARROQUIA','DIRECCIÓN','CÓDIGO PIT','CLAVE CATASTRAL','ÁREA BRUTA','X:','Y:','BARRIO/SECTOR'];
 
@@ -1191,7 +1271,7 @@ function csvCell(v){ return '"' + String(v ?? '').replace(/"/g,'""') + '"'; }
 
 
 async function init(){
-  await loadExternalCSVsV28();
+  await loadExternalCSVsV29();
   document.getElementById('fechaRevision').value=today();
   DATA.tecnicos.forEach(t=>{ const op=document.createElement('option'); op.value=t; document.getElementById('listaTecnicos').appendChild(op); });
   document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>showTab(btn.dataset.tab)));
