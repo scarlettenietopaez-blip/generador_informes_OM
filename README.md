@@ -1,35 +1,36 @@
-# Generador de Informes de Obras Mayores
+# Generador de Informes de Obras Mayores - V28
 
-Esta versión fue generada desde el archivo maestro `Generador_Informes_Obras_Mayores.xlsx`.
+Esta versión mantiene el diseño y funcionamiento del HTML v27, pero carga catálogos y plantillas desde archivos CSV ubicados en la carpeta `data`.
 
-## Publicar en GitHub Pages
+## Importante
 
-1. Sube todo el contenido de esta carpeta al repositorio.
-2. En GitHub: Settings > Pages.
-3. Source: Deploy from a branch.
-4. Branch: main / root.
-5. Abre la URL publicada.
+Sube TODO el contenido de esta carpeta al repositorio de GitHub Pages. No subas solo el `index.html`; también deben subirse:
 
-## Actualizar catálogos y plantillas
+- `data/`
+- `assets/`
+- `Generador_Informes_Obras_Mayores_Maestro_v28.xlsx`
 
-1. Edita `Generador_Informes_Obras_Mayores.xlsx`.
-2. Guarda cada hoja como CSV con el mismo nombre que aparece en la carpeta `data`.
-3. Reemplaza el CSV correspondiente en GitHub.
-4. La página cargará los CSV al abrir.
+## Actualizar información
 
-## Archivos CSV
+1. Edita el Excel maestro.
+2. Guarda la hoja que modificaste como CSV.
+3. Reemplaza el CSV correspondiente dentro de `data`.
+4. Sube el cambio a GitHub.
+5. Abre la página y usa Ctrl + F5 para evitar caché.
 
-- data/observaciones.csv
-- data/tecnicos.csv
-- data/tecnicos_estructurales.csv
-- data/codigos_pit.csv
-- data/requisitos.csv
-- data/informacion_formulario.csv
-- data/plantilla_observaciones.csv
-- data/plantilla_aprobatorio.csv
-- data/estudios_complementarios.csv
-- data/conclusion_tecnica_base.csv
+## Archivos CSV principales
 
-## Guardado de informes y observaciones manuales
+- `observaciones.csv`
+- `tecnicos.csv`
+- `tecnicos_estructurales.csv`
+- `codigos_pit.csv`
+- `requisitos.csv`
+- `informacion_formulario.csv`
+- `plantilla_observaciones.csv`
+- `plantilla_aprobatorio.csv`
+- `estudios_complementarios.csv`
+- `conclusion_tecnica_base.csv`
 
-Los informes guardados y las observaciones manuales quedan en el navegador del computador. Para moverlos o consolidarlos, usa los botones de exportar/importar respaldo y exportar observaciones manuales CSV.
+## Informes guardados
+
+Los informes guardados y observaciones manuales se guardan en el navegador del computador. Para moverlos entre equipos, usar Exportar/Importar respaldo.
