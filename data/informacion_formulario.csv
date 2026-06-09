@@ -1,0 +1,20 @@
+﻿key,label,type,options,placeholder
+INFO_001,TRÁMITE EGOB NRO.:,text,,Texto Usuario
+INFO_002,NOMBRE DEL PROPIETARIO:,text,,Texto Usuario
+INFO_003,CI/RUC:,text,,Texto Usuario
+INFO_004,PROYECTISTA:,text,,Texto Usuario
+INFO_005,REGISTRO SENESCYT:,senescyt,,Texto Usuario
+INFO_006,REGISTRO MUNICIPAL:,number,,Texto Usuario
+INFO_007,PROYECTO DEFINITIVO:,multiselect,OBRA NUEVA|AMPLIACIÓN|MODIFICATORIO|OTRO,OBRA NUEVA/AMPLIACIÓN/MODIFICATORIO/OTRO
+INFO_008,Nombre del Proyecto:,text,,Texto Usuario
+INFO_009,Datos de la construcción,text,,Texto Usuario
+INFO_010,USO PRINCIPAL:,text,,Texto Usuario
+INFO_011,ALTURA EDIFICACIÓN:,number,,Texto Usuario
+INFO_012,Parroquia:,select,LIZARZABURU|MALDONADO|VELASCO|VELOZ|YARUQUÍES|CACHA|CALPI|CUBIJÍES|FLORES|LICÁN|LICTO|PUNGALÁ|PUNÍN|QUIMIAG|SAN JUAN|SAN LUIS,Texto Usuario
+INFO_013,DIRECCIÓN:,text,,Texto Usuario
+INFO_014,CÓDIGO PIT:,pit,,Texto Usuario
+INFO_015,CLAVE CATASTRAL:,catastral,,Texto Usuario
+INFO_016,Área Bruta:,decimal,,Texto Usuario
+INFO_017,X:,coordenada_x,,Texto Usuario
+INFO_018,Y:,coordenada_y,,Texto Usuario
+INFO_019,BARRIO/SECTOR:,text,,Texto Usuario
