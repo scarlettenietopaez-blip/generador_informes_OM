@@ -264,7 +264,7 @@
 <body>
 <header class="no-print">
   <h1>Generador Local de Informes de Obras Mayores</h1>
-  <p>Formulario local con guardado por Nro. eGOB, generación de informe con observaciones o aprobatorio e impresión en PDF.</p>
+  <p>Formulario local con guardado por Nro. eGOB, generación de informe con observaciones o aprobatorio e impresión en PDF.<br><span id="dataSourceStatus">Fuente de datos: verificando CSV...</span></p>
 </header>
 
 
@@ -995,6 +995,211 @@
   ],
   "sourceFile": "Matriz de Observaciones.xlsx - v18"
 }</script>
+
+<script>
+/* ==========================================================
+   CARGA CSV EXTERNA - V32
+   Mantiene la lógica v27/v31 y solo reemplaza catálogos/plantillas
+   si los archivos CSV existen en /data.
+   ========================================================== */
+window.__CSV_STATUS__ = { ok:false, loaded:[], failed:[] };
+
+async function fetchCSVTextV32(url){
+  try{
+    const r = await fetch(url + '?v=' + Date.now(), {cache:'no-store'});
+    if(!r.ok) throw new Error(r.status + ' ' + r.statusText);
+    const txt = await r.text();
+    window.__CSV_STATUS__.loaded.push(url);
+    return txt;
+  }catch(e){
+    window.__CSV_STATUS__.failed.push(url + ' -> ' + e.message);
+    console.warn('CSV no cargado:', url, e.message);
+    return null;
+  }
+}
+
+function parseCSVV32(text){
+  if(!text) return [];
+  text = text.replace(/^\uFEFF/, '');
+  const rows = [];
+  let row = [], cell = '', q = false;
+  for(let i=0;i<text.length;i++){
+    const ch = text[i], next = text[i+1];
+    if(q){
+      if(ch === '"' && next === '"'){ cell += '"'; i++; }
+      else if(ch === '"'){ q = false; }
+      else cell += ch;
+    }else{
+      if(ch === '"') q = true;
+      else if(ch === ','){ row.push(cell); cell = ''; }
+      else if(ch === '\n'){ row.push(cell); rows.push(row); row = []; cell = ''; }
+      else if(ch !== '\r') cell += ch;
+    }
+  }
+  if(cell.length || row.length){ row.push(cell); rows.push(row); }
+  if(!rows.length) return [];
+  const headers = rows.shift().map(h=>String(h||'').trim());
+  return rows
+    .filter(r=>r.some(c=>String(c||'').trim() !== ''))
+    .map(r=>{
+      const obj = {};
+      headers.forEach((h,i)=>obj[h] = r[i] ?? '');
+      return obj;
+    });
+}
+
+function splitOptV32(v){
+  return String(v||'').split('|').map(x=>x.trim()).filter(Boolean);
+}
+
+function activeV32(row){
+  const v = String(row.Activo || row.activo || '').trim().toLowerCase();
+  return !v || v === 'sí' || v === 'si' || v === 'true' || v === '1';
+}
+
+function normLabelV32(v){
+  return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[:.]/g,'').replace(/\s+/g,' ').trim().toUpperCase();
+}
+
+function inferSectionV32(label){
+  const u = normLabelV32(label);
+  if(u === 'X' || u === 'Y' || u.includes('REFERENCIA')) return 'Referencia ubicación';
+  const c = ['USO PRINCIPAL','ALTURA EDIFICACION','PARROQUIA','DIRECCION','CODIGO PIT','CLAVE CATASTRAL','AREA BRUTA','BARRIO/SECTOR'];
+  if(c.some(k=>u.includes(k))) return 'Datos de la construcción';
+  return 'Datos del trámite';
+}
+
+function updateCSVStatusV32(){
+  const el = document.getElementById('dataSourceStatus');
+  if(!el) return;
+  if(window.__CSV_STATUS__.ok){
+    el.textContent = 'Fuente de datos: CSV cargados desde carpeta data';
+    el.style.color = '#d8ffd8';
+  }else{
+    el.textContent = 'Fuente de datos: base interna del HTML';
+    el.style.color = '#ffe0e0';
+  }
+}
+
+async function loadExternalCSVsV32(){
+  const files = {
+    observaciones:'data/observaciones.csv',
+    tecnicos:'data/tecnicos.csv',
+    tecnicosEstructurales:'data/tecnicos_estructurales.csv',
+    codigosPit:'data/codigos_pit.csv',
+    requisitos:'data/requisitos.csv',
+    infoFields:'data/informacion_formulario.csv',
+    plantillaObservaciones:'data/plantilla_observaciones.csv',
+    plantillaAprobatorio:'data/plantilla_aprobatorio.csv',
+    estudios:'data/estudios_complementarios.csv',
+    conclusionBase:'data/conclusion_tecnica_base.csv'
+  };
+
+  const loaded = {};
+  for(const [k,u] of Object.entries(files)){
+    loaded[k] = parseCSVV32(await fetchCSVTextV32(u));
+  }
+
+  let changed = false;
+
+  if(loaded.observaciones.length){
+    DATA.observaciones = loaded.observaciones.map(r=>({
+      "Código": r["Código"] || r["Codigo"] || '',
+      "Componente": r["Componente"] || '',
+      "Tema": r["Tema"] || '',
+      "Observación corta": r["Observación corta"] || r["Observacion corta"] || '',
+      "Texto técnico para informe": r["Texto técnico para informe"] || r["Texto tecnico para informe"] || '',
+      "Norma / criterio": r["Norma / criterio"] || r["Norma"] || ''
+    }));
+    changed = true;
+  }
+
+  if(loaded.tecnicos.length){
+    const tech = loaded.tecnicos.filter(activeV32);
+    DATA.tecnicos = tech.map(r=>String(r.Nombre||'').trim()).filter(Boolean);
+    if(typeof TECNICOS_INFO !== 'undefined' && Array.isArray(TECNICOS_INFO)){
+      TECNICOS_INFO.splice(0, TECNICOS_INFO.length, ...tech.map(r=>({
+        nombre:String(r.Nombre||'').trim(),
+        cargo:String(r["Cargo para firma"] || r.Cargo || 'TÉCNICO REVISOR').trim() || 'TÉCNICO REVISOR'
+      })).filter(x=>x.nombre));
+    }
+    changed = true;
+  }
+
+  if(loaded.tecnicosEstructurales.length && typeof TECNICOS_ESTRUCTURALES !== 'undefined' && Array.isArray(TECNICOS_ESTRUCTURALES)){
+    const techE = loaded.tecnicosEstructurales.filter(activeV32);
+    TECNICOS_ESTRUCTURALES.splice(0, TECNICOS_ESTRUCTURALES.length, ...techE.map(r=>String(r.Nombre||'').trim()).filter(Boolean));
+    if(typeof TECNICOS_INFO !== 'undefined' && Array.isArray(TECNICOS_INFO)){
+      techE.forEach(r=>{
+        const item = {
+          nombre:String(r.Nombre||'').trim(),
+          cargo:String(r["Cargo para firma"] || r.Cargo || 'TÉCNICO REVISOR ESTRUCTURAL').trim() || 'TÉCNICO REVISOR ESTRUCTURAL'
+        };
+        if(item.nombre && !TECNICOS_INFO.some(t=>upper(t.nombre)===upper(item.nombre))) TECNICOS_INFO.push(item);
+      });
+    }
+    changed = true;
+  }
+
+  if(loaded.codigosPit.length && typeof CODIGOS_PIT !== 'undefined' && Array.isArray(CODIGOS_PIT)){
+    CODIGOS_PIT.splice(0, CODIGOS_PIT.length, ...loaded.codigosPit.filter(activeV32).map(r=>String(r["Código PIT"] || r["Codigo PIT"] || r.Código || '').trim()).filter(Boolean));
+    changed = true;
+  }
+
+  if(loaded.requisitos.length){
+    DATA.requisitos = loaded.requisitos
+      .filter(r=>r.id || r.ID)
+      .map(r=>({
+        id:r.id || r.ID || '',
+        grupo:r.grupo || r.Grupo || '',
+        texto:r.texto || r.Requisito || r.requisito || '',
+        opciones:splitOptV32(r.opciones || r.Opciones || '')
+      }));
+    changed = true;
+  }
+
+  if(loaded.infoFields.length){
+    DATA.infoFields = loaded.infoFields
+      .filter(r=>r.key || r.Key)
+      .map(r=>{
+        const label = r.label || r.Campo || r.Label || '';
+        return {
+          key:r.key || r.Key || '',
+          section:r.section || r.Sección || r.Seccion || inferSectionV32(label),
+          label,
+          type:r.type || r.Tipo || 'text',
+          options:splitOptV32(r.options || r.Opciones || ''),
+          placeholder:r.placeholder || r.Placeholder || ''
+        };
+      });
+    changed = true;
+  }
+
+  if(loaded.plantillaObservaciones.length){
+    DATA.plantillaObservaciones = loaded.plantillaObservaciones;
+    changed = true;
+  }
+  if(loaded.plantillaAprobatorio.length){
+    DATA.plantillaAprobatorio = loaded.plantillaAprobatorio;
+    changed = true;
+  }
+
+  if(loaded.estudios.length){
+    DATA.estudios = loaded.estudios.filter(activeV32);
+    changed = true;
+  }
+
+  if(loaded.conclusionBase.length){
+    DATA.conclusionBase = loaded.conclusionBase.filter(activeV32);
+    changed = true;
+  }
+
+  window.__CSV_STATUS__.ok = changed;
+  console.log('Estado CSV:', window.__CSV_STATUS__, 'DATA:', DATA);
+  updateCSVStatusV32();
+}
+</script>
+
 <script>
 const DATA = JSON.parse(document.getElementById('app-data').textContent);
 const DB_NAME='BD_Informes_Obras_Mayores'; const DB_VERSION=2; const STORE='formularios'; const MANUAL_STORE='observaciones_manuales';
@@ -1056,9 +1261,10 @@ function manualObsDelete(id){ return new Promise((resolve,reject)=>{ const tx=db
 function csvCell(v){ return '"' + String(v ?? '').replace(/"/g,'""') + '"'; }
 
 
-function init(){
+async function init(){
+  await loadExternalCSVsV32();
   document.getElementById('fechaRevision').value=today();
-  DATA.tecnicos.forEach(t=>{ const op=document.createElement('option'); op.value=t; document.getElementById('listaTecnicos').appendChild(op); });
+  const listaTec=document.getElementById('listaTecnicos'); if(listaTec) listaTec.innerHTML=''; DATA.tecnicos.forEach(t=>{ const op=document.createElement('option'); op.value=t; document.getElementById('listaTecnicos').appendChild(op); });
   document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>showTab(btn.dataset.tab)));
   document.getElementById('egob').addEventListener('input',e=>{ e.target.value=onlyDigits(e.target.value); collectTop(); syncEgobField(); updateAll(); });
   document.getElementById('buscarEgobSide').addEventListener('input',e=>{ e.target.value=onlyDigits(e.target.value); });
@@ -1467,9 +1673,14 @@ function bindAnteproyectoFields(){
 function renderAprobatorioForm(){
  ensureAprobatorioData();
  const box=document.getElementById('aprobatorioForm');
- const cRows=['Área del predio (IPRUS)','Área útil planta baja','Área bruta planta baja','Área Bruta total de construcción','Número de pisos','Unidades Habitacionales','Unidades Comerciales','COS PB','COS Total'];
- if(!state.aprobatorio.conclusion.length) state.aprobatorio.conclusion=cRows.map(x=>{ const u=x.includes('COS')?'%':x.includes('Número')||x.includes('Unidades')?'U':'m2'; return {descripcion:x,cantidad:'',unidad:u,levels:[]}; });
- if(!state.aprobatorio.estudios.length) state.aprobatorio.estudios=['EP-EMAPAR','EERSA','CNT','BOMBEROS'].map(x=>({estudio:x,documento:'',fecha:'',evidencia:''}));
+ const cRows=(DATA.conclusionBase&&DATA.conclusionBase.length?DATA.conclusionBase:[]).map(r=>({
+   descripcion:r["Descripción"]||r.Descripcion||r.descripcion||'',
+   cantidad:r.Cantidad||r.cantidad||'',
+   unidad:r.Unidad||r.unidad||'m2',
+   levels:String(r.Niveles||r.niveles||'').split('|').map(x=>x.trim()).filter(Boolean)
+ })).filter(r=>r.descripcion);
+ if(!state.aprobatorio.conclusion.length) state.aprobatorio.conclusion=(cRows.length?cRows:['Área del predio (IPRUS)','Área útil planta baja','Área bruta planta baja','Área Bruta total de construcción','Número de pisos','Unidades Habitacionales','Unidades Comerciales','COS PB','COS Total'].map(x=>{ const u=x.includes('COS')?'%':x.includes('Número')||x.includes('Unidades')?'U':'m2'; return {descripcion:x,cantidad:'',unidad:u,levels:[]}; }));
+ if(!state.aprobatorio.estudios.length) state.aprobatorio.estudios=(DATA.estudios&&DATA.estudios.length?DATA.estudios.map(r=>({estudio:r.Estudio||r.estudio||'',documento:r.Documento||'',fecha:r.Fecha||'',evidencia:r.Evidencia||''})):['EP-EMAPAR','EERSA','CNT','BOMBEROS'].map(x=>({estudio:x,documento:'',fecha:'',evidencia:''})));
  box.innerHTML=`${anteproyectoPanelHtml()}<div class="section-title">Consideraciones estructurales</div><table class="form-report-table"><tbody><tr><td class="label-cell">DOCUMENTO:</td><td colspan="2"><input id="estDocumento"></td><td class="label-cell center">EGOB</td><td><input id="estEgob"></td></tr><tr><td class="label-cell">TÉCNICO REVISOR:</td><td colspan="4"><input id="estTecnico" list="listaTecnicosEstructurales"></td></tr><tr><td class="label-cell">CRITERIO TÉCNICO:</td><td colspan="4"><select id="estCriterio"><option></option><option>FAVORABLE</option><option>NO FAVORABLE</option></select></td></tr><tr><td class="label-cell">ING. CALCULISTA:</td><td colspan="4"><input id="estCalculista"></td></tr><tr><td class="label-cell">REG. SENESCYT:</td><td colspan="4"><input id="estSenescyt" placeholder="1041-2026-3296002"></td></tr></tbody></table><div class="section-title">Estudios complementarios</div><div id="estudiosTabla"></div><div class="section-title">Conclusión técnica</div><div class="mini">Use el botón + para insertar una fila debajo. En la columna NIVELES, puede agregar niveles específicos solo en esa fila.</div><div id="conclusionTabla"></div><datalist id="listaTecnicosEstructurales">${TECNICOS_ESTRUCTURALES.map(t=>`<option value="${esc(t.trim())}"></option>`).join("")}</datalist>`;
  bindAnteproyectoFields();
  ['Documento','Egob','Tecnico','Criterio','Calculista','Senescyt'].forEach(k=>{ const id='est'+k; const el=document.getElementById(id); if(!el) return; el.value=state.aprobatorio.estructural[k.toLowerCase()]||''; el.addEventListener('input',()=>{ if(k==='Senescyt') el.value=formatSenescyt(el.value); else normalizeUpperInput(el); state.aprobatorio.estructural[k.toLowerCase()]=el.value;  scheduleReportUpdate();}); }); const no=document.getElementById('estCriterioNo'); if(no){ no.value=upper(state.aprobatorio.estructural.criterio||'')==='NO FAVORABLE'?'NO FAVORABLE':''; no.addEventListener('input',()=>{ state.aprobatorio.estructural.criterio=no.value; const fav=document.getElementById('estCriterio'); if(fav && no.value) fav.value=''; scheduleReportUpdate(); }); }
@@ -1637,7 +1848,7 @@ function reqTable(reqs, mode){ if(!reqs.length) return '<p>No se registran requi
 function formatLegalInline(text){ return esc(text||'').replace(/(Artículo\s*\d+[\w.-]*)/g,'<strong>$1</strong>').replace(/(Artículos\s*\d+\s*-\s*\d+)/g,'<strong>$1</strong>'); }
 function formatBaseTecnicoLegalAprobatorio(text){ const lines=String(text||'').split(/\n+/).map(x=>x.trim()).filter(Boolean); let html='', open=false; const close=()=>{ if(open){ html+='</ul>'; open=false; } }; lines.forEach(line=>{ const u=upper(line); if(u.startsWith('CAPÍTULO')||u.startsWith('CAPITULO')){ close(); html+=`<p class="chapter-title"><strong>${formatLegalInline(line)}</strong></p>`; } else if(u.startsWith('SECCIÓN')||u.startsWith('SECCION')){ if(!open){ html+='<ul class="section-list">'; open=true; } html+=`<li>${formatLegalInline(line)}</li>`; } else { close(); html+=`<p><strong>${formatLegalInline(line)}</strong></p>`; } }); close(); return `<div class="legal-block">${html}</div>`; }
 function renderInformeAprobatorio(){
- const t=DATA.plantillaAprobatorio; const title=tmplRow(t,'ENC_002').Texto_Base||tmplRow(t,'ENC_002').Título||'INFORME TÉCNICO APROBATORIO DE OBRA MAYOR'; const base=tmplRow(t,'BLG_001').Texto_Base||''; const con2=replaceTemplate(tmplRow(t,'CON_002').Texto_Base||'');
+ const t=DATA.plantillaAprobatorio; const title=tmplRow(t,'ENC_002').Texto_Base||tmplRow(t,'ENC_002').Título||'INFORME TÉCNICO APROBATORIO DE OBRA MAYOR'; const base=tmplRow(t,'BLG_001').Texto_Base||''; const con2=replaceTemplate(tmplRow(t,'CON_002').Texto_Base||'').replaceAll('{{TABLA_HOJA_CONCLUSION_TECNICA_BASE}}','');
  let n=1;
  const incumplidos=requisitosPorEstado('No Cumple');
  let alertReq=incumplidos.length?`<div class="apr-alert">ALERTA: Existen ${incumplidos.length} requisito(s) marcado(s) como NO CUMPLE. Revise la pestaña Requisitos antes de emitir el informe técnico aprobatorio.</div>`:'';
