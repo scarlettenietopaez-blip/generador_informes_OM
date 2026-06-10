@@ -1,0 +1,22 @@
+PARA QUE GITHUB PAGES FUNCIONE:
+
+1. En el repositorio, el archivo index.html debe estar en la RAÍZ.
+   Es decir, al abrir el repositorio debes ver:
+   - index.html
+   - data/
+   - README.md
+
+2. No subas los CSV como index.html.
+   Si la página muestra texto como:
+   Descripción,Niveles,Cantidad,Unidad...
+   significa que GitHub está leyendo un CSV como página principal.
+
+3. Reemplaza el index.html actual del repositorio por el index.html de esta carpeta.
+
+4. Reemplaza también la carpeta data completa.
+
+5. En Settings > Pages:
+   Branch: main
+   Folder: /root
+
+6. Espera 2 a 5 minutos y abre la página con Ctrl + F5.

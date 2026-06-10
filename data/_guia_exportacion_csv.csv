@@ -1,0 +1,11 @@
+﻿Hoja Excel,CSV destino,Uso
+observaciones,data/observaciones.csv,Catálogo de observaciones
+tecnicos,data/tecnicos.csv,Técnicos y cargos
+tecnicos_estructurales,data/tecnicos_estructurales.csv,Técnicos estructurales
+codigos_pit,data/codigos_pit.csv,Códigos PIT
+requisitos,data/requisitos.csv,Checklist de requisitos
+informacion_formulario,data/informacion_formulario.csv,Campos del formulario
+plantilla_observaciones,data/plantilla_observaciones.csv,Plantilla observaciones
+plantilla_aprobatorio,data/plantilla_aprobatorio.csv,Plantilla aprobatorio
+estudios_complementarios,data/estudios_complementarios.csv,Estudios complementarios
+conclusion_tecnica_base,data/conclusion_tecnica_base.csv,Conclusión técnica
