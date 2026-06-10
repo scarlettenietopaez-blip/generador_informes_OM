@@ -1011,7 +1011,7 @@ const TECNICOS_INFO = [
 const REQUIRED_LABELS = ['TRÁMITE EGOB','NOMBRE DEL PROPIETARIO','CI/RUC','PROYECTISTA','REGISTRO SENESCYT','REGISTRO MUNICIPAL','PROYECTO DEFINITIVO','NOMBRE DEL PROYECTO','USO PRINCIPAL','ALTURA EDIFICACIÓN','PARROQUIA','DIRECCIÓN','CÓDIGO PIT','CLAVE CATASTRAL','ÁREA BRUTA','X:','Y:','BARRIO/SECTOR'];
 
 function defaultState(){
-  return {egob:'', tecnico:'', tipoInforme:'', fechaRevision:today(), fechaSubsanacion:'', fechaSubsanacionManual:false, propietarios:[{nombre:'',ci:''}], info:{}, requisitos:{}, mostrarComplementarios:false, obsSeleccionadas:[], mostrarTextosTecnicos:false, aprobatorio:{anteproyecto:{activo:false, documento:'', egob:'', tecnico:'', criterio:'', calculista:'', senescyt:''}, estructural:{}, estudios:[], conclusion:[], anexos:[], adjuntos:[]}, createdAt:null, updatedAt:null};
+  return {egob:'', tecnico:'', tipoInforme:'', fechaRevision:today(), fechaSubsanacion:'', fechaSubsanacionManual:false, propietarios:[{nombre:'',ci:''}], info:{}, requisitos:{}, mostrarComplementarios:false, obsSeleccionadas:[], mostrarTextosTecnicos:false, aprobatorio:{anteproyecto:{activo:false, manualToggle:false, documento:'', egob:'', tecnico:'', criterio:'', calculista:'', senescyt:''}, estructural:{}, estudios:[], conclusion:[], anexos:[], adjuntos:[]}, createdAt:null, updatedAt:null};
 }
 function today(){ return new Date().toISOString().slice(0,10); }
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); }
@@ -1397,28 +1397,39 @@ async function exportarObsManualesCSV(){
 
 function ensureAprobatorioData(){
  if(!state.aprobatorio) state.aprobatorio={};
- if(!state.aprobatorio.anteproyecto) state.aprobatorio.anteproyecto={activo:false, documento:'', egob:'', tecnico:'', criterio:'', calculista:'', senescyt:''};
+ if(!state.aprobatorio.anteproyecto) state.aprobatorio.anteproyecto={activo:false, manualToggle:false, documento:'', egob:'', tecnico:'', criterio:'', calculista:'', senescyt:''};
+ if(typeof state.aprobatorio.anteproyecto.manualToggle==='undefined') state.aprobatorio.anteproyecto.manualToggle=false;
  if(!state.aprobatorio.estructural) state.aprobatorio.estructural={};
  if(!state.aprobatorio.estudios) state.aprobatorio.estudios=[];
  if(!state.aprobatorio.conclusion) state.aprobatorio.conclusion=[];
 }
 function anteproyectoObligatorio(){ return numVal(infoValue('ALTURA EDIFICACIÓN'))>2 || numVal(infoValue('Área Bruta'))>400; }
-function anteproyectoActivo(){ ensureAprobatorioData(); return anteproyectoObligatorio() || !!state.aprobatorio.anteproyecto.activo; }
+function anteproyectoActivo(){ ensureAprobatorioData(); return !!state.aprobatorio.anteproyecto.activo; }
+function syncAnteproyectoAuto(){
+ ensureAprobatorioData();
+ const a=state.aprobatorio.anteproyecto;
+ const obligatorio=anteproyectoObligatorio();
+ if(obligatorio && !a.manualToggle && !a.activo){
+   a.activo=true;
+ }
+ if(!obligatorio && !a.manualToggle && a.activo){
+   a.activo=false;
+ }
+}
 function anteproyectoPanelHtml(){
  ensureAprobatorioData();
+ syncAnteproyectoAuto();
  const obligatorio=anteproyectoObligatorio();
  const activo=anteproyectoActivo();
- const nota=obligatorio ? 'El anteproyecto se activa automáticamente porque el proyecto supera 2 pisos o 400 m².' : 'Active esta opción únicamente cuando el predio pasó por anteproyecto por decisión del usuario.';
+ const nota=obligatorio ? 'El anteproyecto se activa automáticamente porque el proyecto supera 2 pisos o 400 m². Puede desmarcar la casilla para ocultar la tabla cuando corresponda.' : 'Active esta opción únicamente cuando el predio pasó por anteproyecto por decisión del usuario.';
  let html=`<div class="section-title">Resolución de Anteproyecto</div><div class="anteproyecto-box"><div class="mini">${nota}</div>`;
- if(!obligatorio){
-   html+=`<label class="check-line" style="margin-top:8px"><input type="checkbox" id="toggleAnteproyecto" ${activo?'checked':''}> El proyecto cuenta con Resolución de Anteproyecto</label>`;
- }
+ html+=`<label class="check-line" style="margin-top:8px"><input type="checkbox" id="toggleAnteproyecto" ${activo?'checked':''}> El proyecto cuenta con Resolución de Anteproyecto</label>`;
  if(activo){
    const a=state.aprobatorio.anteproyecto;
    html+=`<table class="anteproyecto-table form-report-table"><tbody>
     <tr><th>Documento</th><td><input id="antDocumento" value="${esc(a.documento||'')}" placeholder="MEMORANDO / RESOLUCIÓN"></td><th>EGOB</th><td><input id="antEgob" value="${esc(a.egob||'')}" placeholder="EGOB"></td></tr>
-    <tr><th>Técnico revisor</th><td colspan="3"><input id="antTecnico" list="listaTecnicosEstructurales" value="${esc(a.tecnico||'')}" placeholder="TÉCNICO REVISOR"></td></tr>
-    <tr><th>Criterio técnico</th><td><select id="antCriterio"><option></option><option ${a.criterio==='FAVORABLE'?'selected':''}>FAVORABLE</option><option ${a.criterio==='NO FAVORABLE'?'selected':''}>NO FAVORABLE</option></select></td><th>Ing. calculista</th><td><input id="antCalculista" value="${esc(a.calculista||'')}" placeholder="ING. CALCULISTA"></td></tr>
+    <tr><th>Técnico revisor</th><td colspan="3"><input id="antTecnico" list="listaTecnicos" value="${esc(a.tecnico||'')}" placeholder="TÉCNICO REVISOR"></td></tr>
+    <tr><th>Criterio técnico</th><td><select id="antCriterio"><option></option><option ${a.criterio==='FAVORABLE'?'selected':''}>FAVORABLE</option><option ${a.criterio==='NO FAVORABLE'?'selected':''}>NO FAVORABLE</option></select></td><th>Proyectista</th><td><input id="antCalculista" value="${esc(a.calculista||'')}" placeholder="PROYECTISTA"></td></tr>
     <tr><th>Reg. SENESCYT</th><td colspan="3"><input id="antSenescyt" value="${esc(a.senescyt||'')}" placeholder="1041-2026-3296002"></td></tr>
    </tbody></table>`;
  }
@@ -1428,7 +1439,16 @@ function anteproyectoPanelHtml(){
 function bindAnteproyectoFields(){
  ensureAprobatorioData();
  const sw=document.getElementById('toggleAnteproyecto');
- if(sw){ sw.addEventListener('change',()=>{ state.aprobatorio.anteproyecto.activo=!!sw.checked; if(!sw.checked && !anteproyectoObligatorio()){ state.aprobatorio.anteproyecto={activo:false, documento:'', egob:'', tecnico:'', criterio:'', calculista:'', senescyt:''}; } renderAprobatorioForm(); renderReport(); renderPreview(); }); }
+ if(sw){
+   sw.addEventListener('change',()=>{
+     state.aprobatorio.anteproyecto.manualToggle=true;
+     state.aprobatorio.anteproyecto.activo=!!sw.checked;
+     if(!sw.checked){
+       state.aprobatorio.anteproyecto={activo:false, manualToggle:true, documento:'', egob:'', tecnico:'', criterio:'', calculista:'', senescyt:''};
+     }
+     renderAprobatorioForm(); renderReport(); renderPreview();
+   });
+ }
  if(!anteproyectoActivo()) return;
  const map=[
    ['Documento','documento'],['Egob','egob'],['Tecnico','tecnico'],['Criterio','criterio'],['Calculista','calculista'],['Senescyt','senescyt']
@@ -1582,7 +1602,7 @@ function anteproyectoReport(){
   <tr><td class="label-cell">DOCUMENTO:</td><td class="data-cell highlight" colspan="2">${esc(a.documento||'')}</td><td class="label-cell center">EGOB</td><td class="data-cell highlight">${esc(a.egob||state.egob||'')}</td></tr>
   <tr><td class="label-cell">TÉCNICO REVISOR:</td><td class="data-cell" colspan="4">${esc(a.tecnico||state.tecnico||'')}</td></tr>
   <tr><td class="label-cell">CRITERIO TÉCNICO:</td><td class="data-cell bold" colspan="4">${esc(crit)}</td></tr>
-  <tr><td class="label-cell">ING. CALCULISTA:</td><td class="data-cell" colspan="4">${esc(a.calculista||'')}</td></tr>
+  <tr><td class="label-cell">PROYECTISTA:</td><td class="data-cell" colspan="4">${esc(a.calculista||'')}</td></tr>
   <tr><td class="label-cell">REG. SENESCYT:</td><td class="data-cell" colspan="4">${esc(a.senescyt||'')}</td></tr>
  </tbody></table>`; 
 }
@@ -1622,7 +1642,7 @@ function renderInformeAprobatorio(){
  const incumplidos=requisitosPorEstado('No Cumple');
  let alertReq=incumplidos.length?`<div class="apr-alert">ALERTA: Existen ${incumplidos.length} requisito(s) marcado(s) como NO CUMPLE. Revise la pestaña Requisitos antes de emitir el informe técnico aprobatorio.</div>`:'';
  let html=`${reportHeader(title)}${alertReq}<h2>${n++}. Información general</h2>${reportInfoGeneralAprobatorio()}<h2>${n++}. Detalle del proyecto</h2><p>${nl2br(tmplRow(t,'INF_002').Texto_Base||'')}</p>${reqTable(requisitosPorEstado('Cumple'),'apr')}<h2>${n++}. Base técnico - legal</h2>${formatBaseTecnicoLegalAprobatorio(base)}`;
- if(anteproyectoActivo()) html+=`<h2>${n++}. Resolución de Anteproyecto</h2>${anteproyectoReport()}`;
+ syncAnteproyectoAuto(); if(anteproyectoActivo()) html+=`<h2>${n++}. Resolución de Anteproyecto</h2>${anteproyectoReport()}`;
  html+=`<h2>${n++}. Consideraciones estructurales</h2>${aprobatorioStructuralTable()}<h2>${n++}. Estudios complementarios</h2>${estudiosReport()}<h2>${n++}. Conclusión técnica</h2><p>En concordancia a lo dispuesto en la Ordenanza No. 016-2023 de Actualización del Código Urbano, <strong>Artículo 92</strong> Componentes del Proyecto Técnico de Edificación de Obras Mayores, se concluye emitir el presente <strong>INFORME TÉCNICO FAVORABLE</strong>, de conformidad al siguiente detalle:</p>${conclusionReport()}<p>${nl2br(con2)}</p>`;
  return html;
 }
