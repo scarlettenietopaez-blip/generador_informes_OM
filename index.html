@@ -1374,7 +1374,7 @@ function renderInfoForm(){
     if(meta.isCi){inputmode='numeric'; max='maxlength="13"';}
     if(meta.isRegMun){type='number'; inputmode='numeric'; extra='min="1" step="1"';}
     if(meta.isAltura){type='number'; inputmode='numeric'; extra='min="0" step="1"';}
-    if(meta.isArea){type='number'; inputmode='decimal'; extra='min="0" step="0.01"';}
+    if(meta.isArea){type='text'; inputmode='decimal'; extra='pattern="[0-9]+([.][0-9]+)?"';}
     if(meta.isClave){inputmode='numeric'; max='maxlength="27"';}
     if(meta.isX||meta.isY){inputmode='decimal'; placeholder='';}
     if(meta.isSenescyt){placeholder='1041-2026-3296002'; max='maxlength="17"';}
@@ -1401,7 +1401,8 @@ function handleInfoInput(f,el,meta){
   else if(meta.isRegMun) el.value=String(Math.max(0,parseInt(onlyDigits(el.value)||'0',10)||'')).replace(/^0$/,'');
   else if(meta.isClave) el.value=onlyDigits(el.value,27);
   else if(meta.isX||meta.isY) el.value=formatCoordinate(el.value, meta.isX?6:7);
-  else if(meta.isAltura||meta.isArea) el.value=String(el.value).replace(',', '.');
+  else if(meta.isAltura) el.value=onlyDigits(el.value);
+  else if(meta.isArea) el.value=formatDecimalFlexible(el.value);
   else normalizeUpperInput(el);
   state.info[f.key]=smartInputCase(el.value);
   if(f.label.toUpperCase().includes('TRÁMITE EGOB')){ state.egob=onlyDigits(el.value); document.getElementById('egob').value=state.egob; state.info[f.key]=state.egob; }
@@ -1409,6 +1410,12 @@ function handleInfoInput(f,el,meta){
 }
 function formatSenescyt(v){ const d=onlyDigits(v,15); let out=d.slice(0,4); if(d.length>4) out+='-'+d.slice(4,8); if(d.length>8) out+='-'+d.slice(8,15); return out; }
 function formatCoordinate(v,intDigits){ let s=String(v||'').replace(',', '.').replace(/[^0-9.]/g,''); const parts=s.split('.'); let i=parts[0].slice(0,intDigits); let dec=(parts[1]||'').slice(0,4); return parts.length>1 ? i+'.'+dec : i; }
+function formatDecimalFlexible(v){
+  let s=String(v||'').replace(',', '.').replace(/[^0-9.]/g,'');
+  const parts=s.split('.');
+  if(parts.length<=1) return parts[0] || '';
+  return parts[0] + '.' + parts.slice(1).join('');
+}
 function validateInfoField(f,show=true){
   const meta=fieldMeta(f); const err=document.getElementById('err_'+f.key); const el=document.getElementById('info_'+f.key); if(!err||!el) return true;
   const value = f.type==='multiselect' ? (state.info[f.key]||'') : String(el.value||'').trim();
@@ -1417,8 +1424,8 @@ function validateInfoField(f,show=true){
   if(value && meta.isCi && !(/^\d{10}$/.test(value)||/^\d{13}$/.test(value))){ok=false; message='Debe tener 10 dígitos para CI o 13 dígitos para RUC.';}
   if(value && meta.isSenescyt && !/^\d{4}-\d{4}-\d{7}$/.test(value)){ok=false; message='Formato requerido: 0000-0000-0000000.';}
   if(value && meta.isRegMun && !(parseInt(value,10)>=1)){ok=false; message='Debe ser un número entero desde 1.';}
-  if(value && meta.isAltura && isNaN(Number(value))){ok=false; message='Debe ser un número.';}
-  if(value && meta.isArea && isNaN(Number(value))){ok=false; message='Debe ser un número.';}
+  if(value && meta.isAltura && !/^\d+$/.test(value)){ok=false; message='Debe ser un número entero de pisos.';}
+  if(value && meta.isArea && !/^\d+(\.\d+)?$/.test(value)){ok=false; message='Debe ser un número decimal. Use punto como separador decimal, ej.: 450.75';}
   if(value && meta.isClave && !/^\d{27}$/.test(value)){ok=false; message='La clave catastral debe tener exactamente 27 dígitos.';}
   if(value && meta.isX && !/^\d{6}(\.\d{1,4})?$/.test(value)){ok=false; message='X debe tener 6 números y máximo 4 decimales. Use punto decimal.';}
   if(value && meta.isY && !/^\d{7}(\.\d{1,4})?$/.test(value)){ok=false; message='Y debe tener 7 números y máximo 4 decimales. Use punto decimal.';}
