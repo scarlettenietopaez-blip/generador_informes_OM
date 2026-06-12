@@ -1018,9 +1018,29 @@ async function fetchCSVTextV32(url){
   }
 }
 
+function detectCSVDelimiterV34(firstLine){
+  let comma = 0, semicolon = 0, q = false;
+  for(let i=0;i<firstLine.length;i++){
+    const ch = firstLine[i], next = firstLine[i+1];
+    if(q){
+      if(ch === '"' && next === '"'){ i++; }
+      else if(ch === '"'){ q = false; }
+    }else{
+      if(ch === '"') q = true;
+      else if(ch === ',') comma++;
+      else if(ch === ';') semicolon++;
+    }
+  }
+  return semicolon > comma ? ';' : ',';
+}
+
 function parseCSVV32(text){
   if(!text) return [];
   text = text.replace(/^\uFEFF/, '');
+
+  const firstLine = text.split(/\r?\n/)[0] || '';
+  const delimiter = detectCSVDelimiterV34(firstLine);
+
   const rows = [];
   let row = [], cell = '', q = false;
   for(let i=0;i<text.length;i++){
@@ -1031,13 +1051,14 @@ function parseCSVV32(text){
       else cell += ch;
     }else{
       if(ch === '"') q = true;
-      else if(ch === ','){ row.push(cell); cell = ''; }
+      else if(ch === delimiter){ row.push(cell); cell = ''; }
       else if(ch === '\n'){ row.push(cell); rows.push(row); row = []; cell = ''; }
       else if(ch !== '\r') cell += ch;
     }
   }
   if(cell.length || row.length){ row.push(cell); rows.push(row); }
   if(!rows.length) return [];
+
   const headers = rows.shift().map(h=>String(h||'').trim());
   return rows
     .filter(r=>r.some(c=>String(c||'').trim() !== ''))
