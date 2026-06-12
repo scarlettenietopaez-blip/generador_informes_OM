@@ -1398,7 +1398,7 @@ function renderInfoForm(){
     if(meta.isArea){type='text'; inputmode='decimal'; extra='pattern="[0-9]+([.][0-9]+)?"';}
     if(meta.isClave){inputmode='numeric'; max='maxlength="27"';}
     if(meta.isX||meta.isY){inputmode='decimal'; placeholder='';}
-    if(meta.isSenescyt){placeholder='1041-2026-3296002'; max='maxlength="17"';}
+    if(meta.isSenescyt){placeholder='0000-0000-0000000 o 0000-00-000000'; max='maxlength="17"';}
     html+=`<div class="field"><label>${esc(label)}${req}</label><input id="info_${f.key}" type="${type}" inputmode="${inputmode}" ${max} ${extra} value="${esc(val)}" placeholder="${esc(placeholder)}" list="${meta.isPit?'listaPIT':''}"><div class="error-text" id="err_${f.key}"></div></div>`;
   }
  });
@@ -1429,7 +1429,23 @@ function handleInfoInput(f,el,meta){
   if(f.label.toUpperCase().includes('TRÁMITE EGOB')){ state.egob=onlyDigits(el.value); document.getElementById('egob').value=state.egob; state.info[f.key]=state.egob; }
   validateInfoField(f,false); updateAll();
 }
-function formatSenescyt(v){ const d=onlyDigits(v,15); let out=d.slice(0,4); if(d.length>4) out+='-'+d.slice(4,8); if(d.length>8) out+='-'+d.slice(8,15); return out; }
+function formatSenescyt(v){
+ const d=onlyDigits(v,15);
+
+ // Formato largo: 0000-0000-0000000
+ if(d.length>12){
+   let out=d.slice(0,4);
+   if(d.length>4) out+='-'+d.slice(4,8);
+   if(d.length>8) out+='-'+d.slice(8,15);
+   return out;
+ }
+
+ // Formato corto: 0000-00-000000
+ let out=d.slice(0,4);
+ if(d.length>4) out+='-'+d.slice(4,6);
+ if(d.length>6) out+='-'+d.slice(6,12);
+ return out;
+}
 function formatCoordinate(v,intDigits){ let s=String(v||'').replace(',', '.').replace(/[^0-9.]/g,''); const parts=s.split('.'); let i=parts[0].slice(0,intDigits); let dec=(parts[1]||'').slice(0,4); return parts.length>1 ? i+'.'+dec : i; }
 function formatDecimalFlexible(v){
   let s=String(v||'').replace(',', '.').replace(/[^0-9.]/g,'');
@@ -1443,7 +1459,7 @@ function validateInfoField(f,show=true){
   let ok=true, message='';
   if(meta.required && !value){ok=false; message='Campo obligatorio.';}
   if(value && meta.isCi && !(/^\d{10}$/.test(value)||/^\d{13}$/.test(value))){ok=false; message='Debe tener 10 dígitos para CI o 13 dígitos para RUC.';}
-  if(value && meta.isSenescyt && !/^\d{4}-\d{4}-\d{7}$/.test(value)){ok=false; message='Formato requerido: 0000-0000-0000000.';}
+  if(value && meta.isSenescyt && !(/^\d{4}-\d{4}-\d{7}$/.test(value) || /^\d{4}-\d{2}-\d{6}$/.test(value))){ok=false; message='Formato requerido: 0000-0000-0000000 o 0000-00-000000.';}
   if(value && meta.isRegMun && !(parseInt(value,10)>=1)){ok=false; message='Debe ser un número entero desde 1.';}
   if(value && meta.isAltura && !/^\d+$/.test(value)){ok=false; message='Debe ser un número entero de pisos.';}
   if(value && meta.isArea && !/^\d+(\.\d+)?$/.test(value)){ok=false; message='Debe ser un número decimal. Use punto como separador decimal, ej.: 450.75';}
