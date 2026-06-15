@@ -338,7 +338,6 @@
     <input id="appPasswordInput" type="password" placeholder="Contraseña" autocomplete="current-password">
     <button class="success" style="width:100%;margin-top:12px" onclick="unlockAppV36()">Ingresar</button>
     <div id="passwordErrorV36" class="password-error">Contraseña incorrecta.</div>
-    <p class="mini" style="margin-top:12px">Contraseña de prueba: 1234</p>
   </div>
 </div>
 
@@ -2773,6 +2772,128 @@ updConclusionField = function(i,field,v){
 
  renderReport();
  renderPreview();
+};
+</script>
+
+
+<script>
+/* ==========================================================
+   V39 - Ing. Calculista desde profesionales no arquitectos
+   y ocultar contraseña visible.
+   ========================================================== */
+function tituloProfesionalV39(p){
+  return String(p?.titulo || p?.Titulo || p?.TITULO || '').trim();
+}
+function esArquitectoV39(p){
+  return normV36(tituloProfesionalV39(p)).includes('ARQUITECT');
+}
+function profesionalesCalculistasV39(){
+  return (DATA.profesionales||[]).filter(p=>p && p.nombre && !esArquitectoV39(p));
+}
+function findProfesionalExactV39(nombre, lista=(DATA.profesionales||[])){
+  const n=normV36(nombre);
+  if(!n) return null;
+  const exact=lista.find(p=>normV36(p.nombre)===n);
+  if(exact) return exact;
+  const matches=lista.filter(p=>{
+    const pn=normV36(p.nombre);
+    return pn.includes(n) || n.includes(pn);
+  });
+  return matches.length===1 ? matches[0] : null;
+}
+function autoFillCalculistaV39(nombre){
+  const p=findProfesionalExactV39(nombre, profesionalesCalculistasV39());
+  if(!p || !state.aprobatorio || !state.aprobatorio.estructural) return;
+  const sen=formatSenescyt(p.registroSenescyt||'');
+  const mun=p.registroMunicipal||'';
+  state.aprobatorio.estructural.senescyt=sen;
+  state.aprobatorio.estructural.municipal=mun;
+  const senEl=document.getElementById('estSenescyt'); if(senEl) senEl.value=sen;
+  const munEl=document.getElementById('estMunicipal'); if(munEl) munEl.value=mun;
+}
+
+const _loadExternalCSVsV32_base_V39 = typeof loadExternalCSVsV32 === 'function' ? loadExternalCSVsV32 : async()=>{};
+loadExternalCSVsV32 = async function(){
+  await _loadExternalCSVsV32_base_V39();
+  try{
+    const rows=parseCSVV32(await fetchCSVTextV32('data/profesionales.csv'));
+    if(rows && rows.length){
+      DATA.profesionales=rows.filter(activeV32).map(r=>({
+        nombre:String(r.Nombre||r.Profesional||r.Proyectista||'').trim(),
+        registroMunicipal:String(r["Registro Municipal"]||r["RegistroMunicipal"]||r["Reg. Municipal"]||'').trim(),
+        registroSenescyt:String(r["Registro Senescyt"]||r["Registro SENESCYT"]||r.Senescyt||r.SENESCYT||'').trim(),
+        titulo:String(r.Titulo||r["Título"]||r.TITULO||'').trim()
+      })).filter(r=>r.nombre);
+    }
+  }catch(e){
+    console.warn('No se pudo recargar profesionales con título para V39:', e);
+  }
+};
+
+renderAprobatorioForm = function(){
+ if(state.tipoInforme!=='Informe Técnico Aprobatorio'){
+   const box=document.getElementById('aprobatorioForm');
+   if(box) box.innerHTML='<p class="mini">Esta sección se habilita únicamente para Informe Técnico Aprobatorio.</p>';
+   return;
+ }
+ ensureAprobatorioData();
+ const box=document.getElementById('aprobatorioForm');
+ const cRows=(DATA.conclusionBase&&DATA.conclusionBase.length?DATA.conclusionBase:[]).map(r=>({
+   descripcion:r["Descripción"]||r.Descripcion||r.descripcion||'',
+   cantidad:r.Cantidad||r.cantidad||'',
+   unidad:r.Unidad||r.unidad||'m2',
+   levels:String(r.Niveles||r.niveles||'').split('|').map(x=>x.trim()).filter(Boolean)
+ })).filter(r=>r.descripcion);
+ if(!state.aprobatorio.conclusion.length) state.aprobatorio.conclusion=(cRows.length?cRows:['Área del predio (IPRUS)','Área útil planta baja','Área bruta planta baja','Área Bruta total de construcción','Número de pisos','Unidades Habitacionales','Unidades Comerciales','COS PB','COS Total'].map(x=>{ const u=x.includes('COS')?'%':x.includes('Número')||x.includes('Unidades')?'U':'m2'; return {descripcion:x,cantidad:'',unidad:u,levels:[]}; }));
+ if(!state.aprobatorio.estudios.length) state.aprobatorio.estudios=(DATA.estudios&&DATA.estudios.length?DATA.estudios.map(r=>({estudio:r.Estudio||r.estudio||'',documento:r.Documento||'',fecha:r.Fecha||'',evidencia:r.Evidencia||''})):['EP-EMAPAR','EERSA','CNT','BOMBEROS'].map(x=>({estudio:x,documento:'',fecha:'',evidencia:''})));
+ const calculistas=profesionalesCalculistasV39();
+ box.innerHTML=`${anteproyectoPanelHtml()}<div class="section-title">Consideraciones estructurales</div><table class="form-report-table"><tbody>
+ <tr><td class="label-cell">DOCUMENTO:</td><td colspan="2"><input id="estDocumento"></td><td class="label-cell center">EGOB</td><td><input id="estEgob"></td></tr>
+ <tr><td class="label-cell">TÉCNICO REVISOR:</td><td colspan="4"><input id="estTecnico" list="listaTecnicosEstructurales"></td></tr>
+ <tr><td class="label-cell">CRITERIO TÉCNICO:</td><td colspan="4"><select id="estCriterio"><option></option><option>FAVORABLE</option><option>NO FAVORABLE</option></select></td></tr>
+ <tr><td class="label-cell">ING. CALCULISTA:</td><td colspan="4"><input id="estCalculista" list="listaCalculistasV39" placeholder="Buscar en profesionales no arquitectos"></td></tr>
+ <tr><td class="label-cell">REG. SENESCYT:</td><td colspan="4"><input id="estSenescyt" placeholder="0000-0000-0000000 o 0000-00-000000"></td></tr>
+ <tr><td class="label-cell">REG. MUNICIPAL:</td><td colspan="4"><input id="estMunicipal" placeholder="Registro municipal"></td></tr>
+ </tbody></table>
+ <div class="section-title">Estudios complementarios</div><div id="estudiosTabla"></div>
+ <div class="section-title">Conclusión técnica</div><div class="mini">Use el botón + para insertar una fila debajo. En la columna NIVELES, puede agregar niveles específicos solo en esa fila.</div><div id="conclusionTabla"></div>
+ <datalist id="listaTecnicosEstructurales">${TECNICOS_ESTRUCTURALES.map(t=>`<option value="${esc(t.trim())}"></option>`).join("")}</datalist>
+ <datalist id="listaCalculistasV39">${calculistas.map(p=>`<option value="${esc(p.nombre)}">${esc(tituloProfesionalV39(p))} · Reg. Mun. ${esc(p.registroMunicipal||'')}</option>`).join('')}</datalist>`;
+ bindAnteproyectoFields();
+ ['Documento','Egob','Tecnico','Criterio','Calculista','Senescyt','Municipal'].forEach(k=>{
+   const id='est'+k;
+   const el=document.getElementById(id);
+   if(!el) return;
+   const prop=k.toLowerCase();
+   el.value=state.aprobatorio.estructural[prop]||'';
+   el.addEventListener('input',()=>{
+     if(k==='Senescyt') el.value=formatSenescyt(el.value);
+     else if(k==='Municipal') el.value=onlyDigits(el.value);
+     else normalizeUpperInput(el);
+     state.aprobatorio.estructural[prop]=el.value;
+     if(k==='Calculista') autoFillCalculistaV39(el.value);
+     scheduleReportUpdate();
+   });
+   if(k==='Calculista'){
+     el.addEventListener('change',()=>{ autoFillCalculistaV39(el.value); scheduleReportUpdate(); });
+     el.addEventListener('blur',()=>{ autoFillCalculistaV39(el.value); scheduleReportUpdate(); });
+   }
+ });
+ renderEstudiosTabla();
+ renderConclusionTabla();
+};
+
+aprobatorioStructuralTable = function(){ 
+ const e=state.aprobatorio.estructural||{}; 
+ const crit=upper(e.criterio||'');
+ return `<table class="informe-table structural-table"><tbody>
+  <tr><td class="label-cell">DOCUMENTO:</td><td class="data-cell highlight" colspan="2">${esc(e.documento||'')}</td><td class="label-cell center">EGOB</td><td class="data-cell highlight">${esc(e.egob||state.egob||'')}</td></tr>
+  <tr><td class="label-cell">TÉCNICO REVISOR:</td><td class="data-cell" colspan="4">${esc(e.tecnico||state.tecnico||'')}</td></tr>
+  <tr><td class="label-cell">CRITERIO TÉCNICO:</td><td class="data-cell bold" colspan="4">${esc(crit)}</td></tr>
+  <tr><td class="label-cell">ING. CALCULISTA:</td><td class="data-cell" colspan="4">${esc(e.calculista||'')}</td></tr>
+  <tr><td class="label-cell">REG. SENESCYT:</td><td class="data-cell" colspan="4">${esc(e.senescyt||'')}</td></tr>
+  <tr><td class="label-cell">REG. MUNICIPAL:</td><td class="data-cell" colspan="4">${esc(e.municipal||'')}</td></tr>
+ </tbody></table>`; 
 };
 </script>
 
