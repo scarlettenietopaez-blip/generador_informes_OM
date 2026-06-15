@@ -259,9 +259,39 @@
         margin:0;
       }
     }
-  </style>
+  
+/* ===== V36 nuevas funciones ===== */
+.password-overlay{position:fixed;inset:0;background:rgba(7,28,52,.92);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px}
+.password-box{width:min(420px,94vw);background:white;border-radius:18px;box-shadow:0 25px 80px rgba(0,0,0,.35);padding:26px;border-top:8px solid var(--danger)}
+.password-box h2{margin:0 0 10px;color:var(--dark);font-size:20px}
+.password-box p{margin:0 0 16px;color:#5b6b82}
+.password-error{color:var(--danger);font-weight:800;margin-top:8px;display:none}
+.inline-check{display:flex!important;align-items:center;gap:8px;text-transform:none!important;font-weight:800}
+.apoderado-panel,.catastral-panel,.optional-note-panel{border:1px solid #c7d5e6;border-radius:12px;background:#f8fbff;padding:12px;margin:10px 0}
+.catastral-grid{display:grid;grid-template-columns:repeat(7,1fr) 44px;gap:6px;align-items:end}
+.catastral-grid label{font-size:10px;text-align:center}
+.catastral-grid input{padding:7px;text-align:center}
+.catastral-search{height:38px;border-radius:50%;font-size:18px;padding:0}
+.obs-image-cell img,.report-obs-img{max-width:120px;max-height:90px;border:1px solid #aaa;border-radius:6px;display:block;margin-top:4px}
+.image-actions{display:flex;gap:6px;flex-wrap:wrap}
+.no-levels{font-size:11px;color:#64748b;text-align:center;padding:8px}
+.calc-note{font-size:11px;color:#516174;margin-top:6px}
+
+</style>
 </head>
 <body>
+
+<div id="passwordOverlay" class="password-overlay">
+  <div class="password-box">
+    <h2>Acceso al generador</h2>
+    <p>Ingrese la contraseña para continuar.</p>
+    <input id="appPasswordInput" type="password" placeholder="Contraseña" autocomplete="current-password">
+    <button class="success" style="width:100%;margin-top:12px" onclick="unlockAppV36()">Ingresar</button>
+    <div id="passwordErrorV36" class="password-error">Contraseña incorrecta.</div>
+    <p class="mini" style="margin-top:12px">Contraseña de prueba: 1234</p>
+  </div>
+</div>
+
 <header class="no-print">
   <h1>Generador Local de Informes de Obras Mayores</h1>
   <p>Formulario local con guardado por Nro. eGOB, generación de informe con observaciones o aprobatorio e impresión en PDF.<br><span id="dataSourceStatus">Fuente de datos: verificando CSV...</span></p>
@@ -1953,5 +1983,403 @@ function imprimirInforme(){ if(!validateForPrint()) return; renderReport(); show
 
 window.addEventListener('load', init);
 </script>
+
+<script>
+/* ==========================================================
+   V36 - Observaciones solicitadas por Dirección
+   Base: v35 estable. Este bloque agrega funciones sin rehacer el sistema.
+   ========================================================== */
+const APP_PASSWORD_V36 = '1234';
+
+function unlockAppV36(){
+  const val=document.getElementById('appPasswordInput')?.value||'';
+  const err=document.getElementById('passwordErrorV36');
+  if(val===APP_PASSWORD_V36){
+    sessionStorage.setItem('OM_AUTH_V36','OK');
+    const o=document.getElementById('passwordOverlay'); if(o) o.style.display='none';
+  }else{
+    if(err) err.style.display='block';
+  }
+}
+window.addEventListener('load',()=>{
+  const o=document.getElementById('passwordOverlay');
+  if(sessionStorage.getItem('OM_AUTH_V36')==='OK' && o) o.style.display='none';
+  const inp=document.getElementById('appPasswordInput');
+  if(inp) inp.addEventListener('keydown',e=>{ if(e.key==='Enter') unlockAppV36(); });
+});
+
+function ensureV36State(){
+  if(!state.apoderado) state.apoderado={activo:false,nombre:'',ci:''};
+  if(!state.catastral) state.catastral={prov:'06',cant:'01',parro:'',zona:'',sect:'',polg:'',pred:'',urbanoRural:''};
+  if(!state.notaPreConclusiones) state.notaPreConclusiones={activo:false,texto:''};
+  if(!Array.isArray(DATA.profesionales)) DATA.profesionales=[];
+  if(!Array.isArray(DATA.usosPrincipales)) DATA.usosPrincipales=[];
+  if(!Array.isArray(DATA.clavesCatastrales)) DATA.clavesCatastrales=[];
+  if(!Array.isArray(DATA.normativaArticulos)) DATA.normativaArticulos=[];
+}
+
+const _loadExternalCSVsV32_base_V36 = typeof loadExternalCSVsV32 === 'function' ? loadExternalCSVsV32 : async()=>{};
+loadExternalCSVsV32 = async function(){
+  await _loadExternalCSVsV32_base_V36();
+  const extras={
+    profesionales:'data/profesionales.csv',
+    usosPrincipales:'data/usos_principales.csv',
+    clavesCatastrales:'data/claves_catastrales.csv',
+    normativaArticulos:'data/normativa_articulos.csv'
+  };
+  const loaded={};
+  for(const [k,u] of Object.entries(extras)){
+    loaded[k]=parseCSVV32(await fetchCSVTextV32(u));
+  }
+  if(loaded.profesionales.length){
+    DATA.profesionales=loaded.profesionales.filter(activeV32).map(r=>({
+      nombre:String(r.Nombre||r.Profesional||r.Proyectista||'').trim(),
+      registroMunicipal:String(r["Registro Municipal"]||r["RegistroMunicipal"]||r["Reg. Municipal"]||'').trim(),
+      registroSenescyt:String(r["Registro Senescyt"]||r["Registro SENESCYT"]||r.Senescyt||r.SENESCYT||'').trim()
+    })).filter(r=>r.nombre);
+  }
+  if(loaded.usosPrincipales.length){
+    DATA.usosPrincipales=loaded.usosPrincipales.filter(activeV32).map(r=>String(r["Uso Principal"]||r.Uso||r.Nombre||'').trim()).filter(Boolean);
+  }
+  if(loaded.clavesCatastrales.length){
+    DATA.clavesCatastrales=loaded.clavesCatastrales.filter(activeV32).map(r=>({
+      clave:String(r["Clave Catastral"]||r.Clave||'').trim(),
+      parroquia:String(r.Parroquia||'').trim(),
+      urbanoRural:String(r["Urbano/Rural"]||r["Urbano Rural"]||r.Tipo||'').trim(),
+      prov:String(r.Prov||'').trim(), cant:String(r.Cant||'').trim(), parro:String(r.Parro||'').trim(),
+      zona:String(r.Zona||'').trim(), sect:String(r.Sect||'').trim(), polg:String(r.Polg||'').trim(), pred:String(r.Pred||'').trim()
+    }));
+  }
+  if(loaded.normativaArticulos.length){
+    DATA.normativaArticulos=loaded.normativaArticulos.filter(activeV32).map(r=>({
+      articulo:String(r.Articulo||r["Artículo"]||r.Art||'').trim(),
+      norma:String(r.Norma||'Ordenanza 016-2023').trim(),
+      titulo:String(r.Titulo||r["Título"]||'').trim(),
+      texto:String(r.Texto||r.Contenido||r.Descripcion||r["Descripción"]||'').trim()
+    })).filter(r=>r.articulo||r.texto);
+  }
+  ensureV36State();
+};
+
+const _fieldMetaV35_V36 = fieldMeta;
+fieldMeta = function(f){
+  const m=_fieldMetaV35_V36(f);
+  const lab=upper(f.label||'');
+  m.isUsoPrincipal=lab.includes('USO PRINCIPAL');
+  m.isProyectista=lab.includes('PROYECTISTA');
+  m.isClave=lab.includes('CLAVE CATASTRAL');
+  return m;
+};
+
+function normV36(v){
+  return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[:.]/g,'').replace(/\s+/g,' ').trim().toUpperCase();
+}
+function findInfoFieldV36(label){
+  const key=normV36(label);
+  return DATA.infoFields.find(f=>{
+    const lab=normV36(f.label);
+    return lab===key || lab.includes(key) || key.includes(lab);
+  });
+}
+function setInfoByLabelV36(label,value){
+  const f=findInfoFieldV36(label);
+  if(!f) return;
+  state.info[f.key]=value||'';
+  const el=document.getElementById('info_'+f.key);
+  if(el) el.value=value||'';
+}
+function getInfoByLabelV36(label){ const f=findInfoFieldV36(label); return f?(state.info[f.key]||''):''; }
+
+function findProfesionalV36(nombre){
+  const n=normV36(nombre);
+  if(!n) return null;
+  return (DATA.profesionales||[]).find(p=>normV36(p.nombre)===n) || (DATA.profesionales||[]).find(p=>normV36(p.nombre).includes(n)||n.includes(normV36(p.nombre))) || null;
+}
+function autoFillProfesionalV36(nombre){
+  const p=findProfesionalV36(nombre);
+  if(!p) return;
+  if(p.registroMunicipal) setInfoByLabelV36('REGISTRO MUNICIPAL',p.registroMunicipal);
+  if(p.registroSenescyt) setInfoByLabelV36('REGISTRO SENESCYT',formatSenescyt(p.registroSenescyt));
+}
+
+function buildClaveFromPartsV36(){
+  ensureV36State();
+  const c=state.catastral;
+  return [c.prov,c.cant,c.parro,c.zona,c.sect,c.polg,c.pred].map(x=>String(x||'').trim()).join('');
+}
+function catastralPanelHtmlV36(f,val){
+  ensureV36State();
+  const c=state.catastral;
+  if(!c.prov) c.prov='06'; if(!c.cant) c.cant='01';
+  return `<div class="catastral-panel">
+    <div class="mini">Buscador de clave catastral. Por defecto: Prov. 06 y Cant. 01.</div>
+    <div class="catastral-grid">
+      <div><label>Prov</label><input id="catProv" value="${esc(c.prov||'06')}" maxlength="2"></div>
+      <div><label>Cant</label><input id="catCant" value="${esc(c.cant||'01')}" maxlength="2"></div>
+      <div><label>Parro</label><input id="catParro" value="${esc(c.parro||'')}" maxlength="4"></div>
+      <div><label>Zona</label><input id="catZona" value="${esc(c.zona||'')}" maxlength="4"></div>
+      <div><label>Sect</label><input id="catSect" value="${esc(c.sect||'')}" maxlength="4"></div>
+      <div><label>Polg</label><input id="catPolg" value="${esc(c.polg||'')}" maxlength="6"></div>
+      <div><label>Pred</label><input id="catPred" value="${esc(c.pred||'')}" maxlength="12"></div>
+      <button type="button" class="secondary catastral-search" onclick="buscarClaveCatastralV36()">🔍</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div class="field"><label>Urbano / Rural</label><input id="catUrbanoRural" value="${esc(c.urbanoRural||'')}" readonly></div>
+      <div class="field"><label>Clave generada</label><input id="catClavePreview" value="${esc(buildClaveFromPartsV36()||val||'')}" readonly></div>
+    </div>
+  </div>`;
+}
+function bindCatastralPanelV36(f){
+  ['Prov','Cant','Parro','Zona','Sect','Polg','Pred'].forEach(k=>{
+    const el=document.getElementById('cat'+k);
+    if(!el) return;
+    el.addEventListener('input',()=>{
+      ensureV36State();
+      const prop=k.toLowerCase();
+      el.value=onlyDigits(el.value);
+      state.catastral[prop]=el.value;
+      const clave=buildClaveFromPartsV36();
+      const prev=document.getElementById('catClavePreview'); if(prev) prev.value=clave;
+      const main=document.getElementById('info_'+f.key); if(main){ main.value=clave; state.info[f.key]=clave; }
+      renderReport(); renderPreview();
+    });
+  });
+}
+function buscarClaveCatastralV36(){
+  ensureV36State();
+  const clave=buildClaveFromPartsV36() || getInfoByLabelV36('CLAVE CATASTRAL');
+  const row=(DATA.clavesCatastrales||[]).find(r=>r.clave===clave) || (DATA.clavesCatastrales||[]).find(r=>r.prov===state.catastral.prov && r.cant===state.catastral.cant && r.parro===state.catastral.parro && r.zona===state.catastral.zona && r.sect===state.catastral.sect && r.polg===state.catastral.polg && r.pred===state.catastral.pred);
+  if(row){
+    state.catastral.urbanoRural=row.urbanoRural||'';
+    if(row.parroquia) setInfoByLabelV36('PARROQUIA',smartInputCase(row.parroquia));
+    const ur=document.getElementById('catUrbanoRural'); if(ur) ur.value=state.catastral.urbanoRural;
+    msg('Clave catastral encontrada. Se actualizó parroquia y Urbano/Rural.',true);
+  }else{
+    msg('No se encontró la clave catastral en la base. Puede continuar llenando manualmente.');
+  }
+  renderReport(); renderPreview();
+}
+
+const _propietariosHtmlV35_V36 = propietariosHtml;
+propietariosHtml = function(){
+  ensureV36State();
+  const base=_propietariosHtmlV35_V36();
+  const a=state.apoderado;
+  const apod=`<div class="apoderado-panel">
+    <label class="inline-check"><input type="checkbox" id="toggleApoderado" ${a.activo?'checked':''} onchange="toggleApoderadoV36(this.checked)"> Existe apoderado</label>
+    ${a.activo?`<div class="row" style="margin-top:10px"><div class="field"><label>Nombre del apoderado</label><input value="${esc(a.nombre||'')}" oninput="updApoderadoV36('nombre',this)"></div><div class="field"><label>CI/RUC del apoderado</label><input inputmode="numeric" maxlength="13" value="${esc(a.ci||'')}" oninput="updApoderadoV36('ci',this)"></div></div>`:''}
+  </div>`;
+  return base + apod;
+};
+function toggleApoderadoV36(val){ ensureV36State(); state.apoderado.activo=!!val; renderPropietarios(); renderReport(); renderPreview(); }
+function updApoderadoV36(k,el){ ensureV36State(); let v=el.value; if(k==='ci'){v=onlyDigits(v,13); el.value=v;} else {normalizeUpperInput(el); v=el.value;} state.apoderado[k]=v; renderReport(); renderPreview(); }
+
+renderInfoForm = function(){
+ ensureV36State(); ensurePropietarios();
+ const box=document.getElementById('infoForm'); let html=''; let current=''; let ownersInserted=false;
+ DATA.infoFields.forEach(f=>{
+  const meta=fieldMeta(f); const lab=upper(f.label); if(lab.trim()==='DATOS DE LA CONSTRUCCIÓN'||lab.trim()==='DATOS DE LA CONSTRUCCION') return;
+  if(lab.includes('NOMBRE DEL PROPIETARIO') || lab.includes('CI/RUC')){
+    if(!ownersInserted){ html+=`<div id="propietariosBox">${propietariosHtml()}</div>`; ownersInserted=true; }
+    return;
+  }
+  if(f.section!==current){ current=f.section; html+=`<div class="section-title">${esc(current)}</div>`; }
+  const val=state.info[f.key]||'';
+  const req=meta.required?' *':'';
+  const label=displayInfoLabel(f, meta);
+  if(f.type==='multiselect'){
+    const selected=String(val).split(',').map(x=>x.trim()).filter(Boolean);
+    html+=`<div class="field"><label>${esc(label)}${req}</label><div class="multi-box" id="info_${f.key}">${(f.options||[]).map(o=>`<label class="check-line"><input type="checkbox" value="${esc(o)}" ${selected.includes(o)?'checked':''}> ${esc(o)}</label>`).join('')}</div><div class="error-text" id="err_${f.key}"></div></div>`;
+  } else if(meta.isUsoPrincipal && DATA.usosPrincipales.length){
+    html+=`<div class="field"><label>${esc(label)}${req}</label><select id="info_${f.key}"><option value="">Seleccione...</option>${DATA.usosPrincipales.map(o=>`<option value="${esc(o)}" ${val===o?'selected':''}>${esc(o)}</option>`).join('')}</select><div class="error-text" id="err_${f.key}"></div></div>`;
+  } else if(f.type==='select'){
+    const opts=(f.options||[]).map(o=>`<option value="${esc(o)}" ${val===o?'selected':''}>${esc(o)}</option>`).join('');
+    html+=`<div class="field"><label>${esc(label)}${req}</label><select id="info_${f.key}"><option value="">Seleccione...</option>${opts}</select><div class="error-text" id="err_${f.key}"></div></div>`;
+  } else {
+    let type='text', inputmode='', max='', placeholder='', extra='', list=meta.isPit?'listaPIT':'';
+    if(meta.isCi){inputmode='numeric'; max='maxlength="13"';}
+    if(meta.isRegMun){type='number'; inputmode='numeric'; extra='min="1" step="1"';}
+    if(meta.isAltura){type='number'; inputmode='numeric'; extra='min="0" step="1"';}
+    if(meta.isArea){type='text'; inputmode='decimal'; extra='pattern="[0-9]+([.][0-9]+)?"';}
+    if(meta.isClave){inputmode='numeric'; max='maxlength="27"';}
+    if(meta.isX||meta.isY){inputmode='decimal'; placeholder='';}
+    if(meta.isSenescyt){placeholder='0000-0000-0000000 o 0000-00-000000'; max='maxlength="17"';}
+    if(meta.isProyectista){list='listaProfesionales';}
+    html+=`<div class="field"><label>${esc(label)}${req}</label><input id="info_${f.key}" type="${type}" inputmode="${inputmode}" ${max} ${extra} value="${esc(val)}" placeholder="${esc(placeholder)}" list="${list}"><div class="error-text" id="err_${f.key}"></div>${meta.isClave?catastralPanelHtmlV36(f,val):''}</div>`;
+  }
+ });
+ html+=`<datalist id="listaPIT">${CODIGOS_PIT.map(c=>`<option value="${esc(c)}"></option>`).join('')}</datalist>`;
+ html+=`<datalist id="listaProfesionales">${(DATA.profesionales||[]).map(p=>`<option value="${esc(p.nombre)}"></option>`).join('')}</datalist>`;
+ box.innerHTML=html;
+ DATA.infoFields.forEach(f=>{
+   const meta=fieldMeta(f); const lab=upper(f.label); if(lab.includes('NOMBRE DEL PROPIETARIO')||lab.includes('CI/RUC')) return;
+   const el=document.getElementById('info_'+f.key); if(!el) return;
+   if(f.type==='multiselect'){
+     el.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.addEventListener('change',()=>{ state.info[f.key]=[...el.querySelectorAll('input:checked')].map(x=>x.value).join(', '); validateInfoField(f,false); updateAll(); }));
+   } else {
+     el.addEventListener('input',()=>handleInfoInput(f,el,meta));
+     el.addEventListener('blur',()=>validateInfoField(f,true));
+   }
+   if(meta.isClave) bindCatastralPanelV36(f);
+ });
+ validateAllVisibleInfo(false);
+};
+
+const _handleInfoInputV35_V36 = handleInfoInput;
+handleInfoInput = function(f,el,meta){
+  _handleInfoInputV35_V36(f,el,meta);
+  if(meta.isProyectista) autoFillProfesionalV36(el.value);
+};
+
+function articuloKeyV36(v){
+  return normV36(v).replace(/^ART(ICULO)?\s*/,'').replace(/^ART\s*/,'').trim();
+}
+function findNormativaArticuloV36(art){
+  const a=articuloKeyV36(art);
+  if(!a) return null;
+  return (DATA.normativaArticulos||[]).find(r=>articuloKeyV36(r.articulo)===a || articuloKeyV36(r.articulo).includes(a) || a.includes(articuloKeyV36(r.articulo))) || null;
+}
+
+renderObservacionesForm = function(){
+ ensureV36State();
+ const box=document.getElementById('observacionesForm');
+ const comps=[...new Set([...DATA.observaciones.map(o=>o.Componente).filter(Boolean),'Documental','Arquitectónico','Estructural','Urbano / Implantación','Accesibilidad','Instalaciones','Otros'])];
+ box.innerHTML=`<div class="field"><label class="check-line"><input type="checkbox" id="toggleTextosTecnicos" ${state.mostrarTextosTecnicos?'checked':''}> Mostrar acápite de textos técnicos para informe</label><div class="mini">Si se activa, el informe incluirá después de Base Legal un acápite que relaciona cada texto técnico con el número de observación de la tabla.</div></div>
+ <div class="optional-note-panel"><label class="inline-check"><input type="checkbox" id="toggleNotaPreConclusiones" ${state.notaPreConclusiones.activo?'checked':''}> Agregar nota antes de conclusiones</label>${state.notaPreConclusiones.activo?`<textarea id="notaPreConclusionesText" placeholder="Escriba la nota que aparecerá antes de Conclusiones">${esc(state.notaPreConclusiones.texto||'')}</textarea>`:''}</div>
+ <div class="row"><div class="field"><label>Filtrar componente</label><select id="obsFiltroComp"><option value="">Todos</option>${comps.map(c=>`<option>${esc(c)}</option>`).join('')}</select></div><div class="field"><label>Buscar</label><input id="obsBuscar" placeholder="Tema, código u observación"></div></div>
+ <div id="catalogoObs" class="catalog"></div>
+ <div class="buttons small-actions">
+   <button class="secondary" onclick="toggleManualObsPanel()">+ Agregar observación manual</button>
+   <button class="secondary" onclick="renderManualObsDB()">Ver base manual</button>
+   <button class="secondary" onclick="exportarObsManualesCSV()">Exportar CSV</button>
+ </div>
+ <div id="manualObsPanel" class="manual-panel collapsed">
+   <div class="section-title">Agregar observación manual</div>
+   <div class="field"><label>Artículo *</label><input id="manualNorma" oninput="normalizeUpperInput(this)" placeholder="Ej.: ART. 98"></div>
+   <div class="field"><label>Observación puntual opcional</label><textarea id="manualObservacion" oninput="normalizeUpperInput(this)" placeholder="Si se deja vacío, se usará el texto del artículo encontrado en la base normativa"></textarea></div>
+   <div class="buttons small-actions">
+     <button class="success" onclick="agregarObsManual()">Guardar y agregar al informe</button>
+     <button class="secondary" onclick="toggleManualObsPanel()">Cerrar</button>
+   </div>
+   <div class="mini">El texto técnico se carga automáticamente desde data/normativa_articulos.csv usando el artículo ingresado.</div>
+   <div id="manualObsDB" class="manual-db"></div>
+ </div>
+ <div class="section-title">Tabla de observaciones del informe</div><div id="obsSeleccionadas"></div>`;
+ document.getElementById('toggleTextosTecnicos').addEventListener('change', e=>{ state.mostrarTextosTecnicos=e.target.checked; renderReport(); renderPreview(); });
+ document.getElementById('toggleNotaPreConclusiones').addEventListener('change', e=>{ state.notaPreConclusiones.activo=e.target.checked; renderObservacionesForm(); renderReport(); renderPreview(); });
+ const nota=document.getElementById('notaPreConclusionesText'); if(nota) nota.addEventListener('input',e=>{ state.notaPreConclusiones.texto=smartInputCase(e.target.value); renderReport(); renderPreview(); });
+ document.getElementById('obsFiltroComp').addEventListener('input', renderCatalogoObs);
+ document.getElementById('obsBuscar').addEventListener('input', e=>{ normalizeUpperInput(e.target); renderCatalogoObs(); });
+ renderCatalogoObs(); renderObsSeleccionadas(); renderManualObsDB();
+};
+
+function setObsImageV36(id,source,input){
+ const file=input.files && input.files[0]; if(!file) return;
+ const reader=new FileReader();
+ reader.onload=()=>{
+   const target=source==='obs'?state.obsSeleccionadas.find(x=>x.id===id):null;
+   if(target){ target.imagen=reader.result; renderObsSeleccionadas(); renderReport(); renderPreview(); }
+ };
+ reader.readAsDataURL(file);
+}
+function clearObsImageV36(id){
+ const target=state.obsSeleccionadas.find(x=>x.id===id);
+ if(target){ delete target.imagen; renderObsSeleccionadas(); renderReport(); renderPreview(); }
+}
+
+renderObsSeleccionadas = function(){
+ const box=document.getElementById('obsSeleccionadas'); if(!box) return;
+ const rows=combinedObsRows();
+ if(!rows.length){ box.innerHTML='<p class="mini">Aún no se han seleccionado observaciones y no existen requisitos marcados como No Cumple.</p>'; return; }
+ box.innerHTML=`<table><thead><tr><th>Nro.</th><th>Componente</th><th>Observación</th><th>Artículo / Norma</th><th>Imagen</th><th></th></tr></thead><tbody>${rows.map((o,idx)=>`<tr><td>${idx+1}</td><td>${esc(o.componente)}</td><td>${esc(o.observacion||o.texto||'')}</td><td>${esc(o.norma||'')}</td><td class="obs-image-cell">${o.source==='obs'?`<input type="file" accept="image/*" onchange="setObsImageV36('${o.id}','obs',this)">${o.imagen?`<img src="${o.imagen}"><button class="secondary mini-btn" onclick="clearObsImageV36('${o.id}')">Quitar imagen</button>`:''}`:'<span class="mini">No aplica</span>'}</td><td>${o.source==='obs'?`<button class="danger" onclick="quitarObs('${o.id}')">Quitar</button>`:'<span class="mini">Requisito</span>'}</td></tr>`).join('')}</tbody></table>`;
+};
+
+selectedObsTable = function(){
+ const rows=combinedObsRows(); if(!rows.length) return '<p>No se registran observaciones técnicas.</p>';
+ return `<table><thead><tr><th>Nro.</th><th>Componente</th><th>Observación puntual</th><th>Art./Norma</th><th>Imagen</th></tr></thead><tbody>${rows.map((o,i)=>`<tr><td>${i+1}</td><td>${esc(o.componente)}</td><td>${esc(o.observacion||o.texto||'')}</td><td>${esc(o.norma||'')}</td><td>${o.imagen?`<img class="report-obs-img" src="${o.imagen}">`:''}</td></tr>`).join('')}</tbody></table>`;
+};
+
+agregarObsManual = async function(){
+ collectTop();
+ const norma=upper(document.getElementById('manualNorma')?.value||'');
+ const obsRaw=upper(document.getElementById('manualObservacion')?.value||'');
+ if(!norma){ msg('Para agregar una observación manual debe colocar el artículo.'); return; }
+ const art=findNormativaArticuloV36(norma);
+ const texto=art ? `${art.norma ? art.norma+', ' : ''}${art.articulo ? 'Artículo '+art.articulo+'. ' : ''}${art.texto}` : `No se encontró el artículo en la base normativa. Artículo ingresado: ${norma}.`;
+ const observacion=obsRaw || (art ? (art.titulo || texto.slice(0,180)) : `Revisar cumplimiento del ${norma}`);
+ const item={id:crypto.randomUUID(), codigo:'MAN-'+Date.now(), componente:'Manual', tema:art?.titulo||'', observacion, texto, norma:art?`${art.norma||'Ordenanza 016-2023'} - Art. ${art.articulo||norma}`:norma, correccion:'', documento:'', nota:'', manual:true, egob:state.egob||'', tecnico:state.tecnico||'', tipoInforme:state.tipoInforme||'', fechaRevision:state.fechaRevision||'', createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(), estado:'PENDIENTE DE ANÁLISIS'};
+ state.obsSeleccionadas.push({...item});
+ if(db) await manualObsPut({...item});
+ ['manualNorma','manualObservacion'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+ renderObsSeleccionadas(); renderManualObsDB(); renderReport(); renderPreview();
+ msg(art?'Observación manual agregada con texto técnico de la base normativa.':'Observación agregada, pero el artículo no existe aún en la base normativa.', !!art);
+};
+
+function rowAllowsLevelsV36(row,i){
+ const d=normV36(row.descripcion||'');
+ return d.includes('AREA BRUTA PLANTA BAJA') || !!row.allowLevels || i>2 && d.includes('AREA BRUTA PLANTA');
+}
+function parseQtyV36(v){ return parseFloat(String(v||'').replace(',','.')) || 0; }
+function fmtNumV36(n){ if(!isFinite(n)) return ''; return (Math.round(n*100)/100).toFixed(2); }
+function recalcAreasCOSV36(){
+ const arr=state.aprobatorio?.conclusion||[];
+ let areaLote=0, aupb=0, aut=0, brutaTotal=0;
+ arr.forEach(raw=>{
+   const r=normalizeConclusionRow(raw); const d=normV36(r.descripcion); const q=parseQtyV36(r.cantidad);
+   if((d.includes('AREA DEL PREDIO')||d.includes('AREA TOTAL DE LOTE')) && q) areaLote=q;
+   if(d.includes('AREA UTIL PLANTA BAJA')) aupb=q;
+   if(d.includes('AREA UTIL') && !d.includes('TOTAL')) aut+=q;
+   if(d.includes('BRUTA') && !d.includes('TOTAL')) brutaTotal+=q;
+ });
+ arr.forEach((raw,i)=>{
+   const r=normalizeConclusionRow(raw); const d=normV36(r.descripcion);
+   if(d.includes('AREA BRUTA TOTAL')){ r.cantidad=brutaTotal?fmtNumV36(brutaTotal):r.cantidad; syncConclusionObj(i,r); }
+   if(d.includes('COS PB')){ r.cantidad=(areaLote&&aupb)?fmtNumV36((aupb/areaLote)*100):r.cantidad; syncConclusionObj(i,r); }
+   if(d.includes('COS TOTAL')){ r.cantidad=(areaLote&&aut)?fmtNumV36((aut/areaLote)*100):r.cantidad; syncConclusionObj(i,r); }
+ });
+}
+
+renderConclusionTabla = function(){
+ recalcAreasCOSV36();
+ const arr=state.aprobatorio.conclusion||[];
+ document.getElementById('conclusionTabla').innerHTML=`<table class="editable-conclusion"><thead><tr><th colspan="2">Descripción</th><th style="width:18%">Cantidad</th><th style="width:14%">Unidad</th><th style="width:16%">Acciones</th></tr></thead><tbody>${arr.map((raw,i)=>{ const r=normalizeConclusionRow(raw); syncConclusionObj(i,r); const canLevels=rowAllowsLevelsV36(r,i); return `<tr><td><input value="${esc(r.descripcion)}" placeholder="Descripción" oninput="updConclusionField(${i},'descripcion',this.value)"></td><td class="levels-edit">${canLevels?`${r.levels.map((v,j)=>`<div class="level-item"><input value="${esc(v)}" placeholder="Nivel" oninput="updConclusionLevel(${i},${j},this.value)"><button class="secondary mini-btn" onclick="delConclusionLevel(${i},${j})">×</button></div>`).join('')}<button class="secondary add-level-row" onclick="addConclusionLevel(${i})">+ Niveles</button>`:'<div class="no-levels">No aplica niveles</div>'}</td><td><input value="${esc(r.cantidad)}" placeholder="Cantidad" oninput="updConclusionField(${i},'cantidad',this.value)"></td><td><input value="${esc(r.unidad)}" placeholder="Unidad" oninput="updConclusionField(${i},'unidad',this.value)"></td><td class="row-actions"><button class="mini-plus" title="Agregar fila debajo" onclick="addConclusionRowAfter(${i})">+</button><button class="danger mini-btn" onclick="delConclusion(${i})">Quitar</button></td></tr>`; }).join('')}</tbody></table><div class="calc-note">Área Bruta total = suma de filas con “Bruta”. COS PB = Área útil planta baja / Área del predio × 100. COS Total = suma de áreas útiles / Área del predio × 100.</div>`;
+};
+updConclusionField = function(i,field,v){ const row=normalizeConclusionRow(state.aprobatorio.conclusion[i]); row[field]=field==='cantidad'?formatDecimalFlexible(v):smartInputCase(v); syncConclusionObj(i,row); recalcAreasCOSV36(); renderReport(); renderPreview(); };
+addConclusionRowAfter = function(i){ state.aprobatorio.conclusion.splice(i+1,0,{descripcion:'',levels:[],cantidad:'',unidad:'m2',allowLevels:true}); renderConclusionTabla(); renderReport(); renderPreview(); };
+agregarConclusionRow = function(tipo=''){ state.aprobatorio.conclusion.push({descripcion:tipo,levels:[],cantidad:'',unidad:'m2',allowLevels:true}); renderConclusionTabla(); renderReport(); renderPreview(); };
+
+const _renderInformeObservacionesV35_V36 = renderInformeObservaciones;
+renderInformeObservaciones = function(){
+ const t=DATA.plantillaObservaciones; const title=(tmplRow(t,'ENC_002').Título||'INFORME TÉCNICO DE OBSERVACIONES OBRA MAYOR');
+ const ant=replaceTemplateHtml(tmplRow(t,'ANT_001').Texto_Base||''); const base=t.filter(r=>String(r.ID_Bloque||'').startsWith('BLG_') && cleanMostrar(r.Mostrar)==='sí');
+ const con=replaceTemplate(tmplRow(t,'CON_001').Texto_Base||'');
+ const nota=(state.notaPreConclusiones&&state.notaPreConclusiones.activo&&state.notaPreConclusiones.texto)?`<h2>Nota</h2><p>${nl2br(state.notaPreConclusiones.texto)}</p>`:'';
+ return `${reportHeader(title)}<h2>Antecedentes</h2><p>${ant}</p><h2>Criterio técnico</h2>${selectedObsTable()}<h2>Base legal</h2>${base.map(b=>`<h3>${esc(b.Título)}</h3><p class="legal-text">${formatLegalText(b.Texto_Base)}</p>`).join('')}${textosTecnicosSection()}${nota}<h2>Conclusiones</h2>${formatConclusionText(con)}${firmaTecnicoSection()}`;
+};
+
+const _aprobatorioInfoTableFromTemplateV35_V36 = aprobatorioInfoTableFromTemplate;
+aprobatorioInfoTableFromTemplate = function(text){
+ ensureV36State(); ensurePropietarios(); syncPropietariosInfo();
+ const proyecto=infoValue('PROYECTO DEFINITIVO'); const x=infoValue('X:'); const y=infoValue('Y:');
+ const apod=(state.apoderado&&state.apoderado.activo)?aprTwo('APODERADO', state.apoderado.nombre||'', 'CI/RUC APODERADO', state.apoderado.ci||''):'';
+ return `<table class="apr-info-table"><colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"></colgroup><tbody>
+ ${aprOne('TRÁMITE E-GOB', state.egob||infoValue('TRÁMITE EGOB'))}
+ ${aprTwo('NOMBRE DEL PROPIETARIO', infoValue('NOMBRE DEL PROPIETARIO'), 'CI/RUC', infoValue('CI/RUC'))}
+ ${apod}
+ ${aprOne('PROYECTO DEFINITIVO', proyecto)}
+ ${aprOne('NOMBRE DEL PROYECTO', infoValue('NOMBRE DEL PROYECTO'))}
+ ${aprTwo('USO PRINCIPAL', infoValue('USO PRINCIPAL'), 'ALTURA EDIFICACIÓN', infoValue('ALTURA EDIFICACIÓN') ? infoValue('ALTURA EDIFICACIÓN')+' pisos' : '')}
+ <tr><td class="apr-info-section" colspan="4">REFERENCIA UBICACIÓN</td></tr>
+ ${aprTwo('X', x, 'Y', y)}
+ ${aprOne('CLAVE CATASTRAL', infoValue('CLAVE CATASTRAL'))}
+ ${state.catastral.urbanoRural?aprOne('URBANO / RURAL', state.catastral.urbanoRural):''}
+ ${aprTwo('BARRIO / SECTOR', infoValue('BARRIO/SECTOR'), 'CÓDIGO PIT', infoValue('CÓDIGO PIT'))}
+ ${aprOne('DIRECCIÓN', infoValue('DIRECCIÓN'))}
+ ${aprOne('PROYECTISTA', infoValue('PROYECTISTA'))}
+ ${aprTwo('REG. SENESCYT', infoValue('REGISTRO SENESCYT'), 'REG. MUNICIPAL', infoValue('REGISTRO MUNICIPAL'))}
+ </tbody></table>`;
+};
+</script>
+
 </body>
 </html>
