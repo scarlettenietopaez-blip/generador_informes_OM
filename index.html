@@ -277,6 +277,21 @@
 .no-levels{font-size:11px;color:#64748b;text-align:center;padding:8px}
 .calc-note{font-size:11px;color:#516174;margin-top:6px}
 
+
+/* ===== V37 ajustes adicionales ===== */
+.owner-buttons-v37{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.apoderado-fields-v37{border:1px solid #cbd5e1;border-radius:12px;background:#f8fbff;padding:10px;margin-top:8px}
+.catastral-main-hidden-v37{display:none!important}
+.catastral-old-row-v37{margin-top:10px;border-top:1px dashed #cbd5e1;padding-top:10px}
+.note-check-v37{margin:10px 0;padding:10px;border:1px solid #c7d5e6;border-radius:12px;background:#f8fbff}
+.paste-zone-v37{border:1px dashed #94a3b8;border-radius:8px;padding:8px;min-height:38px;background:#f8fafc;font-size:11px;color:#475569;cursor:text;margin-top:6px}
+.paste-zone-v37:focus{outline:2px solid #60a5fa;background:#fff}
+.report-tech-img-row td{background:#fff!important}
+.report-tech-img{display:block;max-width:155mm;max-height:95mm;object-fit:contain;border:1px solid #999;border-radius:4px;margin:6px auto}
+.obs-image-cell img{max-width:110px;max-height:75px;object-fit:contain}
+.calc-readonly-v37 input{background:#eef3f8;font-weight:800}
+.editable-conclusion .levels-empty-v37{background:#fff}
+
 </style>
 </head>
 <body>
@@ -2379,6 +2394,282 @@ aprobatorioInfoTableFromTemplate = function(text){
  ${aprTwo('REG. SENESCYT', infoValue('REGISTRO SENESCYT'), 'REG. MUNICIPAL', infoValue('REGISTRO MUNICIPAL'))}
  </tbody></table>`;
 };
+</script>
+
+
+<script>
+/* ==========================================================
+   V37 - Ajustes posteriores a presentación con Dirección
+   ========================================================== */
+function ensureV37State(){
+  ensureV36State();
+  if(typeof state.catastral.claveAntiguaActiva === 'undefined') state.catastral.claveAntiguaActiva=false;
+  if(typeof state.catastral.claveAntigua === 'undefined') state.catastral.claveAntigua='';
+}
+
+propietariosHtml = function(){
+  ensureV37State(); ensurePropietarios();
+  const a=state.apoderado;
+  return `<div class="section-title">Propietarios</div>
+  <table class="owners-table"><thead><tr><th style="width:52%">Nombre del propietario *</th><th>CI/RUC *</th><th style="width:80px">Acción</th></tr></thead><tbody>${state.propietarios.map((p,i)=>`<tr><td><input value="${esc(p.nombre||'')}" oninput="updPropietario(${i},'nombre',this)"></td><td><input inputmode="numeric" maxlength="13" value="${esc(p.ci||'')}" oninput="updPropietario(${i},'ci',this)"></td><td><button class="danger mini-btn" onclick="delPropietario(${i})">Quitar</button></td></tr>`).join('')}</tbody></table>
+  <div class="owner-buttons-v37"><button class="secondary" onclick="addPropietario()">Agregar propietario</button><button class="secondary" onclick="toggleApoderadoV36(${a.activo?'false':'true'})">${a.activo?'Quitar apoderado':'Agregar apoderado'}</button></div>
+  ${a.activo?`<div class="apoderado-fields-v37"><div class="row"><div class="field"><label>Nombre del apoderado</label><input value="${esc(a.nombre||'')}" oninput="updApoderadoV36('nombre',this)"></div><div class="field"><label>CI/RUC del apoderado</label><input inputmode="numeric" maxlength="13" value="${esc(a.ci||'')}" oninput="updApoderadoV36('ci',this)"></div></div></div>`:''}
+  <div class="error-text" id="err_propietarios"></div>`;
+};
+
+function buildClaveFromPartsV37(){
+  ensureV37State();
+  if(state.catastral.claveAntiguaActiva) return state.catastral.claveAntigua||'';
+  return buildClaveFromPartsV36();
+}
+function syncClaveInputV37(f){
+  const clave=buildClaveFromPartsV37();
+  state.info[f.key]=clave;
+  const main=document.getElementById('info_'+f.key);
+  if(main) main.value=clave;
+  const prev=document.getElementById('catClavePreview');
+  if(prev) prev.value=clave;
+}
+catastralPanelHtmlV36 = function(f,val){
+  ensureV37State();
+  const c=state.catastral;
+  if(!c.prov) c.prov='06'; if(!c.cant) c.cant='01';
+  return `<div class="catastral-panel">
+    <div class="mini">Buscador de clave catastral. Por defecto: Prov. 06 y Cant. 01.</div>
+    <div class="catastral-grid">
+      <div><label>Prov</label><input id="catProv" value="${esc(c.prov||'06')}" maxlength="2" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <div><label>Cant</label><input id="catCant" value="${esc(c.cant||'01')}" maxlength="2" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <div><label>Parro</label><input id="catParro" value="${esc(c.parro||'')}" maxlength="4" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <div><label>Zona</label><input id="catZona" value="${esc(c.zona||'')}" maxlength="4" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <div><label>Sect</label><input id="catSect" value="${esc(c.sect||'')}" maxlength="4" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <div><label>Polg</label><input id="catPolg" value="${esc(c.polg||'')}" maxlength="6" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <div><label>Pred</label><input id="catPred" value="${esc(c.pred||'')}" maxlength="12" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <button type="button" class="secondary catastral-search" onclick="buscarClaveCatastralV36()" ${c.claveAntiguaActiva?'disabled':''}>🔍</button>
+    </div>
+    <div class="catastral-old-row-v37">
+      <label class="inline-check"><input type="checkbox" id="toggleClaveAntiguaV37" ${c.claveAntiguaActiva?'checked':''}> Usar clave catastral antigua</label>
+      ${c.claveAntiguaActiva?`<div class="field" style="margin-top:8px"><label>Clave catastral antigua</label><input id="claveAntiguaTextV37" value="${esc(c.claveAntigua||'')}" placeholder="Ingrese la clave antigua en texto libre"></div>`:''}
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div class="field"><label>Urbano / Rural</label><input id="catUrbanoRural" value="${esc(c.urbanoRural||'')}" readonly></div>
+      <div class="field"><label>Clave generada</label><input id="catClavePreview" value="${esc(buildClaveFromPartsV37()||val||'')}" readonly></div>
+    </div>
+  </div>`;
+};
+
+bindCatastralPanelV36 = function(f){
+  ensureV37State();
+  const tog=document.getElementById('toggleClaveAntiguaV37');
+  if(tog){
+    tog.addEventListener('change',()=>{
+      state.catastral.claveAntiguaActiva=tog.checked;
+      syncClaveInputV37(f);
+      renderInfoForm(); renderReport(); renderPreview();
+    });
+  }
+  const old=document.getElementById('claveAntiguaTextV37');
+  if(old){
+    old.addEventListener('input',()=>{
+      state.catastral.claveAntigua=old.value;
+      syncClaveInputV37(f);
+      renderReport(); renderPreview();
+    });
+  }
+  ['Prov','Cant','Parro','Zona','Sect','Polg','Pred'].forEach(k=>{
+    const el=document.getElementById('cat'+k);
+    if(!el) return;
+    el.addEventListener('input',()=>{
+      const prop=k.toLowerCase();
+      el.value=onlyDigits(el.value);
+      state.catastral[prop]=el.value;
+      syncClaveInputV37(f);
+      renderReport(); renderPreview();
+    });
+  });
+  syncClaveInputV37(f);
+};
+
+const _validateInfoFieldV36_V37 = validateInfoField;
+validateInfoField = function(f,show=true){
+  const meta=fieldMeta(f);
+  if(meta.isClave){
+    const err=document.getElementById('err_'+f.key);
+    if(err) err.textContent='';
+    return true;
+  }
+  return _validateInfoFieldV36_V37(f,show);
+};
+
+// Render Info: se mantiene igual a v36, pero clave catastral ya no muestra input rojo principal.
+renderInfoForm = function(){
+ ensureV37State(); ensurePropietarios();
+ const box=document.getElementById('infoForm'); let html=''; let current=''; let ownersInserted=false;
+ DATA.infoFields.forEach(f=>{
+  const meta=fieldMeta(f); const lab=upper(f.label); if(lab.trim()==='DATOS DE LA CONSTRUCCIÓN'||lab.trim()==='DATOS DE LA CONSTRUCCION') return;
+  if(lab.includes('NOMBRE DEL PROPIETARIO') || lab.includes('CI/RUC')){
+    if(!ownersInserted){ html+=`<div id="propietariosBox">${propietariosHtml()}</div>`; ownersInserted=true; }
+    return;
+  }
+  if(f.section!==current){ current=f.section; html+=`<div class="section-title">${esc(current)}</div>`; }
+  const val=state.info[f.key]||'';
+  const req=meta.required?' *':'';
+  const label=displayInfoLabel(f, meta);
+  if(f.type==='multiselect'){
+    const selected=String(val).split(',').map(x=>x.trim()).filter(Boolean);
+    html+=`<div class="field"><label>${esc(label)}${req}</label><div class="multi-box" id="info_${f.key}">${(f.options||[]).map(o=>`<label class="check-line"><input type="checkbox" value="${esc(o)}" ${selected.includes(o)?'checked':''}> ${esc(o)}</label>`).join('')}</div><div class="error-text" id="err_${f.key}"></div></div>`;
+  } else if(meta.isUsoPrincipal && DATA.usosPrincipales.length){
+    html+=`<div class="field"><label>${esc(label)}${req}</label><select id="info_${f.key}"><option value="">Seleccione...</option>${DATA.usosPrincipales.map(o=>`<option value="${esc(o)}" ${val===o?'selected':''}>${esc(o)}</option>`).join('')}</select><div class="error-text" id="err_${f.key}"></div></div>`;
+  } else if(f.type==='select'){
+    const opts=(f.options||[]).map(o=>`<option value="${esc(o)}" ${val===o?'selected':''}>${esc(o)}</option>`).join('');
+    html+=`<div class="field"><label>${esc(label)}${req}</label><select id="info_${f.key}"><option value="">Seleccione...</option>${opts}</select><div class="error-text" id="err_${f.key}"></div></div>`;
+  } else {
+    let type='text', inputmode='', max='', placeholder='', extra='', list=meta.isPit?'listaPIT':'';
+    if(meta.isCi){inputmode='numeric'; max='maxlength="13"';}
+    if(meta.isRegMun){type='number'; inputmode='numeric'; extra='min="1" step="1"';}
+    if(meta.isAltura){type='number'; inputmode='numeric'; extra='min="0" step="1"';}
+    if(meta.isArea){type='text'; inputmode='decimal'; extra='pattern="[0-9]+([.][0-9]+)?"';}
+    if(meta.isClave){inputmode='numeric'; max='maxlength="27"';}
+    if(meta.isX||meta.isY){inputmode='decimal'; placeholder='';}
+    if(meta.isSenescyt){placeholder='0000-0000-0000000 o 0000-00-000000'; max='maxlength="17"';}
+    if(meta.isProyectista){list='listaProfesionales';}
+    if(meta.isClave){
+      html+=`<div class="field"><label>${esc(label)}</label><input class="catastral-main-hidden-v37" id="info_${f.key}" type="hidden" value="${esc(val)}"><div class="error-text" id="err_${f.key}"></div>${catastralPanelHtmlV36(f,val)}</div>`;
+    }else{
+      html+=`<div class="field"><label>${esc(label)}${req}</label><input id="info_${f.key}" type="${type}" inputmode="${inputmode}" ${max} ${extra} value="${esc(val)}" placeholder="${esc(placeholder)}" list="${list}"><div class="error-text" id="err_${f.key}"></div></div>`;
+    }
+  }
+ });
+ html+=`<datalist id="listaPIT">${CODIGOS_PIT.map(c=>`<option value="${esc(c)}"></option>`).join('')}</datalist>`;
+ html+=`<datalist id="listaProfesionales">${(DATA.profesionales||[]).map(p=>`<option value="${esc(p.nombre)}"></option>`).join('')}</datalist>`;
+ box.innerHTML=html;
+ DATA.infoFields.forEach(f=>{
+   const meta=fieldMeta(f); const lab=upper(f.label); if(lab.includes('NOMBRE DEL PROPIETARIO')||lab.includes('CI/RUC')) return;
+   const el=document.getElementById('info_'+f.key); if(!el) return;
+   if(f.type==='multiselect'){
+     el.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.addEventListener('change',()=>{ state.info[f.key]=[...el.querySelectorAll('input:checked')].map(x=>x.value).join(', '); validateInfoField(f,false); updateAll(); }));
+   } else if(!meta.isClave) {
+     el.addEventListener('input',()=>handleInfoInput(f,el,meta));
+     el.addEventListener('blur',()=>validateInfoField(f,true));
+   }
+   if(meta.isClave) bindCatastralPanelV36(f);
+ });
+ validateAllVisibleInfo(false);
+};
+
+renderObservacionesForm = function(){
+ ensureV37State();
+ const box=document.getElementById('observacionesForm');
+ const comps=[...new Set([...DATA.observaciones.map(o=>o.Componente).filter(Boolean),'Documental','Arquitectónico','Estructural','Urbano / Implantación','Accesibilidad','Instalaciones','Otros'])];
+ box.innerHTML=`<div class="field"><label class="check-line"><input type="checkbox" id="toggleTextosTecnicos" ${state.mostrarTextosTecnicos?'checked':''}> Mostrar acápite de textos técnicos para informe</label><div class="mini">Si se activa, el informe incluirá después de Base Legal un acápite que relaciona cada texto técnico con el número de observación de la tabla.</div></div>
+ <div class="field note-check-v37"><label class="check-line"><input type="checkbox" id="toggleNotaPreConclusiones" ${state.notaPreConclusiones.activo?'checked':''}> Incluir nota antes de conclusiones</label><div class="mini">Si se activa, el informe incluirá una nota antes de Conclusiones.</div>${state.notaPreConclusiones.activo?`<textarea id="notaPreConclusionesText" placeholder="Escriba la nota que aparecerá antes de Conclusiones">${esc(state.notaPreConclusiones.texto||'')}</textarea>`:''}</div>
+ <div class="row"><div class="field"><label>Filtrar componente</label><select id="obsFiltroComp"><option value="">Todos</option>${comps.map(c=>`<option>${esc(c)}</option>`).join('')}</select></div><div class="field"><label>Buscar</label><input id="obsBuscar" placeholder="Tema, código u observación"></div></div>
+ <div id="catalogoObs" class="catalog"></div>
+ <div class="buttons small-actions">
+   <button class="secondary" onclick="toggleManualObsPanel()">+ Agregar observación manual</button>
+   <button class="secondary" onclick="renderManualObsDB()">Ver base manual</button>
+   <button class="secondary" onclick="exportarObsManualesCSV()">Exportar CSV</button>
+ </div>
+ <div id="manualObsPanel" class="manual-panel collapsed">
+   <div class="section-title">Agregar observación manual</div>
+   <div class="field"><label>Artículo *</label><input id="manualNorma" oninput="normalizeUpperInput(this)" placeholder="Ej.: ART. 98"></div>
+   <div class="field"><label>Observación puntual opcional</label><textarea id="manualObservacion" oninput="normalizeUpperInput(this)" placeholder="Si se deja vacío, se usará el texto del artículo encontrado en la base normativa"></textarea></div>
+   <div class="buttons small-actions"><button class="success" onclick="agregarObsManual()">Guardar y agregar al informe</button><button class="secondary" onclick="toggleManualObsPanel()">Cerrar</button></div>
+   <div class="mini">El texto técnico se carga automáticamente desde data/normativa_articulos.csv usando el artículo ingresado.</div>
+   <div id="manualObsDB" class="manual-db"></div>
+ </div>
+ <div class="section-title">Tabla de observaciones del informe</div><div id="obsSeleccionadas"></div>`;
+ document.getElementById('toggleTextosTecnicos').addEventListener('change', e=>{ state.mostrarTextosTecnicos=e.target.checked; renderReport(); renderPreview(); });
+ document.getElementById('toggleNotaPreConclusiones').addEventListener('change', e=>{ state.notaPreConclusiones.activo=e.target.checked; renderObservacionesForm(); renderReport(); renderPreview(); });
+ const nota=document.getElementById('notaPreConclusionesText'); if(nota) nota.addEventListener('input',e=>{ state.notaPreConclusiones.texto=smartInputCase(e.target.value); renderReport(); renderPreview(); });
+ document.getElementById('obsFiltroComp').addEventListener('input', renderCatalogoObs);
+ document.getElementById('obsBuscar').addEventListener('input', e=>{ normalizeUpperInput(e.target); renderCatalogoObs(); });
+ renderCatalogoObs(); renderObsSeleccionadas(); renderManualObsDB();
+};
+
+function pasteObsImageV37(ev,id){
+  ev.preventDefault();
+  const items=ev.clipboardData && ev.clipboardData.items ? [...ev.clipboardData.items] : [];
+  const imgItem=items.find(it=>it.type && it.type.startsWith('image/'));
+  if(!imgItem){ msg('No se detectó una imagen en el portapapeles.'); return; }
+  const file=imgItem.getAsFile();
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const target=state.obsSeleccionadas.find(x=>x.id===id);
+    if(target){ target.imagen=reader.result; renderObsSeleccionadas(); renderReport(); renderPreview(); msg('Imagen pegada en la observación.',true); }
+  };
+  reader.readAsDataURL(file);
+}
+renderObsSeleccionadas = function(){
+ const box=document.getElementById('obsSeleccionadas'); if(!box) return;
+ const rows=combinedObsRows();
+ if(!rows.length){ box.innerHTML='<p class="mini">Aún no se han seleccionado observaciones y no existen requisitos marcados como No Cumple.</p>'; return; }
+ box.innerHTML=`<table><thead><tr><th>Nro.</th><th>Componente</th><th>Observación</th><th>Artículo / Norma</th><th>Imagen</th><th></th></tr></thead><tbody>${rows.map((o,idx)=>`<tr><td>${idx+1}</td><td>${esc(o.componente)}</td><td>${esc(o.observacion||o.texto||'')}</td><td>${esc(o.norma||'')}</td><td class="obs-image-cell">${o.source==='obs'?`<div class="image-actions"><input type="file" accept="image/*" onchange="setObsImageV36('${o.id}','obs',this)"></div><div class="paste-zone-v37" tabindex="0" onpaste="pasteObsImageV37(event,'${o.id}')">Pegue aquí una captura con Ctrl+V</div>${o.imagen?`<img src="${o.imagen}"><button class="secondary mini-btn" onclick="clearObsImageV36('${o.id}')">Quitar imagen</button>`:''}`:'<span class="mini">No aplica</span>'}</td><td>${o.source==='obs'?`<button class="danger" onclick="quitarObs('${o.id}')">Quitar</button>`:'<span class="mini">Requisito</span>'}</td></tr>`).join('')}</tbody></table>`;
+};
+selectedObsTable = function(){
+ const rows=combinedObsRows(); if(!rows.length) return '<p>No se registran observaciones técnicas.</p>';
+ return `<table><thead><tr><th>Nro.</th><th>Componente</th><th>Observación puntual</th><th>Art./Norma</th></tr></thead><tbody>${rows.map((o,i)=>`<tr><td>${i+1}</td><td>${esc(o.componente)}</td><td>${esc(o.observacion||o.texto||'')}</td><td>${esc(o.norma||'')}</td></tr>`).join('')}</tbody></table>`;
+};
+textosTecnicosSection = function(){
+ if(!state.mostrarTextosTecnicos) return '';
+ const rows=combinedObsRows().map((o,i)=>({num:i+1, codigo:o.codigo||'', componente:o.componente||'', texto:o.texto||'', imagen:o.imagen||''})).filter(o=>String(o.texto||'').trim()||o.imagen);
+ if(!rows.length) return '';
+ return `<h2>Sustento técnico de las observaciones</h2><p>Los siguientes textos técnicos se relacionan con el número de observación consignado en la tabla de criterio técnico.</p><table class="tech-note-table"><thead><tr><th>Nro. obs.</th><th>Código / componente</th><th>Texto técnico para informe</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.num}</td><td>${esc(r.codigo)}<br>${esc(r.componente)}</td><td>${esc(r.texto)}</td></tr>${r.imagen?`<tr class="report-tech-img-row"><td colspan="3"><img class="report-tech-img" src="${r.imagen}"></td></tr>`:''}`).join('')}</tbody></table>`;
+};
+
+function normalizeConclusionRowV37(raw){
+ const r=normalizeConclusionRow(raw);
+ r.allowLevels=!!(raw&&raw.allowLevels);
+ return r;
+}
+function ensureAreaUtilTotalRowV37(){
+ const arr=state.aprobatorio.conclusion||[];
+ if(!arr.some(raw=>normV36(normalizeConclusionRow(raw).descripcion).includes('AREA UTIL TOTAL'))){
+   let idx=arr.findIndex(raw=>normV36(normalizeConclusionRow(raw).descripcion).includes('AREA UTIL PLANTA BAJA'));
+   if(idx<0) idx=1;
+   arr.splice(idx+1,0,{descripcion:'Área útil total',levels:[],cantidad:'',unidad:'m2',allowLevels:false});
+ }
+}
+function rowAllowsLevelsV37(raw,i){
+ const r=normalizeConclusionRowV37(raw); const d=normV36(r.descripcion||'');
+ return d.includes('AREA BRUTA PLANTA BAJA') || r.allowLevels===true;
+}
+function isComputedConclusionV37(raw){
+ const d=normV36(normalizeConclusionRow(raw).descripcion);
+ return d.includes('AREA BRUTA TOTAL') || d==='COS PB' || d==='COS TOTAL';
+}
+recalcAreasCOSV36 = function(){
+ ensureAreaUtilTotalRowV37();
+ const arr=state.aprobatorio?.conclusion||[];
+ let areaLote=0, aupb=0, areaUtilTotal=0, brutaTotal=0;
+ arr.forEach(raw=>{
+   const r=normalizeConclusionRow(raw); const d=normV36(r.descripcion); const q=parseQtyV36(r.cantidad);
+   if((d.includes('AREA DEL PREDIO')||d.includes('AREA TOTAL DE LOTE')) && q) areaLote=q;
+   if(d.includes('AREA UTIL PLANTA BAJA')) aupb=q;
+   if(d.includes('AREA UTIL TOTAL')) areaUtilTotal=q;
+   if(d.includes('BRUTA') && !d.includes('TOTAL')) brutaTotal+=q;
+ });
+ arr.forEach((raw,i)=>{
+   const r=normalizeConclusionRow(raw); const d=normV36(r.descripcion);
+   if(d.includes('AREA BRUTA TOTAL')){ r.cantidad=brutaTotal?fmtNumV36(brutaTotal):''; syncConclusionObj(i,r); }
+   if(d.includes('COS PB')){ r.cantidad=(areaLote&&aupb)?fmtNumV36((aupb/areaLote)*100):''; syncConclusionObj(i,r); }
+   if(d.includes('COS TOTAL')){ r.cantidad=(areaLote&&areaUtilTotal)?fmtNumV36((areaUtilTotal/areaLote)*100):''; syncConclusionObj(i,r); }
+ });
+};
+renderConclusionTabla = function(){
+ ensureAreaUtilTotalRowV37();
+ recalcAreasCOSV36();
+ const arr=state.aprobatorio.conclusion||[];
+ document.getElementById('conclusionTabla').innerHTML=`<table class="editable-conclusion"><thead><tr><th>Descripción</th><th style="width:18%">Niveles</th><th style="width:18%">Cantidad</th><th style="width:14%">Unidad</th><th style="width:16%">Acciones</th></tr></thead><tbody>${arr.map((raw,i)=>{ const r=normalizeConclusionRowV37(raw); syncConclusionObj(i,r); state.aprobatorio.conclusion[i].allowLevels=r.allowLevels; const canLevels=rowAllowsLevelsV37(raw,i); const computed=isComputedConclusionV37(raw); return `<tr class="${computed?'calc-readonly-v37':''}"><td><input value="${esc(r.descripcion)}" placeholder="Descripción" oninput="updConclusionField(${i},'descripcion',this.value)" ${computed?'readonly':''}></td><td class="levels-edit ${canLevels?'':'levels-empty-v37'}">${canLevels?`${r.levels.map((v,j)=>`<div class="level-item"><input value="${esc(v)}" placeholder="Nivel" oninput="updConclusionLevel(${i},${j},this.value)"><button class="secondary mini-btn" onclick="delConclusionLevel(${i},${j})">×</button></div>`).join('')}<button class="secondary add-level-row" onclick="addConclusionLevel(${i})">+ Niveles</button>`:''}</td><td><input value="${esc(r.cantidad)}" placeholder="Cantidad" oninput="updConclusionField(${i},'cantidad',this.value)" ${computed?'readonly':''}></td><td><input value="${esc(r.unidad)}" placeholder="Unidad" oninput="updConclusionField(${i},'unidad',this.value)"></td><td class="row-actions"><button class="mini-plus" title="Agregar fila debajo" onclick="addConclusionRowAfter(${i})">+</button><button class="danger mini-btn" onclick="delConclusion(${i})">Quitar</button></td></tr>`; }).join('')}</tbody></table><div class="calc-note">Área Bruta total = suma de filas con “Bruta”. COS PB = Área útil planta baja / Área del predio × 100. COS Total = Área útil total / Área del predio × 100.</div>`;
+};
+updConclusionField = function(i,field,v){
+ const row=normalizeConclusionRowV37(state.aprobatorio.conclusion[i]);
+ if(isComputedConclusionV37(state.aprobatorio.conclusion[i]) && (field==='cantidad'||field==='descripcion')) return;
+ row[field]=field==='cantidad'?formatDecimalFlexible(v):smartInputCase(v);
+ syncConclusionObj(i,row); state.aprobatorio.conclusion[i].allowLevels=row.allowLevels;
+ recalcAreasCOSV36(); renderConclusionTabla(); renderReport(); renderPreview();
+};
+addConclusionRowAfter = function(i){ state.aprobatorio.conclusion.splice(i+1,0,{descripcion:'',levels:[],cantidad:'',unidad:'m2',allowLevels:true}); renderConclusionTabla(); renderReport(); renderPreview(); };
+agregarConclusionRow = function(tipo=''){ state.aprobatorio.conclusion.push({descripcion:tipo,levels:[],cantidad:'',unidad:'m2',allowLevels:true}); renderConclusionTabla(); renderReport(); renderPreview(); };
 </script>
 
 </body>
