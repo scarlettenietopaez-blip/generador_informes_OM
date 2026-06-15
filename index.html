@@ -2897,5 +2897,113 @@ aprobatorioStructuralTable = function(){
 };
 </script>
 
+
+<script>
+/* ==========================================================
+   V40 - Corrección pestaña Aprobatorio
+   Al cambiar el tipo de informe, la pestaña ya aparece y se
+   renderiza al abrirse, sin depender de reiniciar la página.
+   ========================================================== */
+function normTipoInformeV40(v){
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ').trim().toUpperCase();
+}
+function isAprobatorioV40(){
+  return normTipoInformeV40(state.tipoInforme).includes('APROBATORIO');
+}
+function isObservacionesV40(){
+  return normTipoInformeV40(state.tipoInforme).includes('OBSERVACIONES');
+}
+
+tabsForCurrentReport = function(){
+  const base=['tab-info','tab-req'];
+  if(isObservacionesV40()) base.push('tab-obs');
+  if(isAprobatorioV40()) base.push('tab-apr');
+  return [...base,'tab-vista'];
+};
+
+updateTabsForType = function(){
+  const allowed=tabsForCurrentReport();
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('hidden-tab',!allowed.includes(b.dataset.tab)));
+  const current=document.querySelector('.tab.active')?.id;
+  if(!allowed.includes(current)) showTab('tab-info');
+  updateSideActions();
+};
+
+updateSideActions = function(){
+  const isApr=isAprobatorioV40();
+  const onVista=(document.querySelector('.tab.active')?.id==='tab-vista');
+  const panel=document.getElementById('copyPanelAprobatorio');
+  if(panel) panel.classList.toggle('hidden', !onVista);
+  const btnCopy=document.getElementById('btnCopiarAprobatorioVista');
+  if(btnCopy) btnCopy.classList.toggle('hidden', !isApr);
+  const lab=document.getElementById('fechaRevisionLabel');
+  const note=document.getElementById('fechaRevisionNote');
+  const sub=document.getElementById('fechaSubsanacionWrap');
+  if(lab) lab.textContent=isApr?'Fecha de emisión *':'Fecha de revisión *';
+  if(note) note.textContent=isApr?'Fecha de emisión para registro del informe aprobatorio.':'';
+  if(sub) sub.classList.toggle('hidden', isApr);
+};
+
+const _showTab_base_V40 = showTab;
+showTab = function(id){
+  // Si se abre la pestaña Aprobatorio, se construye el formulario en ese momento.
+  // Esto corrige que se quedara con el mensaje de "sección habilitada únicamente..."
+  // cuando el usuario cambiaba el tipo de informe después de cargar la página.
+  if(id==='tab-apr'){
+    collectTop();
+    if(!isAprobatorioV40()){
+      msg('Para abrir esta pestaña seleccione Informe Técnico Aprobatorio.');
+      return;
+    }
+    renderAprobatorioForm();
+  }
+  _showTab_base_V40(id);
+};
+
+const _collectTop_base_V40 = collectTop;
+collectTop = function(){
+  _collectTop_base_V40();
+  state.tipoInforme = String(state.tipoInforme||'').trim();
+};
+
+const _renderAprobatorioForm_base_V40 = renderAprobatorioForm;
+renderAprobatorioForm = function(){
+  collectTop();
+  if(!isAprobatorioV40()){
+    const box=document.getElementById('aprobatorioForm');
+    if(box) box.innerHTML='<p class="mini">Esta sección se habilita únicamente para Informe Técnico Aprobatorio.</p>';
+    return;
+  }
+  _renderAprobatorioForm_base_V40();
+};
+
+const _guardarYSeguir_base_V40 = guardarYSeguir;
+guardarYSeguir = async function(){
+  const ok=await guardarFormulario(false);
+  if(!ok) return;
+  const arr=tabsForCurrentReport();
+  const i=arr.indexOf(currentTabId());
+  const next=arr[Math.min(arr.length-1,i+1)];
+  showTab(next);
+};
+
+// Reforzar el evento de cambio del tipo de informe.
+window.addEventListener('load',()=>{
+  const tipo=document.getElementById('tipoInforme');
+  if(tipo){
+    tipo.addEventListener('change',()=>{
+      collectTop();
+      updateTabsForType();
+      if(isAprobatorioV40()){
+        renderAprobatorioForm();
+      }
+      updateAll();
+    });
+  }
+});
+</script>
+
 </body>
 </html>
