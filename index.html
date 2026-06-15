@@ -292,6 +292,41 @@
 .calc-readonly-v37 input{background:#eef3f8;font-weight:800}
 .editable-conclusion .levels-empty-v37{background:#fff}
 
+
+/* ===== V38 clave antigua y escritura fluida en conclusión ===== */
+.catastral-old-row-v37{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:10px;
+  margin-top:10px;
+  border-top:1px dashed #cbd5e1;
+  padding-top:10px;
+}
+.catastral-old-row-v37 .inline-check{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  gap:8px!important;
+  width:auto!important;
+  margin-left:auto!important;
+  text-align:right!important;
+  white-space:normal;
+}
+.catastral-old-row-v37 .inline-check input{
+  margin:0!important;
+  width:16px!important;
+  height:16px!important;
+  flex:0 0 auto!important;
+}
+.clave-antigua-input-v38{
+  margin-top:8px;
+}
+.editable-conclusion input:focus{
+  outline:2px solid #0b5cab;
+  outline-offset:1px;
+}
+
 </style>
 </head>
 <body>
@@ -2670,6 +2705,75 @@ updConclusionField = function(i,field,v){
 };
 addConclusionRowAfter = function(i){ state.aprobatorio.conclusion.splice(i+1,0,{descripcion:'',levels:[],cantidad:'',unidad:'m2',allowLevels:true}); renderConclusionTabla(); renderReport(); renderPreview(); };
 agregarConclusionRow = function(tipo=''){ state.aprobatorio.conclusion.push({descripcion:tipo,levels:[],cantidad:'',unidad:'m2',allowLevels:true}); renderConclusionTabla(); renderReport(); renderPreview(); };
+</script>
+
+
+<script>
+/* ==========================================================
+   V38 - Correcciones:
+   1) Check de clave catastral antigua alineado.
+   2) Escritura fluida en Conclusión Técnica sin re-render en cada tecla.
+   ========================================================== */
+catastralPanelHtmlV36 = function(f,val){
+  ensureV37State();
+  const c=state.catastral;
+  if(!c.prov) c.prov='06'; if(!c.cant) c.cant='01';
+  return `<div class="catastral-panel">
+    <div class="mini">Buscador de clave catastral. Por defecto: Prov. 06 y Cant. 01.</div>
+    <div class="catastral-grid">
+      <div><label>Prov</label><input id="catProv" value="${esc(c.prov||'06')}" maxlength="2" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <div><label>Cant</label><input id="catCant" value="${esc(c.cant||'01')}" maxlength="2" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <div><label>Parro</label><input id="catParro" value="${esc(c.parro||'')}" maxlength="4" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <div><label>Zona</label><input id="catZona" value="${esc(c.zona||'')}" maxlength="4" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <div><label>Sect</label><input id="catSect" value="${esc(c.sect||'')}" maxlength="4" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <div><label>Polg</label><input id="catPolg" value="${esc(c.polg||'')}" maxlength="6" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <div><label>Pred</label><input id="catPred" value="${esc(c.pred||'')}" maxlength="12" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <button type="button" class="secondary catastral-search" onclick="buscarClaveCatastralV36()" ${c.claveAntiguaActiva?'disabled':''}>🔍</button>
+    </div>
+    <div class="catastral-old-row-v37">
+      <label class="inline-check"><input type="checkbox" id="toggleClaveAntiguaV37" ${c.claveAntiguaActiva?'checked':''}> Usar clave catastral antigua</label>
+    </div>
+    ${c.claveAntiguaActiva?`<div class="field clave-antigua-input-v38"><label>Clave catastral antigua</label><input id="claveAntiguaTextV37" value="${esc(c.claveAntigua||'')}" placeholder="Ingrese la clave antigua en texto libre"></div>`:''}
+    <div class="row" style="margin-top:10px">
+      <div class="field"><label>Urbano / Rural</label><input id="catUrbanoRural" value="${esc(c.urbanoRural||'')}" readonly></div>
+      <div class="field"><label>Clave generada</label><input id="catClavePreview" value="${esc(buildClaveFromPartsV37()||val||'')}" readonly></div>
+    </div>
+  </div>`;
+};
+
+function updateComputedConclusionInputsV38(){
+  const arr=state.aprobatorio?.conclusion||[];
+  arr.forEach((raw,i)=>{
+    const r=normalizeConclusionRowV37(raw);
+    const qty=document.getElementById('conc_qty_'+i);
+    if(qty && qty.value !== String(r.cantidad||'')) qty.value = r.cantidad || '';
+    const unit=document.getElementById('conc_unit_'+i);
+    if(unit && unit.value !== String(r.unidad||'')) unit.value = r.unidad || '';
+  });
+}
+
+renderConclusionTabla = function(){
+ ensureAreaUtilTotalRowV37();
+ recalcAreasCOSV36();
+ const arr=state.aprobatorio.conclusion||[];
+ document.getElementById('conclusionTabla').innerHTML=`<table class="editable-conclusion"><thead><tr><th>Descripción</th><th style="width:18%">Niveles</th><th style="width:18%">Cantidad</th><th style="width:14%">Unidad</th><th style="width:16%">Acciones</th></tr></thead><tbody>${arr.map((raw,i)=>{ const r=normalizeConclusionRowV37(raw); syncConclusionObj(i,r); state.aprobatorio.conclusion[i].allowLevels=r.allowLevels; const canLevels=rowAllowsLevelsV37(raw,i); const computed=isComputedConclusionV37(raw); return `<tr class="${computed?'calc-readonly-v37':''}"><td><input id="conc_desc_${i}" value="${esc(r.descripcion)}" placeholder="Descripción" oninput="updConclusionField(${i},'descripcion',this.value)" onblur="renderConclusionTabla()" ${computed?'readonly':''}></td><td class="levels-edit ${canLevels?'':'levels-empty-v37'}">${canLevels?`${r.levels.map((v,j)=>`<div class="level-item"><input value="${esc(v)}" placeholder="Nivel" oninput="updConclusionLevel(${i},${j},this.value)"><button class="secondary mini-btn" onclick="delConclusionLevel(${i},${j})">×</button></div>`).join('')}<button class="secondary add-level-row" onclick="addConclusionLevel(${i})">+ Niveles</button>`:''}</td><td><input id="conc_qty_${i}" value="${esc(r.cantidad)}" placeholder="Cantidad" oninput="updConclusionField(${i},'cantidad',this.value)" ${computed?'readonly':''}></td><td><input id="conc_unit_${i}" value="${esc(r.unidad)}" placeholder="Unidad" oninput="updConclusionField(${i},'unidad',this.value)"></td><td class="row-actions"><button class="mini-plus" title="Agregar fila debajo" onclick="addConclusionRowAfter(${i})">+</button><button class="danger mini-btn" onclick="delConclusion(${i})">Quitar</button></td></tr>`; }).join('')}</tbody></table><div class="calc-note">Área Bruta total = suma de filas con “Bruta”. COS PB = Área útil planta baja / Área del predio × 100. COS Total = Área útil total / Área del predio × 100.</div>`;
+};
+
+updConclusionField = function(i,field,v){
+ const row=normalizeConclusionRowV37(state.aprobatorio.conclusion[i]);
+ if(isComputedConclusionV37(state.aprobatorio.conclusion[i]) && (field==='cantidad'||field==='descripcion')) return;
+
+ row[field]=field==='cantidad'?formatDecimalFlexible(v):smartInputCase(v);
+ syncConclusionObj(i,row);
+ state.aprobatorio.conclusion[i].allowLevels=row.allowLevels;
+
+ // Recalcula valores automáticos sin reconstruir toda la tabla, así no se pierde el foco.
+ recalcAreasCOSV36();
+ updateComputedConclusionInputsV38();
+
+ renderReport();
+ renderPreview();
+};
 </script>
 
 </body>
