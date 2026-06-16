@@ -583,6 +583,94 @@
   .info-row-v48,.info-row-v48.three{grid-template-columns:1fr}
 }
 
+
+/* ===== V49 corrección bloques + clave catastral compacta ===== */
+.info-block-v49{
+  border:1px solid #d5e0ee;
+  border-radius:14px;
+  background:#fff;
+  padding:12px;
+  margin:12px 0 16px;
+  box-shadow:0 8px 22px rgba(10,35,65,.05);
+}
+.info-block-v49 > .section-title{
+  margin-top:0!important;
+  margin-bottom:10px!important;
+}
+.info-row-v49{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-bottom:10px;
+}
+.info-row-v49.single{grid-template-columns:1fr}
+.info-row-v49.three{grid-template-columns:1fr 1fr 1fr}
+.info-row-v49 .field{margin-bottom:0}
+.v49-hidden{display:none!important}
+.v49-orphan-title{display:none!important}
+.catastral-panel-v49{
+  border:1px solid #c7d5e6;
+  border-radius:12px;
+  background:#f8fbff;
+  padding:10px;
+  margin:8px 0;
+}
+.catastral-line-v49{
+  display:grid;
+  grid-template-columns:52px 52px 82px 92px 82px 82px 1fr 42px;
+  gap:6px;
+  align-items:end;
+}
+.catastral-line-v49 label{
+  display:block;
+  font-size:9px;
+  line-height:1;
+  text-align:center;
+  color:#0b2b4c;
+  font-weight:900;
+  margin-bottom:3px;
+}
+.catastral-line-v49 input,
+.catastral-line-v49 select{
+  height:34px;
+  padding:6px;
+  text-align:center;
+  font-size:13px;
+}
+.catastral-line-v49 button{
+  height:34px;
+  padding:0!important;
+  width:38px!important;
+}
+.catastral-info-v49{
+  display:grid;
+  grid-template-columns:1fr 130px 1fr;
+  gap:8px;
+  margin-top:8px;
+}
+.catastral-info-v49 label{
+  font-size:10px;
+  font-weight:900;
+  color:#0b2b4c;
+}
+.catastral-info-v49 input{
+  height:32px;
+  padding:6px;
+}
+.clave-antigua-v49{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  margin-top:8px;
+}
+@media(max-width:1050px){
+  .catastral-line-v49{grid-template-columns:repeat(4,1fr)}
+  .catastral-info-v49{grid-template-columns:1fr}
+}
+@media(max-width:900px){
+  .info-row-v49,.info-row-v49.three{grid-template-columns:1fr}
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -4667,6 +4755,263 @@ renderInfoForm = function(){
 window.addEventListener('load',()=>{
   setTimeout(regroupInfoGeneralV48,500);
   setTimeout(regroupInfoGeneralV48,1500);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V49 - Corrige organización y clave catastral compacta
+   ========================================================== */
+function cleanLabelV49(s){
+  return String(s||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\*/g,'')
+    .replace(/[:]/g,'')
+    .replace(/\s+/g,' ')
+    .trim().toUpperCase();
+}
+function clearOldGroupsV49(){
+  const box=document.getElementById('infoForm');
+  if(!box) return;
+  // Devolver campos desde bloques previos al formulario antes de reconstruir.
+  [...box.querySelectorAll('.info-block-v47,.info-block-v48,.info-block-v49')].forEach(b=>{
+    [...b.querySelectorAll('.field,#propietariosBox')].forEach(el=>box.appendChild(el));
+    b.remove();
+  });
+  [...box.querySelectorAll('.section-title')].forEach(t=>{
+    // Ocultar todos los encabezados generados originalmente para que no queden repetidos al final.
+    if(!t.closest('.info-block-v49')) t.classList.add('v49-orphan-title');
+  });
+  [...box.querySelectorAll('.v49-hidden')].forEach(el=>el.classList.remove('v49-hidden'));
+}
+function fieldByLabelV49(matchers){
+  const arr=(Array.isArray(matchers)?matchers:[matchers]).map(cleanLabelV49);
+  const fields=[...document.querySelectorAll('#infoForm .field')].filter(f=>!f.closest('.info-block-v49'));
+  let best=null, bestScore=-1;
+  fields.forEach(f=>{
+    if(f.classList.contains('v49-used')) return;
+    const lab=cleanLabelV49(f.querySelector('label')?.textContent||'');
+    if(!lab) return;
+    arr.forEach(m=>{
+      let score=-1;
+      if(lab===m) score=100;
+      else if(lab.includes(m)) score=80;
+      else if(m.includes(lab)) score=60;
+      if(score>bestScore){best=f; bestScore=score;}
+    });
+  });
+  if(best) best.classList.add('v49-used');
+  return bestScore>=0 ? best : null;
+}
+function makeBlockV49(title){
+  const b=document.createElement('div');
+  b.className='info-block-v49';
+  const st=document.createElement('div');
+  st.className='section-title';
+  st.textContent=title;
+  b.appendChild(st);
+  return b;
+}
+function addRowV49(block, fields, cls=''){
+  const valid=fields.filter(Boolean);
+  if(!valid.length) return;
+  const row=document.createElement('div');
+  row.className='info-row-v49 '+cls;
+  valid.forEach(f=>row.appendChild(f));
+  block.appendChild(row);
+}
+function syncEgobToInfoFieldV49(){
+  const f=[...document.querySelectorAll('#infoForm .field')].find(el=>{
+    const lab=cleanLabelV49(el.querySelector('label')?.textContent||'');
+    return lab.includes('TRAMITE EGOB');
+  });
+  if(f){
+    const input=f.querySelector('input,select,textarea');
+    if(input && state.egob){
+      input.value=state.egob;
+      if((input.id||'').startsWith('info_')){
+        state.info[input.id.replace('info_','')]=state.egob;
+      }
+    }
+  }
+}
+function regroupInfoGeneralV49(){
+  const box=document.getElementById('infoForm');
+  if(!box || !box.innerHTML.trim()) return;
+  if(box.dataset.v49Grouping==='1') return;
+  box.dataset.v49Grouping='1';
+  try{
+    clearOldGroupsV49();
+    [...box.querySelectorAll('.v49-used')].forEach(el=>el.classList.remove('v49-used'));
+    syncEgobToInfoFieldV49();
+
+    const tramite=fieldByLabelV49(['TRÁMITE EGOB NRO','TRAMITE EGOB NRO','TRÁMITE EGOB','TRAMITE EGOB']);
+    const propietarios=document.getElementById('propietariosBox');
+
+    const proyectista=fieldByLabelV49(['PROYECTISTA']);
+    const senescyt=fieldByLabelV49(['REGISTRO SENESCYT','REG. SENESCYT','REG SENESCYT']);
+    const registroMunicipal=fieldByLabelV49(['REGISTRO MUNICIPAL','REG. MUNICIPAL','REG MUNICIPAL']);
+
+    const clave=fieldByLabelV49(['CLAVE CATASTRAL']);
+    const parroquia=fieldByLabelV49(['PARROQUIA']);
+    const x=fieldByLabelV49(['X']);
+    const y=fieldByLabelV49(['Y']);
+    const codigoPit=fieldByLabelV49(['CÓDIGO PIT','CODIGO PIT']);
+    const direccion=fieldByLabelV49(['DIRECCIÓN','DIRECCION']);
+    const barrio=fieldByLabelV49(['BARRIO/SECTOR','BARRIO / SECTOR','BARRIO','SECTOR']);
+
+    const proyectoDef=fieldByLabelV49(['PROYECTO DEFINITIVO']);
+    const uso=fieldByLabelV49(['USO PRINCIPAL']);
+    const altura=fieldByLabelV49(['ALTURA EDIFICACIÓN','ALTURA EDIFICACION']);
+    const area=fieldByLabelV49(['ÁREA BRUTA','AREA BRUTA']);
+    const nombreProyecto=fieldByLabelV49(['NOMBRE DEL PROYECTO']);
+
+    const frag=document.createDocumentFragment();
+
+    const b1=makeBlockV49('1. DATOS DEL TRÁMITE');
+    addRowV49(b1,[tramite],'single');
+    if(propietarios) b1.appendChild(propietarios);
+    frag.appendChild(b1);
+
+    const b2=makeBlockV49('2. INFORMACIÓN PROYECTISTA');
+    addRowV49(b2,[proyectista],'single');
+    addRowV49(b2,[senescyt,registroMunicipal]);
+    frag.appendChild(b2);
+
+    const b3=makeBlockV49('3. UBICACIÓN DE LA CONSTRUCCIÓN');
+    addRowV49(b3,[clave],'single');
+    if(parroquia) parroquia.classList.add('v49-hidden'); // no repetir: ya está dentro del buscador catastral
+    addRowV49(b3,[x,y]);
+    addRowV49(b3,[codigoPit],'single');
+    addRowV49(b3,[direccion,barrio]);
+    frag.appendChild(b3);
+
+    const b4=makeBlockV49('4. DATOS DE LA CONSTRUCCIÓN');
+    addRowV49(b4,[proyectoDef],'single');
+    addRowV49(b4,[uso,altura,area],'three');
+    addRowV49(b4,[nombreProyecto],'single');
+    frag.appendChild(b4);
+
+    box.insertBefore(frag, box.firstChild);
+
+    // Si quedaron encabezados originales sin campos, ocultarlos.
+    [...box.querySelectorAll(':scope > .section-title')].forEach(t=>t.classList.add('v49-orphan-title'));
+  }finally{
+    box.dataset.v49Grouping='0';
+  }
+}
+function parroquiasOptionsV49(selected){
+  ensureCatDBV46();
+  const seen={};
+  return (DATA.catastralBase||[]).filter(r=>{
+    if(!r.parro || seen[r.parro]) return false;
+    seen[r.parro]=true;
+    return true;
+  }).sort((a,b)=>String(a.parro).localeCompare(String(b.parro))).map(r=>{
+    const val=String(r.parro).padStart(2,'0');
+    const label=`${val}-${r.parroquia}`;
+    return `<option value="${esc(val)}" ${val===String(selected||'').padStart(2,'0')?'selected':''}>${esc(label)}</option>`;
+  }).join('');
+}
+function zonasOptionsV49(parro, selected){
+  ensureCatDBV46();
+  const p=String(parro||'').padStart(2,'0');
+  const rows=(DATA.catastralBase||[]).filter(r=>String(r.parro).padStart(2,'0')===p);
+  return rows.sort((a,b)=>String(a.zona).localeCompare(String(b.zona))).map(r=>{
+    const val=String(r.zona).padStart(3,'0');
+    const label=`${val}-${r.zonaNombre||'Zona '+val}`;
+    return `<option value="${esc(val)}" ${val===String(selected||'').padStart(3,'0')?'selected':''}>${esc(label)}</option>`;
+  }).join('');
+}
+catastralPanelHtmlV36 = function(f,val){
+  ensureV37State();
+  const c=state.catastral;
+  if(!c.prov) c.prov='06'; 
+  if(!c.cant) c.cant='01';
+  const row=catLookupV46(c.parro,c.zona);
+  const parroquiaAuto=row?.parroquia ? smartInputCase(row.parroquia) : getInfoFieldLabelV46('PARROQUIA');
+  if(row?.urbanoRural) c.urbanoRural=row.urbanoRural;
+  const oldActive=!!c.claveAntiguaActiva;
+  return `<div class="catastral-panel-v49">
+    <div class="mini">Buscador de clave catastral. Por defecto: Prov. 06 y Cant. 01.</div>
+    <div class="catastral-line-v49">
+      <div><label>PROV</label><input id="catProv" value="${esc(c.prov||'06')}" maxlength="2" ${oldActive?'disabled':''}></div>
+      <div><label>CANT</label><input id="catCant" value="${esc(c.cant||'01')}" maxlength="2" ${oldActive?'disabled':''}></div>
+      <div><label>PARR</label><select id="catParro" ${oldActive?'disabled':''}><option value="">PARR</option>${parroquiasOptionsV49(c.parro)}</select></div>
+      <div><label>ZONA</label><select id="catZona" ${oldActive?'disabled':''}><option value="">ZONA</option>${zonasOptionsV49(c.parro,c.zona)}</select></div>
+      <div><label>SECT</label><input id="catSect" value="${esc(c.sect||'')}" maxlength="4" ${oldActive?'disabled':''}></div>
+      <div><label>POLG</label><input id="catPolg" value="${esc(c.polg||'')}" maxlength="6" ${oldActive?'disabled':''}></div>
+      <div><label>PRED</label><input id="catPred" value="${esc(c.pred||'')}" maxlength="12" ${oldActive?'disabled':''}></div>
+      <button type="button" class="secondary catastral-search" onclick="buscarClaveCatastralV36()" ${oldActive?'disabled':''}>🔍</button>
+    </div>
+    <div class="clave-antigua-v49"><label class="inline-check"><input type="checkbox" id="toggleClaveAntiguaV37" ${oldActive?'checked':''}> Usar clave catastral antigua</label></div>
+    ${oldActive?`<div class="field clave-antigua-input-v38"><label>Clave catastral antigua</label><input id="claveAntiguaTextV37" value="${esc(c.claveAntigua||'')}" placeholder="Ingrese la clave antigua en texto libre"></div>`:''}
+    <div class="catastral-info-v49">
+      <div><label>Parroquia</label><input id="catParroquiaAutoV46" value="${esc(parroquiaAuto||'')}" readonly></div>
+      <div><label>Urbano / Rural</label><input id="catUrbanoRural" value="${esc(c.urbanoRural||'')}" readonly></div>
+      <div><label>Clave generada</label><input id="catClavePreview" value="${esc(buildClaveFromPartsV37()||val||'')}" readonly></div>
+    </div>
+  </div>`;
+};
+bindCatastralPanelV36 = function(f){
+  ensureV37State();
+  const tog=document.getElementById('toggleClaveAntiguaV37');
+  if(tog) tog.addEventListener('change',()=>{
+    state.catastral.claveAntiguaActiva=tog.checked;
+    syncClaveInputV37(f);
+    renderInfoForm(); renderReport(); renderPreview();
+  });
+  const old=document.getElementById('claveAntiguaTextV37');
+  if(old) old.addEventListener('input',()=>{
+    state.catastral.claveAntigua=old.value;
+    syncClaveInputV37(f); renderReport(); renderPreview();
+  });
+
+  const parro=document.getElementById('catParro');
+  const zona=document.getElementById('catZona');
+  if(parro){
+    parro.addEventListener('change',()=>{
+      state.catastral.parro=parro.value;
+      state.catastral.zona='';
+      updateParroquiaFromClaveV46();
+      syncClaveInputV37(f);
+      renderInfoForm(); renderReport(); renderPreview();
+    });
+  }
+  if(zona){
+    zona.addEventListener('change',()=>{
+      state.catastral.zona=zona.value;
+      updateParroquiaFromClaveV46();
+      syncClaveInputV37(f);
+      renderInfoForm(); renderReport(); renderPreview();
+    });
+  }
+  ['Prov','Cant','Sect','Polg','Pred'].forEach(k=>{
+    const el=document.getElementById('cat'+k);
+    if(!el) return;
+    el.addEventListener('input',()=>{
+      const prop=k.toLowerCase();
+      el.value=onlyDigits(el.value);
+      state.catastral[prop]=el.value;
+      updateParroquiaFromClaveV46();
+      syncClaveInputV37(f);
+      renderReport(); renderPreview();
+    });
+  });
+  updateParroquiaFromClaveV46();
+  syncClaveInputV37(f);
+};
+
+const _renderInfoForm_base_V49 = typeof renderInfoForm==='function' ? renderInfoForm : null;
+renderInfoForm = function(){
+  if(_renderInfoForm_base_V49) _renderInfoForm_base_V49();
+  setTimeout(regroupInfoGeneralV49,0);
+};
+window.addEventListener('load',()=>{
+  setTimeout(regroupInfoGeneralV49,500);
+  setTimeout(regroupInfoGeneralV49,1500);
+  setTimeout(regroupInfoGeneralV49,3000);
 });
 </script>
 
