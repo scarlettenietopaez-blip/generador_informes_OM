@@ -456,6 +456,34 @@
 #pitMapModalCanvasV44{flex:1;width:100%;min-height:400px}
 .leaflet-control-layers{font-size:12px}
 
+
+/* ===== V45 corrección de carga inicial y mapa visible ===== */
+#pitLeafletMapV44{
+  min-height:230px;
+}
+.pit-map-fallback-v45{
+  border:1px solid #cbd5e1;
+  border-radius:12px;
+  overflow:hidden;
+  background:#eef6ff;
+}
+.pit-map-fallback-v45 svg{
+  display:block;
+  width:100%;
+  height:210px;
+}
+.pit-map-fallback-v45 .pit-map-caption-v43{
+  background:#fff;
+}
+.info-load-warning-v45{
+  padding:12px;
+  border:1px solid #fed7aa;
+  background:#fff7ed;
+  color:#9a3412;
+  border-radius:12px;
+  font-size:13px;
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -3890,6 +3918,100 @@ renderPitDetailV41 = function(){
 window.addEventListener('load',()=>{
   setTimeout(()=>{moveSearchBelowPitV44(); setupSearchCompactV44(); renderPitDetailV41();},500);
 });
+</script>
+
+
+<script>
+/* ==========================================================
+   V45 - Corrección carga inicial + mapa visible
+   ========================================================== */
+function ensureAppInitV45(){
+  if(window.__OM_APP_INIT_DONE_V45) return;
+  window.__OM_APP_INIT_DONE_V45=true;
+  Promise.resolve()
+    .then(()=>typeof init==='function' ? init() : null)
+    .then(()=>{
+      // Si por algún motivo el formulario quedó vacío, se fuerza el render.
+      setTimeout(()=>{
+        const box=document.getElementById('infoForm');
+        if(box && !box.innerHTML.trim()){
+          try{
+            renderInfoForm();
+            renderRequisitosForm();
+            renderObservacionesForm();
+            renderAprobatorioForm();
+            updateTabsForType();
+            updateSideActions();
+            renderPitDetailV41();
+          }catch(e){
+            console.error('Error al forzar Información General V45:', e);
+            box.innerHTML='<div class="info-load-warning-v45">No se pudo cargar Información General. Revise que existan los CSV dentro de la carpeta data y recargue con Ctrl + F5.</div>';
+          }
+        }
+      },650);
+    })
+    .catch(err=>{
+      console.error('Error iniciando la aplicación V45:', err);
+      const box=document.getElementById('infoForm');
+      if(box) box.innerHTML='<div class="info-load-warning-v45">Ocurrió un error al iniciar la página. Recargue con Ctrl + F5 y verifique los archivos de la carpeta data.</div>';
+    });
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', ensureAppInitV45);
+}else{
+  ensureAppInitV45();
+}
+
+function miniMapSvgFallbackV45(item){
+  if(!item || !item.geometry) return '<div class="pit-map-fallback-v45"><div class="pit-map-caption-v43">Busque por X/Y para visualizar el punto sobre el polígono.</div></div>';
+  const x=Number(state.pitMap?.x), y=Number(state.pitMap?.y);
+  const w=320,h=210;
+  const helper=svgPathsForGeomV43(item.geometry,item.bbox,w,h,12);
+  if(!helper || !helper.paths?.length) return '';
+  let dot='';
+  if(isFinite(x)&&isFinite(y)){
+    const [px,py]=helper.project([x,y]);
+    dot=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="5.5" fill="#d71920" stroke="white" stroke-width="2.4"></circle>`;
+  }
+  return `<div class="pit-map-fallback-v45"><svg viewBox="0 0 ${w} ${h}" aria-label="Mini mapa PIT">${helper.paths.map(d=>`<path d="${d}" fill="#b9dcff" stroke="#0b5cab" stroke-width="1.6" fill-opacity="0.72"></path>`).join('')}${dot}</svg><div class="pit-map-caption-v43">${dot?'Punto X/Y sobre el polígono consultado.':'Polígono del PIT seleccionado.'}</div></div>`;
+}
+
+const _initLeafletPitMapV44_base_V45 = typeof initLeafletPitMapV44==='function' ? initLeafletPitMapV44 : null;
+initLeafletPitMapV44 = function(containerId, isModal=false){
+  const container=document.getElementById(containerId);
+  if(!container) return;
+  if(!window.L){
+    const item=getCurrentPitItemV44();
+    container.innerHTML=miniMapSvgFallbackV45(item) + '<div class="pit-map-note-v44">Mapa interactivo pendiente de conexión. Se muestra el polígono como referencia.</div>';
+    return;
+  }
+  if(_initLeafletPitMapV44_base_V45) _initLeafletPitMapV44_base_V45(containerId,isModal);
+};
+
+const _miniMapV43_base_V45 = typeof miniMapV43==='function' ? miniMapV43 : null;
+miniMapV43 = function(item){
+  if(!item || !item.geometry) return '<div class="pit-map-fallback-v45"><div class="pit-map-caption-v43">Busque por X/Y para visualizar el punto sobre el mapa.</div></div>';
+  return `<div class="pit-map-actions-v44"><button class="secondary" onclick="openPitMapModalV44()">Agrandar mapa</button></div><div id="pitLeafletMapV44" class="pit-leaflet-map-v44">${miniMapSvgFallbackV45(item)}</div><div class="pit-map-note-v44">Cuadro de ubicación del PIT. Al agrandar puede acercar/alejar y revisar mejor la ubicación.</div>`;
+};
+
+const _renderPitDetailV41_base_V45 = typeof renderPitDetailV41==='function' ? renderPitDetailV41 : null;
+renderPitDetailV41 = function(){
+  if(_renderPitDetailV41_base_V45) _renderPitDetailV41_base_V45();
+  const mapBox=document.getElementById('pitLeafletMapV44');
+  if(mapBox){
+    setTimeout(()=>initLeafletPitMapV44('pitLeafletMapV44',false),120);
+  }
+};
+
+const _buscarPitPorCoordenadasV42_base_V45 = typeof buscarPitPorCoordenadasV42==='function' ? buscarPitPorCoordenadasV42 : null;
+buscarPitPorCoordenadasV42 = function(){
+  if(_buscarPitPorCoordenadasV42_base_V45) _buscarPitPorCoordenadasV42_base_V45();
+  setTimeout(()=>{
+    renderPitDetailV41();
+    const mapBox=document.getElementById('pitLeafletMapV44');
+    if(mapBox) initLeafletPitMapV44('pitLeafletMapV44',false);
+  },200);
+};
 </script>
 
 </body>
