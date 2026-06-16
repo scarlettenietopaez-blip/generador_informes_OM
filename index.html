@@ -346,6 +346,14 @@
 .pit-coord-tools button{width:100%;font-size:12px;padding:8px}
 .geo-status-v42{font-size:11px;color:#64748b;margin-top:5px}
 
+
+/* ===== V43 IPRUS/PIT desde GeoJSON enriquecido ===== */
+.pit-map-v43{border:1px solid #cbd5e1;background:#f8fafc;border-radius:12px;margin:8px 0 10px;overflow:hidden}
+.pit-map-v43 svg{display:block;width:100%;height:170px;background:#eef6ff}
+.pit-map-caption-v43{font-size:11px;color:#475569;padding:6px 8px;border-top:1px solid #dbe4ef;background:#fff}
+.pit-detail-table .pit-section-v43 th{background:#dceaf8!important;color:#0b2b4c;text-align:center}
+.pit-geo-note-v43{font-size:11px;color:#64748b;margin-top:6px}
+
 </style>
 </head>
 <body>
@@ -3294,6 +3302,291 @@ handleInfoInput = function(f,el,meta){
   _handleInfoInput_base_V42(f,el,meta);
   const lab=upper(f.label||'').replace(/\s+/g,'').trim();
   if(lab==='X:' || lab==='X' || lab==='Y:' || lab==='Y' || (meta&&meta.isPit)){
+    renderPitDetailV41();
+  }
+};
+</script>
+
+
+<script>
+/* ==========================================================
+   V43 - PIT/IPRUS desde un único GeoJSON enriquecido
+   - Ya no depende de data/codigos_pit.csv para lista/detalle.
+   - Autocompleta Parroquia y Código PIT por X/Y.
+   - Muestra mini mapa con polígono y punto consultado.
+   ========================================================== */
+function ensureIprusPitV43(){
+  if(!Array.isArray(DATA.iprusPitFeatures)) DATA.iprusPitFeatures=[];
+  if(!Array.isArray(DATA.iprusPitIndex)) DATA.iprusPitIndex=[];
+  if(!Array.isArray(DATA.iprusPitDetalle)) DATA.iprusPitDetalle=[];
+  if(!state.pitMap) state.pitMap={x:null,y:null,codigo:''};
+}
+function pgetV43(row, ...keys){
+  for(const key of keys){
+    if(row && row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') return row[key];
+  }
+  return '';
+}
+function codigoPitOfFeatureV43(ft){
+  const p=ft?.properties||{};
+  return String(pgetV43(p,'codigo_pit','pit','Código PIT','Codigo PIT')).trim();
+}
+function bboxOfCoordsV43(coords,b=[Infinity,Infinity,-Infinity,-Infinity]){
+  if(!Array.isArray(coords)) return b;
+  if(coords.length>=2 && typeof coords[0]==='number' && typeof coords[1]==='number'){
+    const x=coords[0], y=coords[1];
+    if(x<b[0]) b[0]=x; if(y<b[1]) b[1]=y; if(x>b[2]) b[2]=x; if(y>b[3]) b[3]=y;
+  }else{
+    coords.forEach(c=>bboxOfCoordsV43(c,b));
+  }
+  return b;
+}
+function buildIprusPitIndexV43(){
+  ensureIprusPitV43();
+  const seen={};
+  DATA.iprusPitIndex=(DATA.iprusPitFeatures||[]).map(ft=>{
+    const geom=ft.geometry||{};
+    return {codigo_pit:codigoPitOfFeatureV43(ft), properties:ft.properties||{}, geometry:geom, bbox:bboxOfCoordsV43(geom.coordinates||[])};
+  }).filter(x=>x.codigo_pit && isFinite(x.bbox[0]));
+  DATA.iprusPitDetalle=[];
+  DATA.iprusPitIndex.forEach(item=>{
+    if(!seen[item.codigo_pit]){
+      seen[item.codigo_pit]=true;
+      DATA.iprusPitDetalle.push(item.properties);
+    }
+  });
+  DATA.pitDetalle=DATA.iprusPitDetalle;
+  if(typeof CODIGOS_PIT !== 'undefined' && Array.isArray(CODIGOS_PIT)){
+    CODIGOS_PIT.splice(0, CODIGOS_PIT.length, ...DATA.iprusPitDetalle.map(p=>String(pgetV43(p,'codigo_pit','pit')).trim()).filter(Boolean));
+  }
+}
+function pointInRingV43(x,y,ring){
+  let inside=false;
+  for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+    const xi=Number(ring[i][0]), yi=Number(ring[i][1]);
+    const xj=Number(ring[j][0]), yj=Number(ring[j][1]);
+    const intersect=((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi+0.0)+xi);
+    if(intersect) inside=!inside;
+  }
+  return inside;
+}
+function pointInPolygonCoordsV43(x,y,poly){
+  if(!poly || !poly.length) return false;
+  if(!pointInRingV43(x,y,poly[0])) return false;
+  for(let h=1;h<poly.length;h++){
+    if(pointInRingV43(x,y,poly[h])) return false;
+  }
+  return true;
+}
+function pointInGeomV43(x,y,geom){
+  if(!geom) return false;
+  if(geom.type==='Polygon') return pointInPolygonCoordsV43(x,y,geom.coordinates);
+  if(geom.type==='MultiPolygon') return geom.coordinates.some(poly=>pointInPolygonCoordsV43(x,y,poly));
+  return false;
+}
+function findPitByPointV43(x,y){
+  ensureIprusPitV43();
+  for(const item of DATA.iprusPitIndex||[]){
+    const b=item.bbox;
+    if(x<b[0] || y<b[1] || x>b[2] || y>b[3]) continue;
+    if(pointInGeomV43(x,y,item.geometry)) return item;
+  }
+  return null;
+}
+function findPitV41(code){
+  ensureIprusPitV43();
+  const c=normPitV41(code);
+  if(!c) return null;
+  return DATA.iprusPitIndex.find(r=>normPitV41(r.codigo_pit)===c) || null;
+}
+function pitDetailRowsV41(item){
+  const p=item?.properties || item || {};
+  return [
+    ['Parroquia', pgetV43(p,'parroquia')],
+    ['Clasificación suelo', pgetV43(p,'clase_suelo','clas_suelo')],
+    ['Código PIT', pgetV43(p,'codigo_pit','pit')],
+    ['Lote mínimo', pgetV43(p,'lote_minimo','lote_min')],
+    ['Altura edificación', pgetV43(p,'altura_edificacion')],
+    ['Implantación', pgetV43(p,'implantacion','implantac')],
+    ['Frente mínimo', pgetV43(p,'frente_minimo','f_min')],
+    ['Retiro frontal', pgetV43(p,'retiro_frontal','r_frontal')],
+    ['Retiro lateral', pgetV43(p,'retiro_lateral','r_lateral')],
+    ['Retiro posterior', pgetV43(p,'retiro_posterior','r_posterio')],
+    ['COS planta baja', pgetV43(p,'cos_planta_baja','cos_pb')],
+    ['COS total', pgetV43(p,'cos_total')],
+    ['COS creado', pgetV43(p,'cos_creado','cos_total_c')],
+    ['Uso principal', pgetV43(p,'uso_principal','u_principa')]
+  ];
+}
+function fieldByLabelV43(parts){
+  const arr=Array.isArray(parts)?parts:[parts];
+  return DATA.infoFields.find(f=>{
+    const lab=upper(f.label||'');
+    return arr.some(p=>lab.includes(p));
+  });
+}
+function coordValueV43(which){
+  const f=DATA.infoFields.find(x=>{
+    const lab=upper(x.label||'').replace(/\s+/g,'').trim();
+    return which==='X' ? lab==='X:' || lab==='X' : lab==='Y:' || lab==='Y';
+  });
+  if(!f) return '';
+  return state.info[f.key] || document.getElementById('info_'+f.key)?.value || '';
+}
+function setCodigoPitV43(code){
+  const f=fieldByLabelV43(['CÓDIGO PIT','CODIGO PIT']);
+  if(!f) return;
+  state.info[f.key]=code||'';
+  const el=document.getElementById('info_'+f.key);
+  if(el) el.value=code||'';
+}
+function setParroquiaV43(parr){
+  const f=fieldByLabelV43(['PARROQUIA']);
+  if(!f || !parr) return;
+  const val=smartInputCase(String(parr).trim());
+  state.info[f.key]=val;
+  const el=document.getElementById('info_'+f.key);
+  if(el) el.value=val;
+}
+function setUsoPrincipalFromPitV43(uso){
+  const f=fieldByLabelV43(['USO PRINCIPAL']);
+  if(!f || !uso) return;
+  const val=smartInputCase(String(uso).trim());
+  // Solo autocompleta uso si el campo está vacío, para no cambiar decisiones del técnico.
+  if(!(state.info[f.key]||'').trim()){
+    state.info[f.key]=val;
+    const el=document.getElementById('info_'+f.key);
+    if(el) el.value=val;
+  }
+}
+function buscarPitPorCoordenadasV42(){
+  const x=Number(String(coordValueV43('X')).replace(',','.'));
+  const y=Number(String(coordValueV43('Y')).replace(',','.'));
+  if(!isFinite(x) || !isFinite(y)){
+    msg('Ingrese coordenadas X/Y válidas antes de buscar el Código PIT.');
+    return;
+  }
+  if(!DATA.iprusPitIndex || !DATA.iprusPitIndex.length){
+    msg('La base IPRUS/PIT aún no está cargada. Verifique data/iprus_pit_lookup.geojson.');
+    return;
+  }
+  const hit=findPitByPointV43(x,y);
+  state.pitMap={x,y,codigo:hit?hit.codigo_pit:''};
+  if(!hit){
+    msg('No se encontró un polígono PIT para esas coordenadas. Verifique que X/Y estén en el mismo sistema de coordenadas del GeoJSON.');
+    renderPitDetailV41();
+    return;
+  }
+  setCodigoPitV43(hit.codigo_pit);
+  setParroquiaV43(pgetV43(hit.properties,'parroquia'));
+  setUsoPrincipalFromPitV43(pgetV43(hit.properties,'uso_principal','u_principa'));
+  renderInfoForm();
+  renderPitDetailV41();
+  renderReport();
+  renderPreview();
+  msg('PIT y parroquia encontrados por coordenadas: '+hit.codigo_pit+' / '+pgetV43(hit.properties,'parroquia'), true);
+}
+function svgPathsForGeomV43(geom,bbox,w=320,h=170,pad=12){
+  if(!geom || !geom.coordinates) return '';
+  const [minx,miny,maxx,maxy]=bbox;
+  const dx=maxx-minx || 1, dy=maxy-miny || 1;
+  const scale=Math.min((w-2*pad)/dx,(h-2*pad)/dy);
+  const ox=(w-dx*scale)/2, oy=(h-dy*scale)/2;
+  function project(c){
+    const x=ox+(Number(c[0])-minx)*scale;
+    const y=h-(oy+(Number(c[1])-miny)*scale);
+    return [x,y];
+  }
+  function ringPath(ring){
+    if(!ring || !ring.length) return '';
+    return ring.map((c,i)=>{ const [x,y]=project(c); return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1); }).join(' ')+' Z';
+  }
+  let paths=[];
+  if(geom.type==='Polygon'){
+    paths=geom.coordinates.map(ringPath);
+  }else if(geom.type==='MultiPolygon'){
+    geom.coordinates.forEach(poly=>poly.forEach(r=>paths.push(ringPath(r))));
+  }
+  return {paths:paths.filter(Boolean), project};
+}
+function miniMapV43(item){
+  ensureIprusPitV43();
+  const x=Number(state.pitMap?.x), y=Number(state.pitMap?.y);
+  if(!item || !item.geometry) return '<div class="pit-map-v43"><div class="pit-map-caption-v43">Busque por X/Y para visualizar el punto sobre el polígono.</div></div>';
+  const w=320,h=170;
+  const helper=svgPathsForGeomV43(item.geometry,item.bbox,w,h,12);
+  if(!helper || !helper.paths?.length) return '';
+  let dot='';
+  if(isFinite(x)&&isFinite(y)){
+    const [px,py]=helper.project([x,y]);
+    dot=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="4.8" fill="#d71920" stroke="white" stroke-width="2"></circle>`;
+  }
+  return `<div class="pit-map-v43"><svg viewBox="0 0 ${w} ${h}" aria-label="Mini mapa PIT">${helper.paths.map(d=>`<path d="${d}" fill="#b9dcff" stroke="#0b5cab" stroke-width="1.4" fill-opacity="0.72"></path>`).join('')}${dot}</svg><div class="pit-map-caption-v43">${dot?'Punto X/Y sobre el polígono consultado.':'Polígono del PIT seleccionado.'}</div></div>`;
+}
+function pitCoordToolsHTMLV42(){
+  const x=coordValueV43('X') || '—';
+  const y=coordValueV43('Y') || '—';
+  const count=(DATA.iprusPitIndex||[]).length;
+  return `<div class="pit-coord-tools">
+    <div class="mini"><b>Búsqueda por coordenadas</b></div>
+    <div class="pit-coord-grid"><div><b>X:</b> ${esc(x)}</div><div><b>Y:</b> ${esc(y)}</div></div>
+    <button class="secondary" onclick="buscarPitPorCoordenadasV42()">Buscar PIT por X/Y</button>
+    <div class="geo-status-v42">${count?`Base IPRUS/PIT cargada: ${count} polígonos.`:'Base IPRUS/PIT pendiente de carga.'}</div>
+  </div>`;
+}
+function renderPitDetailV41(){
+  ensurePitPanelV41();
+  const box=document.getElementById('pitDetailContentV41');
+  if(!box) return;
+  const code=currentPitCodeV41();
+  let item=code?findPitV41(code):null;
+  let main='';
+  if(!code){
+    main='Seleccione un Código PIT en Información General o use la búsqueda por X/Y.';
+  }else if(!item){
+    main=`<div class="pit-warning">No se encontró información para el Código PIT <b>${esc(code)}</b> en el GeoJSON IPRUS/PIT.</div>`;
+  }else{
+    const p=item.properties||{};
+    const rows=pitDetailRowsV41(item).filter(x=>String(x[1]??'').trim()!=='');
+    main=`<span class="pit-pill">${esc(pgetV43(p,'codigo_pit','pit'))}</span>${miniMapV43(item)}<table class="pit-detail-table"><tbody>${rows.map(([k,v])=>`<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join('')}</tbody></table>`;
+  }
+  box.innerHTML=`<div id="pitCoordToolsV42">${pitCoordToolsHTMLV42()}</div>${main}<div class="pit-geo-note-v43">Fuente: data/iprus_pit_lookup.geojson</div>`;
+}
+
+const _loadExternalCSVsV32_base_V43 = typeof loadExternalCSVsV32 === 'function' ? loadExternalCSVsV32 : async()=>{};
+loadExternalCSVsV32 = async function(){
+  await _loadExternalCSVsV32_base_V43();
+  ensureIprusPitV43();
+  try{
+    const r=await fetch('data/iprus_pit_lookup.geojson?v='+Date.now(), {cache:'no-store'});
+    if(!r.ok) throw new Error(r.status+' '+r.statusText);
+    const gj=await r.json();
+    DATA.iprusPitFeatures=gj.features||[];
+    buildIprusPitIndexV43();
+    console.log('IPRUS/PIT GeoJSON V43 cargado:', DATA.iprusPitIndex.length, 'polígonos;', DATA.iprusPitDetalle.length, 'PIT únicos.');
+  }catch(e){
+    console.warn('No se pudo cargar data/iprus_pit_lookup.geojson:', e);
+  }
+};
+
+const _renderInfoForm_base_V43 = renderInfoForm;
+renderInfoForm = function(){
+  _renderInfoForm_base_V43();
+  renderPitDetailV41();
+};
+
+const _handleInfoInput_base_V43 = handleInfoInput;
+handleInfoInput = function(f,el,meta){
+  _handleInfoInput_base_V43(f,el,meta);
+  const lab=upper(f.label||'').replace(/\s+/g,'').trim();
+  if(lab==='X:' || lab==='X' || lab==='Y:' || lab==='Y' || (meta&&meta.isPit)){
+    if(meta&&meta.isPit){
+      const item=findPitV41(el.value);
+      if(item){
+        setParroquiaV43(pgetV43(item.properties,'parroquia'));
+        setUsoPrincipalFromPitV43(pgetV43(item.properties,'uso_principal','u_principa'));
+      }
+    }
     renderPitDetailV41();
   }
 };
