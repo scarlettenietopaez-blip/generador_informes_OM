@@ -505,6 +505,55 @@
 .info-order-title-v46{margin-top:14px!important}
 @media (max-width:900px){.catastral-main-v46,.catastral-extra-v46,.catastral-rest-v46{grid-template-columns:1fr 1fr}}
 
+
+/* ===== V47 bloques de Información General y mayor zoom de mapa ===== */
+.info-block-v47{
+  border:1px solid #d5e0ee;
+  border-radius:14px;
+  background:#ffffff;
+  padding:12px;
+  margin:12px 0 16px;
+  box-shadow:0 8px 22px rgba(10,35,65,.05);
+}
+.info-block-v47 > .section-title{
+  margin-top:0!important;
+  margin-bottom:10px!important;
+}
+.info-block-v47 .field{
+  margin-bottom:10px;
+}
+.info-block-v47 .row-v47{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.info-block-v47 .row-v47.three{
+  grid-template-columns:1fr 1fr 1fr;
+}
+.info-block-v47 .row-v47.single{
+  grid-template-columns:1fr;
+}
+#propietariosBox{
+  margin-top:4px;
+}
+.pit-leaflet-map-v44{
+  height:260px;
+}
+.map-modal-box-v44{
+  height:min(850px,94vh)!important;
+}
+.map-modal-head-v44 .map-hint-v47{
+  font-size:12px;
+  font-weight:600;
+  opacity:.9;
+}
+@media(max-width:900px){
+  .info-block-v47 .row-v47,
+  .info-block-v47 .row-v47.three{
+    grid-template-columns:1fr;
+  }
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -4264,6 +4313,168 @@ function initFastV46(){
   }
 }
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded', initFastV46, {once:true});}else{initFastV46();}
+</script>
+
+
+<script>
+/* ==========================================================
+   V47 - Zoom mayor en mapa + Información General por bloques
+   ========================================================== */
+
+function baseLayersV44(){
+  // maxNativeZoom permite "sobreacercar" la imagen satelital cuando el proveedor ya no tiene más mosaicos.
+  const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+    maxNativeZoom:18,
+    maxZoom:23,
+    attribution:'Tiles © Esri'
+  });
+  const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxNativeZoom:19,
+    maxZoom:23,
+    attribution:'© OpenStreetMap'
+  });
+  return {sat,osm};
+}
+
+const _initLeafletPitMapV44_base_V47 = typeof initLeafletPitMapV44==='function' ? initLeafletPitMapV44 : null;
+initLeafletPitMapV44 = function(containerId, isModal=false){
+  const container=document.getElementById(containerId);
+  if(!container) return;
+  if(!window.L){
+    const item=getCurrentPitItemV44();
+    container.innerHTML=miniMapSvgFallbackV45(item) + '<div class="pit-map-note-v44">Mapa interactivo pendiente de conexión. Se muestra el polígono como referencia.</div>';
+    return;
+  }
+  const item=getCurrentPitItemV44();
+  const point=currentPointLatLngV44();
+  const mapVar=isModal?'pitLeafletModalMapV44':'pitLeafletMapV44';
+  if(window[mapVar]){
+    try{ window[mapVar].remove(); }catch(e){}
+    window[mapVar]=null;
+  }
+  const {sat,osm}=baseLayersV44();
+  const map=L.map(containerId,{zoomControl:true,layers:[sat],maxZoom:23});
+  window[mapVar]=map;
+  L.control.layers({'Satélite':sat,'Mapa base':osm},null,{collapsed:true}).addTo(map);
+  drawPitLeafletV44(map,item,point,isModal?'pitModalLayerV44':'pitLayerV44',isModal?'pitModalMarkerV44':'pitMarkerV44');
+  setTimeout(()=>map.invalidateSize(),120);
+};
+
+function openPitMapModalV44(){
+  let modal=document.getElementById('pitMapModalV44');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='pitMapModalV44';
+    modal.className='map-modal-v44';
+    modal.innerHTML=`<div class="map-modal-box-v44"><div class="map-modal-head-v44"><span>Mapa PIT / IPRUS</span><span class="map-hint-v47">Use + para acercar hasta el nivel máximo disponible</span><button onclick="closePitMapModalV44()">Cerrar</button></div><div id="pitMapModalCanvasV44"></div></div>`;
+    document.body.appendChild(modal);
+  }
+  modal.classList.add('open');
+  setTimeout(()=>initLeafletPitMapV44('pitMapModalCanvasV44',true),80);
+}
+
+function labelNormV47(s){
+  return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').replace(/\*/g,'').trim().toUpperCase();
+}
+function fieldWrapperByAnyLabelV47(parts){
+  const arr=(Array.isArray(parts)?parts:[parts]).map(labelNormV47);
+  const fields=[...document.querySelectorAll('#infoForm > .field, #infoForm .field')];
+  return fields.find(f=>{
+    const lab=labelNormV47(f.querySelector('label')?.textContent||'');
+    return arr.some(p=>lab===p || lab.includes(p) || p.includes(lab));
+  });
+}
+function makeInfoBlockV47(title, className=''){
+  const block=document.createElement('div');
+  block.className='info-block-v47 '+className;
+  const st=document.createElement('div');
+  st.className='section-title';
+  st.textContent=title;
+  block.appendChild(st);
+  return block;
+}
+function appendRowV47(block, items, cls='row-v47'){
+  const row=document.createElement('div');
+  row.className=cls;
+  items.filter(Boolean).forEach(el=>row.appendChild(el));
+  if(row.children.length) block.appendChild(row);
+  return row.children.length>0;
+}
+function takeFieldV47(parts){
+  const el=fieldWrapperByAnyLabelV47(parts);
+  return el || null;
+}
+function reorderInfoGeneralV47(){
+  const box=document.getElementById('infoForm');
+  if(!box || box.dataset.reorderedV47==='1' || !box.innerHTML.trim()) return;
+  box.dataset.reorderedV47='1';
+
+  // Limpiar títulos de reordenamientos previos para evitar duplicados.
+  [...box.querySelectorAll('.info-block-v47')].forEach(b=>b.remove());
+
+  const tramite=takeFieldV47(['TRÁMITE EGOB NRO','TRAMITE EGOB NRO','TRÁMITE EGOB','TRAMITE EGOB']);
+  const propBox=document.getElementById('propietariosBox');
+
+  const proyectista=takeFieldV47(['PROYECTISTA']);
+  const senescyt=takeFieldV47(['REGISTRO SENESCYT','REG. SENESCYT']);
+  const regMun=takeFieldV47(['REGISTRO MUNICIPAL','REG. MUNICIPAL']);
+
+  const clave=takeFieldV47(['CLAVE CATASTRAL']);
+  const parroquia=takeFieldV47(['PARROQUIA']);
+  const x=takeFieldV47(['X:','X']);
+  const y=takeFieldV47(['Y:','Y']);
+  const pit=takeFieldV47(['CÓDIGO PIT','CODIGO PIT']);
+  const direccion=takeFieldV47(['DIRECCIÓN','DIRECCION']);
+  const barrio=takeFieldV47(['BARRIO/SECTOR','BARRIO / SECTOR','BARRIO','SECTOR']);
+
+  const proyectoDef=takeFieldV47(['PROYECTO DEFINITIVO']);
+  const uso=takeFieldV47(['USO PRINCIPAL']);
+  const altura=takeFieldV47(['ALTURA EDIFICACIÓN','ALTURA EDIFICACION']);
+  const area=takeFieldV47(['ÁREA BRUTA','AREA BRUTA']);
+  const nombreProyecto=takeFieldV47(['NOMBRE DEL PROYECTO']);
+
+  const frag=document.createDocumentFragment();
+
+  const b1=makeInfoBlockV47('1. DATOS DEL TRÁMITE');
+  appendRowV47(b1,[tramite],'row-v47 single');
+  if(propBox) b1.appendChild(propBox);
+  if(b1.children.length>1) frag.appendChild(b1);
+
+  const b2=makeInfoBlockV47('2. INFORMACIÓN PROYECTISTA');
+  appendRowV47(b2,[proyectista],'row-v47 single');
+  appendRowV47(b2,[senescyt,regMun],'row-v47');
+  if(b2.children.length>1) frag.appendChild(b2);
+
+  const b3=makeInfoBlockV47('3. UBICACIÓN DE LA CONSTRUCCIÓN');
+  appendRowV47(b3,[clave],'row-v47 single');
+  appendRowV47(b3,[parroquia],'row-v47 single');
+  appendRowV47(b3,[x,y],'row-v47');
+  appendRowV47(b3,[pit],'row-v47 single');
+  appendRowV47(b3,[direccion,barrio],'row-v47');
+  if(b3.children.length>1) frag.appendChild(b3);
+
+  const b4=makeInfoBlockV47('4. DATOS DE LA CONSTRUCCIÓN');
+  appendRowV47(b4,[proyectoDef],'row-v47 single');
+  appendRowV47(b4,[uso,altura,area],'row-v47 three');
+  appendRowV47(b4,[nombreProyecto],'row-v47 single');
+  if(b4.children.length>1) frag.appendChild(b4);
+
+  // Insertar bloques al inicio y dejar debajo los campos que no estén contemplados.
+  box.insertBefore(frag, box.firstChild);
+}
+const _renderInfoForm_base_V47 = typeof renderInfoForm==='function' ? renderInfoForm : null;
+renderInfoForm = function(){
+  if(_renderInfoForm_base_V47) _renderInfoForm_base_V47();
+  // V46 reordena; V47 reagrupa de forma definitiva.
+  const box=document.getElementById('infoForm');
+  if(box) box.dataset.reorderedV47='0';
+  reorderInfoGeneralV47();
+};
+
+// Reaplicar agrupación después de carga asíncrona y al cambiar campos relacionados.
+window.addEventListener('load',()=>{
+  setTimeout(()=>{try{renderInfoForm();}catch(e){console.warn('No se pudo reagrupar Información General V47',e);}},700);
+});
 </script>
 
 </body>
