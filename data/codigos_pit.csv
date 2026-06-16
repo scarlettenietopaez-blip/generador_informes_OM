@@ -1,1 +1,199 @@
-﻿clas_suelo
+﻿clas_suelo;codigo_pit;lote_min;edif_bas;edif_max;altura_min;altura_max;implantac;f_min;r_frontal;r_lateral;r_posterio;cos_pb;cos_total;cos_total_c;u_principa
+URBANO;Z8;230;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;85;340;425;Residencial de mediana densidad
+URBANO;Z22;200;4;NO APLICA;12;;PAREADA CON RETIROS;10;3;3;3;65;260;NO APLICA;Residencial de baja densidad
+URBANO;Z35_Z35;180;5;5;15;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;80;400;480;Residencial de mediana densidad
+URBANO;PIP_ESPOCH;0;8;10;24;;AISLADA;0;10;10;20;60;480;600;Equipamiento de Educación
+URBANO;Z1B_EJZ1;250;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;80;320;360;Residencial de mediana densidad
+URBANO;Z36-B;200;3;4;9;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;85;255;340;Residencial de baja densidad
+URBANO;Z19;180;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;75;300;375;Residencial de baja densidad
+URBANO;Z5;180;5;6;15;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;80;400;500;Residencial de mediana densidad
+URBANO;Z3;160;3;NO APLICA;9;;CONTINUA CON RETIROS;8;3;0;3;70;210;NO APLICA;Residencial de mediana densidad
+URBANO;Z24;200;4;NO APLICA;12;;PAREADA CON RETIROS;9;3;3;3;70;280;NO APLICA;Residencial de mediana densidad
+URBANO;Z13;150;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;75;300;375;Residencial de baja densidad
+URBANO;Z15;200;2;NO APLICA;6;;PAREADA CON RETIROS;10;3;3;3;55;110;NO APLICA;Residencial de mediana densidad
+URBANO;Z17;200;4;NO APLICA;12;;PAREADA CON RETIROS;10;3;3;3;60;240;NO APLICA;Residencial de mediana densidad
+URBANO;Z27;200;3;NO APLICA;9;;CONTINUA CON RETIROS;9;3;0;3;70;210;NO APLICA;Residencial de baja densidad
+URBANO;Z21-A;180;5;6;15;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;85;425;510;Residencial de baja densidad
+URBANO;Z23-A;200;4;NO APLICA;12;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;85;340;NO APLICA;Residencial de mediana densidad
+URBANO;Z31-A;150;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;80;320;400;Residencial de mediana densidad
+URBANO;Z33;120;3;4;9;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;80;240;320;Residencial de mediana densidad
+URBANO;Z39;200;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;9;0;0;3;80;320;400;Residencial de mediana densidad
+URBANO;Z26;150;3;4;9;;CONTINUA SOBRE LINEA DE FABRICA;7;0;0;3;85;255;340;Residencial de baja densidad
+URBANO;Z4;180;5;6;15;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;80;400;500;Residencial de mediana densidad
+URBANO;Z29-B;400;2;3;6;;PAREADA CON RETIROS;15;5;5;5;50;100;150;Residencial de baja densidad
+URBANO;Z2TIII;150;3;4;9;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;85;255;340;Residencial de mediana densidad
+URBANO;ZLSA;0;-;---;-;;NO APLICA;0;10;10;20;0;---;---;Protección ecológica integral
+URBANO;PIP_Aeropuerto;0;-;---;-;;NO APLICA;0;0;0;0;0;---;---;Equipamiento de Transporte
+URBANO;Z11;180;5;6;15;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;85;425;510;Residencial de mediana densidad
+URBANO;Z32;200;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;9;0;0;3;85;340;425;Residencial de mediana densidad
+URBANO;Z10;135;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;7;0;0;3;85;340;425;Residencial de mediana densidad
+URBANO;Z20-A;150;3;4;9;;CONTINUA CON RETIROS;8;3;0;3;75;225;300;Residencial de baja densidad
+URBANO;Z28-B;600;2;3;6;;PAREADA CON RETIROS;14;3;3;3;60;120;180;Residencial de baja densidad
+URBANO;Z37-C;150;3;4;9;;CONTINUA SOBRE LINEA DE FABRICA;9;0;0;3;85;255;340;Residencial de baja densidad
+URBANO;Z20-B;180;5;6;15;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;85;425;510;Residencial de mediana densidad
+URBANO;Z21-B;180;3;4;9;;CONTINUA CON RETIROS;8;3;0;3;75;225;300;Residencial de mediana densidad
+URBANO;Z38TII-A;150;3;4;9;12;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;80;240;320;Residencial de baja densidad
+URBANO;Z9;180;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;85;340;425;Residencial de baja densidad
+URBANO;Z37-B;200;6;7;18;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;85;510;595;Residencial de baja densidad
+URBANO;Z18-C;200;4;0;12;;CONTINUA CON RETIROS;10;3;0;3;60;240;0;Residencial de mediana densidad
+URBANO;Z18-D;200;4;0;12;;PAREADA CON RETIROS;10;3;3;3;70;280;0;Residencial de mediana densidad
+URBANO;Z29-A;500;2;3;6;;AISLADA;15;5;3;5;50;100;150;Residencial de baja densidad
+URBANO;Z28-A;400;3;NO APLICA;9;;PAREADA CON RETIROS;12;3;3;3;60;180;NO APLICA;Residencial de baja densidad
+URBANO;Z14T0;400;1;NO APLICA;3;;AISLADA;14;5;5;5;25;25;NO APLICA;Protección de Riesgos
+URBANO;Z14TIV-A;170;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;7;0;0;3;75;300;375;Residencial de baja densidad
+URBANO;Z14TIV-D;180;5;6;15;;CONTINUA SOBRE LINEA DE FABRICA;7;0;0;3;85;425;510;Residencial de mediana densidad
+URBANO;Z38TII-C;150;2;3;6;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;80;160;240;Residencial de baja densidad
+URBANO;Z38TI-B;180;1;NO APLICA;3;;CONTINUA SOBRE LINEA DE FABRICA;9;0;0;3;80;80;NO APLICA;Residencial de baja densidad
+URBANO;Z38T0;0;-;---;-;;NO APLICA;0;0;0;0;0;---;---;Protección de Riesgos
+URBANO;Z38TI-A;180;1;NO APLICA;3;;CONTINUA SOBRE LINEA DE FABRICA;9;0;0;3;80;80;NO APLICA;Residencial de baja densidad
+URBANO;Z38TIII-A;150;3;4;9;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;80;240;320;Residencial de mediana densidad
+URBANO;Z14-A;120;2;3;6;;CONTINUA SOBRE LINEA DE FABRICA;7;0;0;3;80;160-320;240;Residencial de baja densidad
+URBANO;Z34_Z34-B;250;3;4;9;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;85;255;340;Residencial de baja densidad
+URBANO;Z31-B;150;3;4;9;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;80;240;320;Residencial de mediana densidad
+URBANO;Z31-C;150;3;4;9;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;80;240;320;Residencial de baja densidad
+URBANO;Z30-B;120;2;3;6;;CONTINUA SOBRE LINEA DE FABRICA;7;0;0;3;80;160;240;Residencial de baja densidad
+URBANO;ZL-A;170;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;7;0;0;3;85;340;425;Residencial de mediana densidad
+URBANO;Z30-A;150;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;85;340;425;Residencial de mediana densidad
+URBANO;PIP_Recreación y Deporte;0;-;---;-;;NO APLICA;0;0;0;0;0;---;---;Equipamiento de Recreación y Deporte
+URBANO;ZL2-A;200;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;85;340;425;Residencial de baja densidad
+URBANO;PIP_PARQUE URBANO;0;3;---;12 - 18;;AISLADA;0;20;20;20;50;150;---;Equipamiento de Recreación y Deporte
+URBANO;PIP_TERMINAL INTERMODAL INTERPROVINCIAL;0;3;---;12 - 18;;AISLADA;0;20;20;20;50;150;---;Equipamiento de Transporte
+URBANO;PIP_CEMENTERIO;0;3;---;12 - 18;;AISLADA;0;20;20;20;50;150;---;Equipamiento de Servicios Funerarios
+URBANO;PIP_Brigada Galápagos;0;3;NO APLICA;9 - 24;;AISLADA;12;3;3;3;50;150;NO APLICA;Equipamiento de Seguridad
+URBANO;PIP_Tanques La Saboya;0;-;---;-;;NO APLICA;0;0;0;0;0;---;---;Equipamiento de Infraestructura
+URBANO;ZL-B;170;2;3;6;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;80;160;240;Residencial de baja densidad
+URBANO;Z6;180;5;6;15;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;85;425;500;Residencial de mediana densidad
+URBANO;Z18-A;360;6;0;18;;PAREADA CON RETIROS;12;3;3;3;70;420;0;Residencial de baja densidad
+URBANO;Z2;180;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;5;0;0;3;85;160;425;Residencial de mediana densidad
+URBANO;Z38TIII_EJ19;200;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;9;0;0;3;80;320;400;Residencial de mediana densidad
+URBANO;Z35_EJ20;200;6;8;18;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;85;510;680;Residencial de mediana densidad
+URBANO;Z23A_EJ7;280;8;10;24;;CONTINUA SOBRE LINEA DE FABRICA;12;0;0;3;85;680;850;Residencial de mediana densidad
+URBANO;Z18_EJ5;360;10;13;30;;CONTINUA CON RETIROS;12;3;0;3;70;700;910;Residencial de mediana densidad
+URBANO;Z34_EJ18;200;5;6;15;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;85;425;510;Residencial de mediana densidad
+URBANO;Z31_EJ17;200;8;10;24;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;85;680;850;Residencial de mediana densidad
+URBANO;Z23A_EJ6;300;8;10;24;;CONTINUA SOBRE LINEA DE FABRICA;12;0;0;3;85;680;850;Residencial de mediana densidad
+URBANO;Z18_EJ7;280;8;10;24;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;70;560;700;Residencial de mediana densidad
+URBANO;Z18_EJ6;320;8;10;24;;CONTINUA SOBRE LINEA DE FABRICA;12;0;0;3;80;640;800;Residencial de mediana densidad
+URBANO;Z17_EJ5;280;8;10;24;;PAREADA CON RETIROS;12;3;3;3;70;560;700;Residencial de mediana densidad
+URBANO;Z17_EJ7;280;8;10;24;;CONTINUA SOBRE LINEA DE FABRICA;12;0;0;3;70;560;700;Residencial de mediana densidad
+URBANO;Z17_EJ6;320;8;10;24;;CONTINUA SOBRE LINEA DE FABRICA;12;0;0;3;80;640;800;Residencial de mediana densidad
+URBANO;Z22_EJ7;320;8;10;24;;CONTINUA SOBRE LINEA DE FABRICA;12;0;0;3;80;640;800;Residencial de mediana densidad
+URBANO;Z22_EJ6;320;8;10;24;;CONTINUA SOBRE LINEA DE FABRICA;12;0;0;3;80;640;800;Residencial de mediana densidad
+URBANO;Z22_EJ3;320;8;10;24;;PAREADA CON RETIROS;12;3;3;3;70;560;700;Residencial de mediana densidad
+URBANO;Z15_EJ22;320;8;10;24;;CONTINUA CON RETIROS;10;3;0;3;80;640;800;Residencial de mediana densidad
+URBANO;Z30_EJ25;200;6;8;18;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;80;480;640;Residencial de mediana densidad
+URBANO;Z30_EJ15-A;200;6;8;18;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;80;480;640;Residencial de mediana densidad
+URBANO;Z30_EJ17;200;6;8;18;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;80;480;640;Residencial de mediana densidad
+URBANO;Z26_EJ15-B;180;6;8;18;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;85;510;680;Residencial de mediana densidad
+URBANO;Z27_EJ15-C;350;6;8;18;;CONTINUA CON RETIROS;15;3;0;3;70;420;560;Residencial de mediana densidad
+URBANO;EJ21;200;6;8;18;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;80;480;640;Residencial de mediana densidad
+URBANO;Z37_EJ20;200;6;8;18;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;80;480;640;Residencial de mediana densidad
+URBANO;Z20B_EJ23;250;6;8;18;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;85;510;680;Residencial de mediana densidad
+URBANO;Z20A_EJ1;250;6;8;18;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;85;510;680;Residencial de mediana densidad
+URBANO;Z20B_EJ2;250;6;8;18;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;85;510;680;Residencial de mediana densidad
+URBANO;Z19_EJ4;250;6;8;18;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;85;510;680;Residencial de mediana densidad
+URBANO;Z19_EJ2;250;6;8;18;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;85;510;680;Residencial de mediana densidad
+URBANO;Z2TIII_EJ13;250;8;10;24;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;70;560;700;Residencial de mediana densidad
+URBANO;Z2TIV_EJ13;200;8;10;24;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;70;250;700;Residencial de mediana densidad
+URBANO;Z2_EJ13;250;8;10;24;;CONTINUA SOBRE LINEA DE FABRICA;7;0;0;3;70;560;700;Residencial de mediana densidad
+URBANO;Z5_EJ12-B;300;6;8;18;;CONTINUA SOBRE LINEA DE FABRICA;11;0;0;3;85;425;680;Residencial de mediana densidad
+URBANO;Z5_EJ10-A;300;10;13;30;;CONTINUA SOBRE LINEA DE FABRICA;11;0;0;3;85;850;1105;Residencial de mediana densidad
+URBANO;Z32_EJ25;300;6;8;18;;CONTINUA SOBRE LINEA DE FABRICA;11;0;0;3;80;480;640;Residencial de mediana densidad
+URBANO;Z32_EJ18;200;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;80;320;400;Residencial de mediana densidad
+URBANO;Z4_EJ26;200;5;6;15;;CONTINUA SOBRE LINEA DE FABRICA;9;0;0;3;70;350;420;Residencial de mediana densidad
+URBANO;EJ11;300;7;NO APLICA;21;;CONTINUA SOBRE LINEA DE FABRICA;11;0;0;3;85;595;NO APLICA;Residencial de mediana densidad
+URBANO;Z6_EJ27;200;7;8;21;;CONTINUA SOBRE LINEA DE FABRICA;9;0;0;3;85;595;680;Residencial de mediana densidad
+URBANO;Z8_EJ24;200;6;8;18;;CONTINUA SOBRE LINEA DE FABRICA;9;0;0;3;85;510;680;Residencial de mediana densidad
+URBANO;EJ17;200;6;8;18;;CONTINUA SOBRE LINEA DE FABRICA;9;0;0;3;80;480;640;Residencial de mediana densidad
+URBANO;Z8_EJ14;200;7;9;21;;CONTINUA SOBRE LINEA DE FABRICA;9;0;0;3;85;595;765;Residencial de mediana densidad
+URBANO;Z8_EJ16;300;6;8;18;;CONTINUA SOBRE LINEA DE FABRICA;11;0;0;3;85;510;680;Residencial de mediana densidad
+URBANO;Z4_EJ12-A;300;5;6;15;;CONTINUA SOBRE LINEA DE FABRICA;11;0;0;3;85;425;510;Residencial de mediana densidad
+URBANO;Z39_EJ28;200;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;9;0;0;3;80;320;400;Mixto Patrimonial
+URBANO;Z14TIV_EJ22;250;8;---;24;;CONTINUA CON RETIRO;12;5;0;3;85;680;---;Residencial de mediana densidad
+URBANO;Z14TIV_EJ7;250;6;8;18;;CONTINUA SOBRE LINEA DE FABRICA;12;0;0;3;85;510;680;Residencial de mediana densidad
+URBANO;Z4_EJ10-B;300;5;6;15;;CONTINUA SOBRE LINEA DE FABRICA;11;0;0;3;85;425;510;Residencial de mediana densidad
+URBANO;EJ8;320;10;13;30;;CONTINUA CON RETIROS;12;5;0;3;80;800;1040;Residencial de mediana densidad
+URBANO;PIP Patrimonial;0;2;---;6;;AISLADA;0;0;0;0;0;0;---;Protección de Patrimonio Histórico y Cultural
+URBANO;ZL2_EJ4;250;6;8;18;;CONTINUA SOBRE LÍNEA DE FÁBRICA;10;0;0;3;85;510;680;Residencial de mediana densidad
+URBANO;Z23-B;240;4;NO APLICA;12;;PAREADA CON RETIROS;10;3;3;3;65;260;NO APLICA;Residencial de baja densidad
+URBANO;Z6_EJ12-C;300;8;10;24;;CONTINUA SOBRE LINEA DE FABRICA;11;0;0;3;85;680;850;Residencial de mediana densidad
+URBANO;Z18_EJ3;320;8;10;24;;CONTINUA SOBRE LINEA DE FABRICA;12;0;0;3;70;560;700;Residencial de mediana densidad
+URBANO;Z20_EJ3;200;8;10;24;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;80;640;800;Residencial de mediana densidad
+URBANO;Z15_EJ6-A;320;2;NO APLICA;6;;CONTINUA SOBRE LINEA DE FABRICA;12;0;0;3;80;160;NO APLICA;Residencial de mediana densidad
+URBANO;Z14TIV_EJ29;200;6;NO APLICA;18;;CONTINUA CON RETIRO;8;3;0;3;75;450;NO APLICA;Residencial de mediana densidad
+URBANO;Z15_EJ29;200;6;8;18;;CONTINUA CON RETIRO;8;3;0;3;75;450;600;Residencial de mediana densidad
+URBANO;Z2TIV;180;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;85;340;425;Residencial de mediana densidad
+URBANO;Z37-A;150;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;9;0;0;3;85;340;425;Residencial de mediana densidad
+URBANO;Z2TIII_EJZ2TIII;250;3;4;9;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;80;240;280;Residencial de mediana densidad
+URBANO;Z38TIII-B;180;3;4;9;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;80;240;320;Residencial de baja densidad
+URBANO;Z38TIII_EJZ38TIII-B;200;4;---;12;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;80;320;320;Residencial de mediana densidad
+URBANO;Z14-B;150;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;85;340;425;Residencial de mediana densidad
+URBANO;Z18-B;200;4;0;12;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;70;280;0;Residencial de baja densidad
+URBANO;Z18-E;200;4;0;12;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;70;280;0;Residencial de baja densidad
+URBANO;ZL2-B;200;2;3;6;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;80;160;240;Residencial de baja densidad
+URBANO;Z23-C;110;2;NO APLICA;6;;CONTINUA CON RETIROS;7;3;0;0;85;170;NO APLICA;Residencial de baja densidad
+URBANO;Z14TV-A;150;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;75;300;375;Residencial de mediana densidad
+URBANO;Z14TIV-B;150;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;75;300;375;Residencial de baja densidad
+URBANO;Z14TIV-C;180;5;6;15;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;75;375;450;Residencial de baja densidad
+URBANO;ZSL2_EJ18;250;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;85;340;425;Residencial de mediana densidad
+URBANO;Z12;200;5;6;15;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;80;400;480;Residencial de mediana densidad
+URBANO;Z34-A;150;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;80;320;400;Residencial de mediana densidad
+URBANO;ZSL2;150;3;4;9;;CONTINUA SOBRE LINEA DE FABRICA;8;0;0;3;75;225;300;Residencial de baja densidad
+URBANO;Z36-A;200;4;5;12;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;85;340;425;Residencial de mediana densidad
+URBANO;PIP_Terminal;0;3;NO APLICA;18;;AISLADA;0;5;5;5;50;150;NO APLICA;Equipamiento de Transporte
+URBANO;Z1B;250;6;8;18;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;80;480;560;Residencial de mediana densidad
+URBANO;ZH1_ZH1;200;3;4;9;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;80;240;280;Mixto Patrimonial
+URBANO;Z14TIV_EJ9;250;8;10;24;;CONTINUA SOBRE LINEA DE FABRICA;10;0;0;3;85;680;850;Residencial de mediana densidad
+URBANO;PIP_RECREACION;0;-;---;-;;NO APLICA;0;0;0;0;60;60;---;Equipamiento de Recreación y Deporte
+URBANO;PIP_UNACH;0;1-8;8;5 - 40;;AISLADA;0;5;5;5;60;60;480;Equipamiento de Educación
+URBANO;PIP_Maldonado;0;6;8;18;;AISLADA;0;5;3;3;60;360;480;Equipamiento de Recreación y Deporte
+URBANO;PIP_Administrativo;200;7;9;21;;AISLADA;10;3;3;3;85;595;765;Equipamiento de Administración Pública
+URBANO;Z16;180;5;NO APLICA;15;;CONTINUA SOBRE LINEA DE FABRICA;7;0;0;3;80;400%;NO APLICA;Residencial de mediana densidad
+URBANO;PIP_BMI;500;5;6;15;;PAREADA;15;5;3;3;50;250;300;Industrial Bajo Impacto, Mediano Impacto
+URBANO;PIP_Camal;500;5;---;15;;PAREADA;15;5;3;3;50;250;---;Industrial Bajo Impacto, Mediano Impacto
+URBANO;CUP-51;200;2;---;6;;CONTINUA CON RETIRO POSTERIOR;15;0;0;3;60;240;;Residencial de baja densidad
+URBANO;CUP-56_P;100;3;---;9;;CONTINUA A LINEA DE FABRICA;0;0;0;3;80;140;;Mixto Patrimonial
+URBANO;CUP-57;100;2;---;6;;CONTINUA CON RETIRO POSTERIOR;9;0;0;3;70;240;;Residencial de baja densidad
+URBANO;CUP-56;100;2;---;6;;CONTINUA CON RETIRO POSTERIOR;9;0;0;3;70;140;;Residencial de baja densidad
+URBANO;CUP-57_P;100;3;---;9;;CONTINUA A LINEA DE FABRICA;0;0;0;3;80;240;;Mixto Patrimonial
+URBANO;CUP-58_P;100;3;---;9;;CONTINUA A LINEA DE FABRICA;0;0;0;3;80;240;;Mixto Patrimonial
+URBANO;CUP-58;100;2;---;6;;CONTINUA CON RETIRO POSTERIOR;9;0;0;3;70;140;;Residencial de baja densidad
+URBANO;CUP-59_P;100;3;---;9;;CONTINUA A LINEA DE FABRICA;0;0;0;3;80;240;;Mixto Patrimonial
+URBANO;CUP-59;100;2;---;6;;CONTINUA CON RETIRO POSTERIOR;9;0;0;3;70;240;;Residencial de baja densidad
+URBANO;CUP-60_P;100;3;---;9;;CONTINUA A LINEA DE FABRICA;0;0;0;3;80;240;;Mixto Patrimonial
+URBANO;CUP-60;100;2;---;6;;CONTINUA CON RETIRO POSTERIOR;9;0;0;3;70;240;;Residencial de baja densidad
+URBANO;CUP-53_P;100;3;---;9;;CONTINUA A LINEA DE FABRICA;0;0;0;3;80;240;;Mixto Patrimonial
+URBANO;CUP-53;100;2;---;6;;CONTINUA CON RETIRO POSTERIOR;9;0;0;3;70;240;;Residencial de baja densidad
+URBANO;CUP-61_P;100;3;---;9;;CONTINUA A LINEA DE FABRICA;0;0;0;3;80;240;;Mixto Patrimonial
+URBANO;CUP-52_P;100;3;---;9;;CONTINUA A LINEA DE FABRICA;0;0;0;3;80;240;;Mixto Patrimonial
+URBANO;CUP-61;100;2;---;6;;CONTINUA CON RETIRO POSTERIOR;9;0;0;3;70;240;;Residencial de baja densidad
+URBANO;CUP-52;100;2;---;6;;CONTINUA CON RETIRO POSTERIOR;9;0;0;3;70;240;;Residencial de baja densidad
+URBANO;CUP-54_P;200;3;---;9;;CONTINUA A LINEA DE FABRICA;0;0;0;3;80;240;;Mixto Patrimonial
+URBANO;CUP-54;200;2;---;6;;CONTINUA CON RETIRO POSTERIOR;15;0;0;3;60;240;;Residencial de baja densidad
+URBANO;CUP-51_P;200;3;---;9;;CONTINUA A LINEA DE FABRICA;0;0;0;3;80;240;;Mixto Patrimonial
+RURAL;AE;-----;-----;;-----;;-----;-----;-----;-----;-----;-----;-----;;Explotación Minera
+RURAL;PETZ-ZA;-----;-----;;-----;;-----;-----;-----;-----;-----;-----;-----;;Protección de Patrimonio Histórico y Cultural
+RURAL;ASR;2.500;2;;6;;AISLADA;≥30;5-10;----;----;3%;6%;;Producción agrícola (mediana y gran escala)
+RURAL;AR1;1000;2;;6;;AISLADA;20;10;5;10;30%;60%;;Agropecuario residencial 1
+RURAL;Z-PAP-VE;-----;-----;;-----;;-----;-----;-----;-----;-----;-----;-----;;Protección de Patrimonio Histórico y Cultural Emergente
+RURAL;AAM;15.000;2;;6;;AISLADA;≥70;20;----;----;1%;2%;;Agricola-pecuario (baja escala)
+RURAL;EQ;-----;-----;;-----;;-----;-----;-----;-----;-----;-----;-----;;Equipamiento de Educación
+RURAL;AIE;-----;-----;;-----;;-----;-----;-----;-----;-----;-----;-----;;Explotación Minera de Amortiguamiento
+RURAL;ZPPF;10.000;2;;6;;AISLADA;≥60;10;----;----;1%;2%;;Promoción y  producción forestal
+RURAL;PRH;Prohibido el fraccionamiento. Art. 471. COOTAD;----;;----;;----;----;----;----;----;----;----;;Protección ecológica de recursos hídricos
+RURAL;Z-PAP-1O;-----;-----;;-----;;-----;-----;-----;-----;-----;-----;-----;;Protección de Patrimonio Histórico y Cultural
+RURAL;PETZ-DC;-----;-----;;-----;;-----;-----;-----;-----;-----;-----;-----;;Protección de Patrimonio Histórico y Cultural
+RURAL;PETZ-ZM-SZA;-----;-----;;-----;;-----;-----;-----;-----;-----;-----;-----;;Protección de Patrimonio Histórico y Cultural
+RURAL;Z-PAP-2O;-----;-----;;-----;;-----;-----;-----;-----;-----;-----;-----;;Protección de Patrimonio Histórico y Cultural
+RURAL;PETZ-ZM-SZAE;-----;-----;;-----;;-----;-----;-----;-----;-----;-----;-----;;Protección de Patrimonio Histórico y Cultural
+RURAL;ACR;10.000;2;;6;;AISLADA;≥60;10;----;----;1%;2%;;Producción agrícola  (baja y  mediana  escala)
+RURAL;I2-I3-I4;20.000;10;;30-50;;AISLADA;100-120;15;10;10;70%;700%;;Industrial Mediano Impacto, Alto Impacto y Alto Riesgo
+RURAL;PPHVN;Prohibido el fraccionamiento. Art. 471. COOTAD;----;;----;;----;----;----;----;----;----;----;;Protección ecológica integral
+RURAL;AR2;500;2;;6;;AISLADA;15;5;3;5;40%;80%;;Agropecuario residencial 2
+RURAL;AR3;200;2;;6;;PAREADA;9;5;3;5;45%;90%;;Agropecuario residencial 3
+RURAL;AR4;180;3;;9;;CONTINUA SOBRE LINEA DE FABRICA;9;0;0;3;70%;210%;;Agropecuario residencial 4
+RURAL;AR5;180;4;;12;;CONTINUA A LINEA DE FABRICA;9;0;0;3;80%;320%;;Agropecuario residencial 5
+RURAL;AR6-VIS;130;3;;9;;CONTINUA CON RETIRO;7;2;0;3;70%;210%;;Agropecuario residencial 6
+RURAL;CS;500;3;;9;;CONTINUA CON RETIRO;15;5;0;5;40%;120%;;Comercial Restringido
+RURAL;I2;20.000;10;;30-50;;AISLADA;100-120;15;10;10;70%;700%;;Industrial Mediano Impacto
+RURAL;CVE;1000;2;;6;;AISLADA;20;10;5;10;30%;60%;;Agropecuario de protección
