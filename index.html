@@ -484,6 +484,27 @@
   font-size:13px;
 }
 
+
+/* ===== V46 inicio inmediato, mapa con overlay visible y base catastral ===== */
+.tab-btn.hidden-tab{display:none!important}
+.info-v46-ready #infoForm:empty::before{content:"Cargando Información General...";display:block;padding:12px;border:1px solid #dbe4ef;background:#f8fafc;border-radius:12px;color:#475569}
+.pit-map-legend-v46{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:11px;color:#334155;padding:5px 0 0}
+.pit-map-legend-v46 span{display:inline-flex;align-items:center;gap:4px}
+.pit-swatch-v46{width:14px;height:10px;border:2px solid #d71920;background:rgba(255,230,0,.35)}
+.pit-dot-v46{width:10px;height:10px;border-radius:50%;background:#d71920;border:2px solid white;box-shadow:0 0 0 1px #d71920}
+.pit-leaflet-map-v44 .leaflet-overlay-pane svg path{filter:drop-shadow(0 0 2px rgba(0,0,0,.55))}
+.catastral-panel-v46{border:1px solid #c7d5e6;border-radius:12px;background:#f8fbff;padding:12px;margin:10px 0}
+.catastral-main-v46{display:grid;grid-template-columns:repeat(4,1fr) 44px;gap:8px;align-items:end}
+.catastral-main-v46 label{font-size:10px;text-align:center;color:#0b2b4c;font-weight:900}
+.catastral-main-v46 input{padding:8px;text-align:center}
+.catastral-extra-v46{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
+.catastral-rest-v46{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.catastral-rest-v46 label,.catastral-extra-v46 label{font-size:11px;color:#0b2b4c;font-weight:900}
+.catastral-rest-v46 input,.catastral-extra-v46 input{padding:8px}
+.clave-antigua-v46{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:10px}
+.info-order-title-v46{margin-top:14px!important}
+@media (max-width:900px){.catastral-main-v46,.catastral-extra-v46,.catastral-rest-v46{grid-template-columns:1fr 1fr}}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -543,8 +564,8 @@
       <div class="tabs no-print">
         <button class="tab-btn active" data-tab="tab-info" onclick="showTab('tab-info')">Información general</button>
         <button class="tab-btn" data-tab="tab-req" onclick="showTab('tab-req')">Requisitos</button>
-        <button class="tab-btn" data-tab="tab-obs" onclick="showTab('tab-obs')">Observaciones</button>
-        <button class="tab-btn" data-tab="tab-apr" onclick="showTab('tab-apr')">Aprobatorio</button>
+        <button class="tab-btn hidden-tab" data-tab="tab-obs" onclick="showTab('tab-obs')">Observaciones</button>
+        <button class="tab-btn hidden-tab" data-tab="tab-apr" onclick="showTab('tab-apr')">Aprobatorio</button>
         <button class="tab-btn" data-tab="tab-vista" onclick="showTab('tab-vista')">Vista del informe</button>
       </div>
       <div id="tab-info" class="tab active card no-print"><h2>Información general</h2><div id="infoForm"></div><div class="buttons"><button class="secondary" onclick="tabAnterior()">Atrás</button><button onclick="guardarYSeguir()" class="success">Guardar y siguiente</button></div></div>
@@ -4012,6 +4033,237 @@ buscarPitPorCoordenadasV42 = function(){
     if(mapBox) initLeafletPitMapV44('pitLeafletMapV44',false);
   },200);
 };
+</script>
+
+
+<script>
+/* ==========================================================
+   V46 - Inicio inmediato, mapa visible y base de clave catastral
+   ========================================================== */
+window.__OM_APP_INIT_DONE_V45 = true;
+window.__OM_FAST_INIT_V46_DONE = false;
+
+function activeV46(r){const v=String(r?.Activo ?? r?.activo ?? 'Sí').trim().toLowerCase();return !['no','false','0','inactivo'].includes(v);}
+function normTxtV46(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toUpperCase();}
+function ensureCatDBV46(){if(!Array.isArray(DATA.catastralBase)) DATA.catastralBase=[];}
+async function loadCatastralBaseV46(){
+  ensureCatDBV46();
+  try{
+    const rows=parseCSVV32(await fetchCSVTextV32('data/base_clave_catastral_parroquia_zona.csv'));
+    DATA.catastralBase=(rows||[]).filter(activeV46).map(r=>({
+      prov:String(r.Prov||r.prov||'06').trim(),
+      cant:String(r.Cant||r.cant||'01').trim(),
+      parro:String(r.Parro||r.parro||'').padStart(2,'0'),
+      parroquia:String(r.Parroquia||r.parroquia||'').trim(),
+      zona:String(r.Zona||r.zona||'').padStart(3,'0'),
+      zonaNombre:String(r.Zona_Nombre||r.zona_nombre||'').trim(),
+      urbanoRural:String(r.Urbano_Rural||r['Urbano/Rural']||r.urbano_rural||'').trim(),
+      claveParcial:String(r.Clave_Parcial||r.clave_parcial||'').trim()
+    })).filter(r=>r.parro);
+    console.log('Base catastral V46 cargada:', DATA.catastralBase.length);
+  }catch(e){console.warn('No se pudo cargar base catastral V46:', e);}
+}
+function catLookupV46(parro,zona){
+  ensureCatDBV46();
+  const p=String(parro||'').padStart(2,'0');
+  const z=String(zona||'').padStart(3,'0');
+  return DATA.catastralBase.find(r=>r.parro===p && r.zona===z) || DATA.catastralBase.find(r=>r.parro===p) || null;
+}
+function setInfoByFieldLabelV46(label,value,overwrite=true){
+  const key=normTxtV46(label);
+  const f=DATA.infoFields.find(x=>{const lab=normTxtV46(x.label||'');return lab===key || lab.includes(key) || key.includes(lab);});
+  if(!f) return false;
+  if(!overwrite && String(state.info[f.key]||'').trim()) return false;
+  state.info[f.key]=value||'';
+  const el=document.getElementById('info_'+f.key); if(el) el.value=value||'';
+  return true;
+}
+function getInfoFieldLabelV46(label){
+  const key=normTxtV46(label);
+  const f=DATA.infoFields.find(x=>{const lab=normTxtV46(x.label||'');return lab===key || lab.includes(key) || key.includes(lab);});
+  return f ? (state.info[f.key]||'') : '';
+}
+function updateParroquiaFromClaveV46(){
+  ensureV37State();
+  const c=state.catastral||{};
+  const row=catLookupV46(c.parro,c.zona);
+  if(row){
+    state.catastral.urbanoRural=row.urbanoRural || '';
+    setInfoByFieldLabelV46('PARROQUIA', smartInputCase(row.parroquia||''), true);
+    const ur=document.getElementById('catUrbanoRural'); if(ur) ur.value=state.catastral.urbanoRural;
+    const par=document.getElementById('catParroquiaAutoV46'); if(par) par.value=smartInputCase(row.parroquia||'');
+  }
+}
+function buildClaveFromPartsV37(){
+  ensureV37State();
+  if(state.catastral.claveAntiguaActiva) return state.catastral.claveAntigua||'';
+  const c=state.catastral;
+  return [c.prov||'06',c.cant||'01',c.parro||'',c.zona||'',c.sect||'',c.polg||'',c.pred||''].map(x=>String(x||'').trim()).join('');
+}
+catastralPanelHtmlV36 = function(f,val){
+  ensureV37State();
+  const c=state.catastral;
+  if(!c.prov) c.prov='06'; if(!c.cant) c.cant='01';
+  const row=catLookupV46(c.parro,c.zona);
+  const parroquiaAuto=row?.parroquia ? smartInputCase(row.parroquia) : getInfoFieldLabelV46('PARROQUIA');
+  if(row?.urbanoRural) c.urbanoRural=row.urbanoRural;
+  return `<div class="catastral-panel-v46">
+    <div class="mini">Buscador de clave catastral. Por defecto: Prov. 06 y Cant. 01.</div>
+    <div class="catastral-main-v46">
+      <div><label>Prov</label><input id="catProv" value="${esc(c.prov||'06')}" maxlength="2" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <div><label>Cant</label><input id="catCant" value="${esc(c.cant||'01')}" maxlength="2" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <div><label>Parro</label><input id="catParro" value="${esc(c.parro||'')}" maxlength="2" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <div><label>Zona</label><input id="catZona" value="${esc(c.zona||'')}" maxlength="3" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <button type="button" class="secondary catastral-search" onclick="buscarClaveCatastralV36()" ${c.claveAntiguaActiva?'disabled':''}>🔍</button>
+    </div>
+    <div class="catastral-rest-v46">
+      <div><label>Sect</label><input id="catSect" value="${esc(c.sect||'')}" maxlength="4" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <div><label>Polg</label><input id="catPolg" value="${esc(c.polg||'')}" maxlength="6" ${c.claveAntiguaActiva?'disabled':''}></div>
+      <div><label>Pred</label><input id="catPred" value="${esc(c.pred||'')}" maxlength="12" ${c.claveAntiguaActiva?'disabled':''}></div>
+    </div>
+    <div class="clave-antigua-v46"><label class="inline-check"><input type="checkbox" id="toggleClaveAntiguaV37" ${c.claveAntiguaActiva?'checked':''}> Usar clave catastral antigua</label></div>
+    ${c.claveAntiguaActiva?`<div class="field clave-antigua-input-v38"><label>Clave catastral antigua</label><input id="claveAntiguaTextV37" value="${esc(c.claveAntigua||'')}" placeholder="Ingrese la clave antigua en texto libre"></div>`:''}
+    <div class="catastral-extra-v46">
+      <div><label>Parroquia</label><input id="catParroquiaAutoV46" value="${esc(parroquiaAuto||'')}" readonly></div>
+      <div><label>Urbano / Rural</label><input id="catUrbanoRural" value="${esc(c.urbanoRural||'')}" readonly></div>
+      <div><label>Clave generada</label><input id="catClavePreview" value="${esc(buildClaveFromPartsV37()||val||'')}" readonly></div>
+    </div>
+  </div>`;
+};
+bindCatastralPanelV36 = function(f){
+  ensureV37State();
+  const tog=document.getElementById('toggleClaveAntiguaV37');
+  if(tog) tog.addEventListener('change',()=>{state.catastral.claveAntiguaActiva=tog.checked;syncClaveInputV37(f);renderInfoForm();renderReport();renderPreview();});
+  const old=document.getElementById('claveAntiguaTextV37');
+  if(old) old.addEventListener('input',()=>{state.catastral.claveAntigua=old.value;syncClaveInputV37(f);renderReport();renderPreview();});
+  ['Prov','Cant','Parro','Zona','Sect','Polg','Pred'].forEach(k=>{
+    const el=document.getElementById('cat'+k); if(!el) return;
+    el.addEventListener('input',()=>{
+      const prop=k.toLowerCase();
+      el.value=onlyDigits(el.value);
+      if(k==='Parro') el.value=el.value.slice(0,2);
+      if(k==='Zona') el.value=el.value.slice(0,3);
+      state.catastral[prop]=el.value;
+      updateParroquiaFromClaveV46();
+      syncClaveInputV37(f);
+      renderReport(); renderPreview();
+    });
+    el.addEventListener('blur',()=>{
+      if(k==='Parro' && el.value){el.value=el.value.padStart(2,'0');state.catastral.parro=el.value;}
+      if(k==='Zona' && el.value){el.value=el.value.padStart(3,'0');state.catastral.zona=el.value;}
+      updateParroquiaFromClaveV46(); syncClaveInputV37(f); renderInfoForm(); renderReport(); renderPreview();
+    });
+  });
+  updateParroquiaFromClaveV46(); syncClaveInputV37(f);
+};
+buscarClaveCatastralV36 = function(){
+  ensureV37State(); updateParroquiaFromClaveV46();
+  const row=catLookupV46(state.catastral.parro,state.catastral.zona);
+  msg(row ? `Clave catastral reconocida: ${row.parroquia} / ${row.urbanoRural}.` : 'No se encontró parroquia/zona en la base catastral. Puede continuar llenando manualmente.', !!row);
+  renderInfoForm(); renderReport(); renderPreview();
+};
+
+// Mapa con polígono/punto visible.
+function getCurrentPitItemV44(){
+  const code=currentPitCodeV41();
+  let item=code ? findPitV41(code) : null;
+  const x=Number(String(coordValueV43('X')).replace(',','.'));
+  const y=Number(String(coordValueV43('Y')).replace(',','.'));
+  if(!item && isFinite(x) && isFinite(y)){
+    item=findPitByPointV43(x,y);
+    if(item){
+      state.pitMap={x,y,codigo:item.codigo_pit};
+      setCodigoPitV43(item.codigo_pit);
+      setParroquiaV43(pgetV43(item.properties,'parroquia'));
+    }
+  }
+  return item;
+}
+function drawPitLeafletV44(map,item,point,layerRefName,markerRefName){
+  if(!window.L || !map) return;
+  if(window[layerRefName]){try{map.removeLayer(window[layerRefName]);}catch(e){}}
+  if(window[markerRefName]){try{map.removeLayer(window[markerRefName]);}catch(e){}}
+  if(!map.getPane('pitPaneV46')){map.createPane('pitPaneV46');map.getPane('pitPaneV46').style.zIndex=650;}
+  if(!map.getPane('pitMarkerPaneV46')){map.createPane('pitMarkerPaneV46');map.getPane('pitMarkerPaneV46').style.zIndex=700;}
+  const layers=[];
+  if(item && item.geometry){
+    const geom=geomToWgs84V44(item.geometry);
+    window[layerRefName]=L.geoJSON(geom,{pane:'pitPaneV46',style:{color:'#d71920',weight:4,opacity:1,fillColor:'#ffe600',fillOpacity:.38}}).addTo(map);
+    try{window[layerRefName].bringToFront();}catch(e){}
+    layers.push(window[layerRefName]);
+  }
+  if(point){
+    window[markerRefName]=L.circleMarker(point,{pane:'pitMarkerPaneV46',radius:9,color:'#ffffff',weight:3,fillColor:'#d71920',fillOpacity:1}).addTo(map).bindPopup('Punto consultado');
+    try{window[markerRefName].bringToFront();}catch(e){}
+    layers.push(window[markerRefName]);
+  }
+  if(layers.length){const group=L.featureGroup(layers);map.fitBounds(group.getBounds().pad(.25),{maxZoom:18});}
+  else map.setView([-1.67,-78.65],12);
+}
+miniMapV43 = function(item){
+  if(!item || !item.geometry) return '<div class="pit-map-fallback-v45"><div class="pit-map-caption-v43">Busque por X/Y para visualizar el punto sobre el mapa.</div></div>';
+  return `<div class="pit-map-actions-v44"><button class="secondary" onclick="openPitMapModalV44()">Agrandar mapa</button></div><div id="pitLeafletMapV44" class="pit-leaflet-map-v44">${miniMapSvgFallbackV45(item)}</div><div class="pit-map-legend-v46"><span><i class="pit-swatch-v46"></i> Polígono PIT</span><span><i class="pit-dot-v46"></i> Punto consultado</span></div><div class="pit-map-note-v44">Cuadro de ubicación del PIT. Al agrandar puede acercar/alejar y revisar mejor la ubicación.</div>`;
+};
+
+// Reordenamiento visual de Información General.
+function fieldWrapperByLabelV46(labelParts){
+  const parts=Array.isArray(labelParts)?labelParts:[labelParts];
+  const fields=[...document.querySelectorAll('#infoForm .field')];
+  return fields.find(f=>{const lab=normTxtV46(f.querySelector('label')?.textContent||'');return parts.some(p=>lab.includes(normTxtV46(p)));});
+}
+function reorderInfoGeneralV46(){
+  const box=document.getElementById('infoForm'); if(!box || box.dataset.ordering==='1') return; box.dataset.ordering='1';
+  try{
+    const ordered=[['CLAVE CATASTRAL'],['PARROQUIA'],['X:','X'],['Y:','Y'],['CÓDIGO PIT','CODIGO PIT'],['DIRECCIÓN','DIRECCION'],['BARRIO/SECTOR','BARRIO / SECTOR','BARRIO'],['USO PRINCIPAL'],['ALTURA EDIFICACIÓN','ALTURA EDIFICACION'],['ÁREA BRUTA','AREA BRUTA']];
+    const selected=[];
+    ordered.forEach(keys=>{const el=fieldWrapperByLabelV46(keys); if(el && !selected.includes(el)) selected.push(el);});
+    if(selected.length){
+      const title=document.createElement('div'); title.className='section-title info-order-title-v46'; title.textContent='UBICACIÓN Y DATOS DE LA CONSTRUCCIÓN';
+      const propBox=document.getElementById('propietariosBox');
+      if(propBox && propBox.parentNode){propBox.insertAdjacentElement('afterend',title); selected.reverse().forEach(el=>title.insertAdjacentElement('afterend',el));}
+      else{box.insertBefore(title,box.firstChild); selected.reverse().forEach(el=>title.insertAdjacentElement('afterend',el));}
+    }
+  }finally{box.dataset.ordering='0';}
+}
+const _renderInfoForm_base_V46 = typeof renderInfoForm==='function' ? renderInfoForm : null;
+renderInfoForm = function(){if(_renderInfoForm_base_V46) _renderInfoForm_base_V46(); reorderInfoGeneralV46();};
+
+// Inicio rápido: no espera el GeoJSON ni todos los CSV para mostrar la página.
+function initFastV46(){
+  if(window.__OM_FAST_INIT_V46_DONE) return;
+  window.__OM_FAST_INIT_V46_DONE=true;
+  document.body.classList.add('info-v46-ready');
+  try{
+    const fecha=document.getElementById('fechaRevision'); if(fecha && !fecha.value) fecha.value=today();
+    const subs=document.getElementById('fechaSubsanacion'); if(subs && !subs.value) subs.value=addBusinessDays(today(),10);
+    const listaTec=document.getElementById('listaTecnicos');
+    if(listaTec){listaTec.innerHTML='';(DATA.tecnicos||[]).forEach(t=>{const op=document.createElement('option');op.value=t;listaTec.appendChild(op);});}
+    document.querySelectorAll('.tab-btn').forEach(btn=>{if(!btn.dataset.v46click){btn.dataset.v46click='1';btn.addEventListener('click',()=>showTab(btn.dataset.tab));}});
+    const egob=document.getElementById('egob');
+    if(egob && !egob.dataset.v46){egob.dataset.v46='1';egob.addEventListener('input',e=>{e.target.value=onlyDigits(e.target.value);collectTop();syncEgobField();updateAll();});}
+    const buscar=document.getElementById('buscarEgobSide');
+    if(buscar && !buscar.dataset.v46){buscar.dataset.v46='1';buscar.addEventListener('input',e=>{e.target.value=onlyDigits(e.target.value);});}
+    const tecnico=document.getElementById('tecnico');
+    if(tecnico && !tecnico.dataset.v46){tecnico.dataset.v46='1';tecnico.addEventListener('input',e=>{normalizeUpperInput(e.target);collectTop();updateAll();});}
+    const tipo=document.getElementById('tipoInforme');
+    if(tipo && !tipo.dataset.v46){tipo.dataset.v46='1';tipo.addEventListener('change',()=>{collectTop();updateTabsForType();updateAll();});}
+    const frev=document.getElementById('fechaRevision');
+    if(frev && !frev.dataset.v46){frev.dataset.v46='1';frev.addEventListener('input',()=>{collectTop();if(state.tipoInforme!=='Informe Técnico Aprobatorio'){const s=document.getElementById('fechaSubsanacion');if(s)s.value=addBusinessDays(state.fechaRevision,10);state.fechaSubsanacionManual=false;collectTop();}updateAll();});}
+    const fsub=document.getElementById('fechaSubsanacion');
+    if(fsub && !fsub.dataset.v46){fsub.dataset.v46='1';fsub.addEventListener('input',()=>{state.fechaSubsanacionManual=true;collectTop();updateAll();});}
+    collectTop(); renderInfoForm(); renderRequisitosForm(); renderObservacionesForm(); renderAprobatorioForm(); updateTabsForType(); updateSideActions(); renderPitDetailV41();
+    openDB().then(()=>{renderSavedList();renderManualObsDB();updateAll();}).catch(err=>msg('No se pudo abrir la base local: '+err));
+    Promise.allSettled([loadCatastralBaseV46(), loadExternalCSVsV32()]).then(()=>{
+      const lista=document.getElementById('listaTecnicos');
+      if(lista){lista.innerHTML='';(DATA.tecnicos||[]).forEach(t=>{const op=document.createElement('option');op.value=t;lista.appendChild(op);});}
+      renderInfoForm(); renderRequisitosForm(); renderObservacionesForm(); renderAprobatorioForm(); updateTabsForType(); updateSideActions(); renderPitDetailV41(); updateAll();
+    });
+  }catch(e){
+    console.error('Error initFastV46:', e);
+    const box=document.getElementById('infoForm'); if(box) box.innerHTML='<div class="info-load-warning-v45">No se pudo cargar Información General. Recargue con Ctrl + F5.</div>';
+  }
+}
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded', initFastV46, {once:true});}else{initFastV46();}
 </script>
 
 </body>
