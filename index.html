@@ -354,7 +354,113 @@
 .pit-detail-table .pit-section-v43 th{background:#dceaf8!important;color:#0b2b4c;text-align:center}
 .pit-geo-note-v43{font-size:11px;color:#64748b;margin-top:6px}
 
+
+/* ===== V44 panel PIT arriba, búsqueda compacta y mapa interactivo ===== */
+.search-card.compact-search-v44{margin-top:16px}
+.search-card.compact-search-v44 h2{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  font-size:16px;
+  margin-bottom:8px;
+}
+.search-toggle-v44{
+  border:0;
+  border-radius:9px;
+  background:#e8eef6;
+  color:#082b4c;
+  font-size:11px;
+  font-weight:900;
+  padding:7px 9px;
+  cursor:pointer;
+  width:auto!important;
+}
+.search-card.search-collapsed-v44 .search-content-v44{display:none}
+.search-content-v44 .field{margin-bottom:8px}
+.search-card.compact-search-v44 .mini{font-size:11px;line-height:1.25}
+.search-card.compact-search-v44 .search-actions,
+.search-card.compact-search-v44 .backup-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.search-card.compact-search-v44 .search-actions button,
+.search-card.compact-search-v44 .backup-actions button{font-size:12px;padding:8px}
+.search-card.compact-search-v44 .saved-side{
+  max-height:245px;
+  overflow-y:auto;
+  padding-right:4px;
+  margin-top:8px;
+  border:1px solid #dbe4ef;
+  border-radius:12px;
+  background:#f8fafc;
+}
+.search-card.compact-search-v44 .saved-item{
+  margin:0;
+  border:0;
+  border-bottom:1px solid #dbe4ef;
+  border-radius:0;
+  padding:9px 10px;
+  background:white;
+}
+.search-card.compact-search-v44 .saved-item:last-child{border-bottom:0}
+.search-card.compact-search-v44 .saved-item strong{font-size:13px;line-height:1.15;display:block}
+.search-card.compact-search-v44 .saved-item .buttons{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.search-card.compact-search-v44 .saved-item .buttons button{font-size:11px;padding:6px 8px}
+.pit-leaflet-map-v44{
+  height:210px;
+  width:100%;
+  border:1px solid #cbd5e1;
+  border-radius:12px;
+  overflow:hidden;
+  background:#e2e8f0;
+}
+.pit-map-actions-v44{display:grid;grid-template-columns:1fr;gap:6px;margin:6px 0 8px}
+.pit-map-actions-v44 button{font-size:12px;padding:8px}
+.pit-map-note-v44{font-size:11px;color:#475569;margin-top:5px}
+.map-modal-v44{
+  position:fixed;
+  inset:0;
+  background:rgba(2,15,32,.82);
+  z-index:99998;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+}
+.map-modal-v44.open{display:flex}
+.map-modal-box-v44{
+  width:min(1100px,96vw);
+  height:min(760px,92vh);
+  background:white;
+  border-radius:16px;
+  box-shadow:0 24px 80px rgba(0,0,0,.42);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.map-modal-head-v44{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding:10px 14px;
+  background:#0b2b4c;
+  color:white;
+  font-weight:900;
+}
+.map-modal-head-v44 button{
+  width:auto!important;
+  background:#e8eef6!important;
+  color:#0b2b4c!important;
+  border-radius:10px;
+  padding:7px 10px;
+}
+#pitMapModalCanvasV44{flex:1;width:100%;min-height:400px}
+.leaflet-control-layers{font-size:12px}
+
 </style>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
 </head>
 <body>
 
@@ -3590,6 +3696,200 @@ handleInfoInput = function(f,el,meta){
     renderPitDetailV41();
   }
 };
+</script>
+
+
+<script>
+/* ==========================================================
+   V44 - Panel PIT arriba, búsqueda compacta y mapa interactivo
+   ========================================================== */
+let pitLeafletMapV44=null;
+let pitLeafletModalMapV44=null;
+let pitLayerV44=null;
+let pitMarkerV44=null;
+let pitModalLayerV44=null;
+let pitModalMarkerV44=null;
+
+function setupSearchCompactV44(){
+  const card=document.querySelector('.search-card');
+  if(!card || card.dataset.v44Ready==='1') return;
+  card.dataset.v44Ready='1';
+  card.classList.add('compact-search-v44','search-collapsed-v44');
+  const h2=card.querySelector('h2');
+  if(h2){
+    h2.innerHTML=`<span>Buscar informe registrado</span><button type="button" class="search-toggle-v44" onclick="toggleSearchCardV44(event)">Mostrar</button>`;
+  }
+  const wrapper=document.createElement('div');
+  wrapper.className='search-content-v44';
+  const children=[...card.childNodes].filter(n=>n!==h2);
+  children.forEach(n=>wrapper.appendChild(n));
+  card.appendChild(wrapper);
+}
+function toggleSearchCardV44(ev){
+  if(ev) ev.stopPropagation();
+  const card=document.querySelector('.search-card');
+  if(!card) return;
+  const collapsed=card.classList.toggle('search-collapsed-v44');
+  const btn=card.querySelector('.search-toggle-v44');
+  if(btn) btn.textContent=collapsed?'Mostrar':'Ocultar';
+  if(!collapsed) renderSavedList();
+}
+function moveSearchBelowPitV44(){
+  ensurePitPanelV41();
+  const pit=document.getElementById('pitDetailCardV41');
+  const search=document.querySelector('.search-card');
+  if(pit && search && pit.nextElementSibling!==search){
+    pit.insertAdjacentElement('afterend', search);
+  }
+  setupSearchCompactV44();
+}
+const _ensurePitPanelV41_base_V44 = ensurePitPanelV41;
+ensurePitPanelV41 = function(){
+  _ensurePitPanelV41_base_V44();
+  const pit=document.getElementById('pitDetailCardV41');
+  const search=document.querySelector('.search-card');
+  if(pit && search && pit.nextElementSibling!==search){
+    pit.insertAdjacentElement('afterend', search);
+  }
+  setupSearchCompactV44();
+};
+
+function utm17sToLatLngV44(easting,northing){
+  // EPSG:32717 aproximado, usado por las coordenadas UTM del GeoJSON.
+  const a=6378137.0;
+  const eccSquared=0.00669438;
+  const k0=0.9996;
+  const zoneNumber=17;
+  let x=Number(easting)-500000.0;
+  let y=Number(northing);
+  y-=10000000.0; // hemisferio sur
+  const longOrigin=(zoneNumber-1)*6-180+3;
+  const eccPrimeSquared=eccSquared/(1-eccSquared);
+  const M=y/k0;
+  const mu=M/(a*(1-eccSquared/4-3*eccSquared*eccSquared/64-5*eccSquared*eccSquared*eccSquared/256));
+  const e1=(1-Math.sqrt(1-eccSquared))/(1+Math.sqrt(1-eccSquared));
+  const J1=3*e1/2-27*Math.pow(e1,3)/32;
+  const J2=21*e1*e1/16-55*Math.pow(e1,4)/32;
+  const J3=151*Math.pow(e1,3)/96;
+  const J4=1097*Math.pow(e1,4)/512;
+  const fp=mu+J1*Math.sin(2*mu)+J2*Math.sin(4*mu)+J3*Math.sin(6*mu)+J4*Math.sin(8*mu);
+  const sinfp=Math.sin(fp), cosfp=Math.cos(fp), tanfp=Math.tan(fp);
+  const C1=eccPrimeSquared*cosfp*cosfp;
+  const T1=tanfp*tanfp;
+  const N1=a/Math.sqrt(1-eccSquared*sinfp*sinfp);
+  const R1=a*(1-eccSquared)/Math.pow(1-eccSquared*sinfp*sinfp,1.5);
+  const D=x/(N1*k0);
+  let lat=fp-(N1*tanfp/R1)*(D*D/2-(5+3*T1+10*C1-4*C1*C1-9*eccPrimeSquared)*Math.pow(D,4)/24+(61+90*T1+298*C1+45*T1*T1-252*eccPrimeSquared-3*C1*C1)*Math.pow(D,6)/720);
+  lat=lat*180/Math.PI;
+  let lon=(D-(1+2*T1+C1)*Math.pow(D,3)/6+(5-2*C1+28*T1-3*C1*C1+8*eccPrimeSquared+24*T1*T1)*Math.pow(D,5)/120)/cosfp;
+  lon=longOrigin+lon*180/Math.PI;
+  return [lat,lon];
+}
+function transformUtmCoordsToLonLatV44(coords){
+  if(!Array.isArray(coords)) return coords;
+  if(coords.length>=2 && typeof coords[0]==='number' && typeof coords[1]==='number'){
+    const [lat,lon]=utm17sToLatLngV44(coords[0],coords[1]);
+    return [lon,lat];
+  }
+  return coords.map(transformUtmCoordsToLonLatV44);
+}
+function geomToWgs84V44(geom){
+  if(!geom || !geom.coordinates) return null;
+  return {type:geom.type, coordinates:transformUtmCoordsToLonLatV44(geom.coordinates)};
+}
+function getCurrentPitItemV44(){
+  const code=currentPitCodeV41();
+  if(code) return findPitV41(code);
+  if(state.pitMap && state.pitMap.codigo) return findPitV41(state.pitMap.codigo);
+  return null;
+}
+function currentPointLatLngV44(){
+  const x=Number(String(coordValueV43('X')).replace(',','.'));
+  const y=Number(String(coordValueV43('Y')).replace(',','.'));
+  if(isFinite(x)&&isFinite(y)) return utm17sToLatLngV44(x,y);
+  if(state.pitMap && isFinite(Number(state.pitMap.x)) && isFinite(Number(state.pitMap.y))) return utm17sToLatLngV44(Number(state.pitMap.x),Number(state.pitMap.y));
+  return null;
+}
+function baseLayersV44(){
+  const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'});
+  const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
+  return {sat,osm};
+}
+function drawPitLeafletV44(map, item, point, layerRefName, markerRefName){
+  if(!window.L || !map) return;
+  if(window[layerRefName]){ try{map.removeLayer(window[layerRefName]);}catch(e){} }
+  if(window[markerRefName]){ try{map.removeLayer(window[markerRefName]);}catch(e){} }
+  const layers=[];
+  if(item && item.geometry){
+    const geom=geomToWgs84V44(item.geometry);
+    window[layerRefName]=L.geoJSON(geom,{style:{color:'#0b5cab',weight:2,fillColor:'#73bdf8',fillOpacity:.35}}).addTo(map);
+    layers.push(window[layerRefName]);
+  }
+  if(point){
+    window[markerRefName]=L.circleMarker(point,{radius:7,color:'#fff',weight:2,fillColor:'#d71920',fillOpacity:1}).addTo(map).bindPopup('Punto consultado');
+    layers.push(window[markerRefName]);
+  }
+  if(layers.length){
+    const group=L.featureGroup(layers);
+    map.fitBounds(group.getBounds().pad(.18),{maxZoom:18});
+  }else{
+    map.setView([-1.67,-78.65],12);
+  }
+}
+function initLeafletPitMapV44(containerId, isModal=false){
+  const container=document.getElementById(containerId);
+  if(!container) return;
+  if(!window.L){
+    container.innerHTML='<div class="pit-warning">El mapa interactivo necesita conexión a internet para cargar Leaflet.</div>';
+    return;
+  }
+  const item=getCurrentPitItemV44();
+  const point=currentPointLatLngV44();
+  const mapVar=isModal?'pitLeafletModalMapV44':'pitLeafletMapV44';
+  if(window[mapVar]){
+    try{ window[mapVar].remove(); }catch(e){}
+    window[mapVar]=null;
+  }
+  const {sat,osm}=baseLayersV44();
+  const map=L.map(containerId,{zoomControl:true,layers:[sat]});
+  window[mapVar]=map;
+  L.control.layers({'Satélite':sat,'Mapa base':osm},null,{collapsed:true}).addTo(map);
+  drawPitLeafletV44(map,item,point,isModal?'pitModalLayerV44':'pitLayerV44',isModal?'pitModalMarkerV44':'pitMarkerV44');
+  setTimeout(()=>map.invalidateSize(),120);
+}
+function openPitMapModalV44(){
+  let modal=document.getElementById('pitMapModalV44');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='pitMapModalV44';
+    modal.className='map-modal-v44';
+    modal.innerHTML=`<div class="map-modal-box-v44"><div class="map-modal-head-v44"><span>Mapa PIT / IPRUS</span><button onclick="closePitMapModalV44()">Cerrar</button></div><div id="pitMapModalCanvasV44"></div></div>`;
+    document.body.appendChild(modal);
+  }
+  modal.classList.add('open');
+  setTimeout(()=>initLeafletPitMapV44('pitMapModalCanvasV44',true),80);
+}
+function closePitMapModalV44(){
+  const modal=document.getElementById('pitMapModalV44');
+  if(modal) modal.classList.remove('open');
+}
+miniMapV43 = function(item){
+  if(!item || !item.geometry) return '<div class="pit-map-v43"><div class="pit-map-caption-v43">Busque por X/Y para visualizar el punto sobre el mapa.</div></div>';
+  return `<div class="pit-map-actions-v44"><button class="secondary" onclick="openPitMapModalV44()">Agrandar mapa</button></div><div id="pitLeafletMapV44" class="pit-leaflet-map-v44"></div><div class="pit-map-note-v44">Mapa interactivo con capa satelital. Puede cambiar a mapa base desde el control superior.</div>`;
+};
+
+const _renderPitDetailV41_base_V44 = renderPitDetailV41;
+renderPitDetailV41 = function(){
+  _renderPitDetailV41_base_V44();
+  moveSearchBelowPitV44();
+  if(document.getElementById('pitLeafletMapV44')){
+    setTimeout(()=>initLeafletPitMapV44('pitLeafletMapV44',false),80);
+  }
+};
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{moveSearchBelowPitV44(); setupSearchCompactV44(); renderPitDetailV41();},500);
+});
 </script>
 
 </body>
