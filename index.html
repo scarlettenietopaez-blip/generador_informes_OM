@@ -554,6 +554,35 @@
   }
 }
 
+
+/* ===== V48 organización definitiva Información General ===== */
+.info-block-v48{
+  border:1px solid #d5e0ee;
+  border-radius:14px;
+  background:#fff;
+  padding:12px;
+  margin:12px 0 16px;
+  box-shadow:0 8px 22px rgba(10,35,65,.05);
+}
+.info-block-v48 > .section-title{
+  margin-top:0!important;
+  margin-bottom:10px!important;
+}
+.info-row-v48{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-bottom:10px;
+}
+.info-row-v48.single{grid-template-columns:1fr}
+.info-row-v48.three{grid-template-columns:1fr 1fr 1fr}
+.info-block-v48 .field{margin-bottom:0}
+.field-hidden-v48{display:none!important}
+.section-title.orphan-title-v48{display:none!important}
+@media(max-width:900px){
+  .info-row-v48,.info-row-v48.three{grid-template-columns:1fr}
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -4474,6 +4503,170 @@ renderInfoForm = function(){
 // Reaplicar agrupación después de carga asíncrona y al cambiar campos relacionados.
 window.addEventListener('load',()=>{
   setTimeout(()=>{try{renderInfoForm();}catch(e){console.warn('No se pudo reagrupar Información General V47',e);}},700);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V48 - Reorganización definitiva de Información General
+   ========================================================== */
+function cleanLabelV48(s){
+  return String(s||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\*/g,'')
+    .replace(/[:]/g,'')
+    .replace(/\s+/g,' ')
+    .trim().toUpperCase();
+}
+function directFieldByLabelV48(matchers){
+  const arr=(Array.isArray(matchers)?matchers:[matchers]).map(cleanLabelV48);
+  const fields=[...document.querySelectorAll('#infoForm .field')].filter(f=>!f.closest('.info-block-v48'));
+  let best=null, bestScore=-1;
+  fields.forEach(f=>{
+    const lab=cleanLabelV48(f.querySelector('label')?.textContent||'');
+    if(!lab) return;
+    arr.forEach(m=>{
+      let score=-1;
+      if(lab===m) score=100;
+      else if(lab.includes(m)) score=80;
+      else if(m.includes(lab)) score=60;
+      if(score>bestScore){best=f; bestScore=score;}
+    });
+  });
+  return bestScore>=0 ? best : null;
+}
+function directFieldByInputIdV48(idPart){
+  const idp=String(idPart||'').toLowerCase();
+  const fields=[...document.querySelectorAll('#infoForm .field')].filter(f=>!f.closest('.info-block-v48'));
+  return fields.find(f=>{
+    const el=f.querySelector('input[id],select[id],textarea[id],div[id]');
+    return el && String(el.id||'').toLowerCase().includes(idp);
+  }) || null;
+}
+function makeBlockV48(title){
+  const block=document.createElement('div');
+  block.className='info-block-v48';
+  const st=document.createElement('div');
+  st.className='section-title';
+  st.textContent=title;
+  block.appendChild(st);
+  return block;
+}
+function addRowV48(block, fields, cls=''){
+  const valid=fields.filter(Boolean);
+  if(!valid.length) return false;
+  const row=document.createElement('div');
+  row.className='info-row-v48 '+cls;
+  valid.forEach(f=>row.appendChild(f));
+  block.appendChild(row);
+  return true;
+}
+function hideSeparateParroquiaV48(){
+  const parroquia=directFieldByLabelV48(['PARROQUIA']);
+  if(parroquia) parroquia.classList.add('field-hidden-v48');
+}
+function removeOrphanTitlesV48(){
+  [...document.querySelectorAll('#infoForm > .section-title')].forEach(t=>{
+    if(!t.closest('.info-block-v48')) t.classList.add('orphan-title-v48');
+  });
+}
+function syncEgobToInfoFieldV48(){
+  const f=directFieldByLabelV48(['TRÁMITE EGOB NRO','TRAMITE EGOB NRO','TRÁMITE EGOB','TRAMITE EGOB']);
+  if(f){
+    const el=f.querySelector('input,select,textarea');
+    if(el && state.egob && !el.value){
+      el.value=state.egob;
+      const id=el.id||'';
+      if(id.startsWith('info_')){
+        state.info[id.replace('info_','')]=state.egob;
+      }
+    }
+  }
+}
+function regroupInfoGeneralV48(){
+  const box=document.getElementById('infoForm');
+  if(!box || !box.innerHTML.trim()) return;
+  if(box.dataset.groupingV48==='1') return;
+  box.dataset.groupingV48='1';
+  try{
+    // Quitar bloques de intentos anteriores y devolver sus campos al formulario para evitar perderlos.
+    [...box.querySelectorAll('.info-block-v48')].forEach(b=>{
+      [...b.querySelectorAll('.field,#propietariosBox')].forEach(el=>box.appendChild(el));
+      b.remove();
+    });
+
+    // Eliminar clases previas
+    [...box.querySelectorAll('.field-hidden-v48')].forEach(el=>el.classList.remove('field-hidden-v48'));
+    [...box.querySelectorAll('.orphan-title-v48')].forEach(el=>el.classList.remove('orphan-title-v48'));
+
+    syncEgobToInfoFieldV48();
+
+    const tramite=directFieldByLabelV48(['TRÁMITE EGOB NRO','TRAMITE EGOB NRO','TRÁMITE EGOB','TRAMITE EGOB']);
+    const propietarios=document.getElementById('propietariosBox');
+
+    const proyectista=directFieldByLabelV48(['PROYECTISTA']);
+    const senescyt=directFieldByLabelV48(['REGISTRO SENESCYT','REG. SENESCYT','REG SENESCYT']);
+    const registroMunicipal=directFieldByLabelV48(['REGISTRO MUNICIPAL','REG. MUNICIPAL','REG MUNICIPAL']);
+
+    const clave=directFieldByLabelV48(['CLAVE CATASTRAL']);
+    const parroquia=directFieldByLabelV48(['PARROQUIA']);
+    const x=directFieldByLabelV48(['X']);
+    const y=directFieldByLabelV48(['Y']);
+    const codigoPit=directFieldByLabelV48(['CÓDIGO PIT','CODIGO PIT']);
+    const direccion=directFieldByLabelV48(['DIRECCIÓN','DIRECCION']);
+    const barrio=directFieldByLabelV48(['BARRIO/SECTOR','BARRIO / SECTOR','BARRIO','SECTOR']);
+
+    const proyectoDef=directFieldByLabelV48(['PROYECTO DEFINITIVO']);
+    const uso=directFieldByLabelV48(['USO PRINCIPAL']);
+    const altura=directFieldByLabelV48(['ALTURA EDIFICACIÓN','ALTURA EDIFICACION']);
+    const area=directFieldByLabelV48(['ÁREA BRUTA','AREA BRUTA']);
+    const nombreProyecto=directFieldByLabelV48(['NOMBRE DEL PROYECTO']);
+
+    const frag=document.createDocumentFragment();
+
+    const b1=makeBlockV48('1. DATOS DEL TRÁMITE');
+    addRowV48(b1,[tramite],'single');
+    if(propietarios) b1.appendChild(propietarios);
+    if(b1.children.length>1) frag.appendChild(b1);
+
+    const b2=makeBlockV48('2. INFORMACIÓN PROYECTISTA');
+    addRowV48(b2,[proyectista],'single');
+    addRowV48(b2,[senescyt,registroMunicipal]);
+    if(b2.children.length>1) frag.appendChild(b2);
+
+    const b3=makeBlockV48('3. UBICACIÓN DE LA CONSTRUCCIÓN');
+    addRowV48(b3,[clave],'single');
+    // Parroquia NO se muestra como campo separado porque ya aparece dentro del buscador de clave catastral.
+    if(parroquia) parroquia.classList.add('field-hidden-v48');
+    addRowV48(b3,[x,y]);
+    addRowV48(b3,[codigoPit],'single');
+    addRowV48(b3,[direccion,barrio]);
+    if(b3.children.length>1) frag.appendChild(b3);
+
+    const b4=makeBlockV48('4. DATOS DE LA CONSTRUCCIÓN');
+    addRowV48(b4,[proyectoDef],'single');
+    addRowV48(b4,[uso,altura,area],'three');
+    addRowV48(b4,[nombreProyecto],'single');
+    if(b4.children.length>1) frag.appendChild(b4);
+
+    box.insertBefore(frag, box.firstChild);
+    removeOrphanTitlesV48();
+  }finally{
+    box.dataset.groupingV48='0';
+  }
+}
+
+const _renderInfoForm_base_V48 = typeof renderInfoForm==='function' ? renderInfoForm : null;
+renderInfoForm = function(){
+  if(_renderInfoForm_base_V48) _renderInfoForm_base_V48();
+  setTimeout(regroupInfoGeneralV48,0);
+};
+
+// Si se renderiza por cargas asíncronas, reagrupa de nuevo.
+window.addEventListener('load',()=>{
+  setTimeout(regroupInfoGeneralV48,500);
+  setTimeout(regroupInfoGeneralV48,1500);
 });
 </script>
 
