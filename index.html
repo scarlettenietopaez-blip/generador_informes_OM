@@ -682,6 +682,23 @@
   text-align:left!important;
 }
 
+
+/* ===== V51 ajustes finales: selects, manuales y requisitos ===== */
+.manual-panel .row-v51{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.manual-panel .row-v51.three{
+  grid-template-columns:1fr 1fr 1fr;
+}
+.catastral-line-v49 select option[hidden]{
+  display:none!important;
+}
+@media(max-width:900px){
+  .manual-panel .row-v51,.manual-panel .row-v51.three{grid-template-columns:1fr}
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -5110,6 +5127,207 @@ renderInfoForm = function(){
     bindSelectVisualV50(document.getElementById('catParro'));
     bindSelectVisualV50(document.getElementById('catZona'));
   },0);
+};
+</script>
+
+
+<script>
+/* ==========================================================
+   V51 - Listas sin vacíos, observación manual completa,
+   No Aplica en requisitos >2 pisos/400m2, contraseña form1234
+   ========================================================== */
+
+// 1) Contraseña nueva
+unlockAppV36 = function(){
+  const val=document.getElementById('appPasswordInput')?.value||'';
+  const err=document.getElementById('passwordErrorV36');
+  if(val==='form1234'){
+    sessionStorage.setItem('OM_AUTH_V36','OK');
+    const o=document.getElementById('passwordOverlay'); 
+    if(o) o.style.display='none';
+  }else{
+    if(err) err.style.display='block';
+  }
+};
+
+// 2) Selects PARR/ZONA sin opciones vacías visibles
+function parroquiasOptionsV49(selected){
+  ensureCatDBV46();
+  const sel=String(selected||'').padStart(2,'0');
+  const seen={};
+  const rows=(DATA.catastralBase||[]).filter(r=>{
+    const val=String(r.parro||'').padStart(2,'0');
+    if(!val || seen[val]) return false;
+    seen[val]=true;
+    return true;
+  }).sort((a,b)=>String(a.parro).localeCompare(String(b.parro)));
+  return rows.map(r=>{
+    const val=String(r.parro).padStart(2,'0');
+    const full=optionTextV50 ? optionTextV50('parro',r) : `${val}-${r.parroquia||''}`;
+    const txt=(val===sel ? val : full);
+    return `<option value="${esc(val)}" data-full="${esc(full)}" ${val===sel?'selected':''}>${esc(txt)}</option>`;
+  }).join('');
+}
+function zonasOptionsV49(parro, selected){
+  ensureCatDBV46();
+  const p=String(parro||'').padStart(2,'0');
+  const sel=String(selected||'').padStart(3,'0');
+  const rows=(DATA.catastralBase||[]).filter(r=>String(r.parro||'').padStart(2,'0')===p)
+    .sort((a,b)=>String(a.zona).localeCompare(String(b.zona)));
+  return rows.map(r=>{
+    const val=String(r.zona).padStart(3,'0');
+    const full=optionTextV50 ? optionTextV50('zona',r) : `${val}-${r.zonaNombre||('Zona '+val)}`;
+    const txt=(val===sel ? val : full);
+    return `<option value="${esc(val)}" data-full="${esc(full)}" ${val===sel?'selected':''}>${esc(txt)}</option>`;
+  }).join('');
+}
+function catastralPlaceholderV51(value){
+  return value ? '' : '<option value="" selected disabled hidden></option>';
+}
+catastralPanelHtmlV36 = function(f,val){
+  ensureV37State();
+  const c=state.catastral;
+  if(!c.prov) c.prov='06'; 
+  if(!c.cant) c.cant='01';
+  const row=catLookupV46(c.parro,c.zona);
+  const parroquiaAuto=row?.parroquia ? smartInputCase(row.parroquia) : getInfoFieldLabelV46('PARROQUIA');
+  if(row?.urbanoRural) c.urbanoRural=row.urbanoRural;
+  const oldActive=!!c.claveAntiguaActiva;
+  return `<div class="catastral-panel-v49">
+    <div class="mini">Buscador de clave catastral. Por defecto: Prov. 06 y Cant. 01.</div>
+    <div class="catastral-line-v49">
+      <div><label>PROV</label><input id="catProv" value="${esc(c.prov||'06')}" maxlength="2" ${oldActive?'disabled':''}></div>
+      <div><label>CANT</label><input id="catCant" value="${esc(c.cant||'01')}" maxlength="2" ${oldActive?'disabled':''}></div>
+      <div><label>PARR</label><select id="catParro" ${oldActive?'disabled':''}>${catastralPlaceholderV51(c.parro)}${parroquiasOptionsV49(c.parro)}</select></div>
+      <div><label>ZONA</label><select id="catZona" ${oldActive?'disabled':''}>${catastralPlaceholderV51(c.zona)}${zonasOptionsV49(c.parro,c.zona)}</select></div>
+      <div><label>SECT</label><input id="catSect" value="${esc(c.sect||'')}" maxlength="4" ${oldActive?'disabled':''}></div>
+      <div><label>POLG</label><input id="catPolg" value="${esc(c.polg||'')}" maxlength="6" ${oldActive?'disabled':''}></div>
+      <div><label>PRED</label><input id="catPred" value="${esc(c.pred||'')}" maxlength="12" ${oldActive?'disabled':''}></div>
+      <button type="button" class="secondary catastral-search" onclick="buscarClaveCatastralV36()" ${oldActive?'disabled':''}>🔍</button>
+    </div>
+    <div class="clave-antigua-v49"><label class="inline-check"><input type="checkbox" id="toggleClaveAntiguaV37" ${oldActive?'checked':''}> Usar clave catastral antigua</label></div>
+    ${oldActive?`<div class="field clave-antigua-input-v38"><label>Clave catastral antigua</label><input id="claveAntiguaTextV37" value="${esc(c.claveAntigua||'')}" placeholder="Ingrese la clave antigua en texto libre"></div>`:''}
+    <div class="catastral-info-v49">
+      <div><label>Parroquia</label><input id="catParroquiaAutoV46" value="${esc(parroquiaAuto||'')}" readonly></div>
+      <div><label>Urbano / Rural</label><input id="catUrbanoRural" value="${esc(c.urbanoRural||'')}" readonly></div>
+      <div><label>Clave generada</label><input id="catClavePreview" value="${esc(buildClaveFromPartsV37()||val||'')}" readonly></div>
+    </div>
+  </div>`;
+};
+
+// 3) Observación manual con campos solicitados
+renderObservacionesForm = function(){
+ ensureV37State();
+ const box=document.getElementById('observacionesForm');
+ const comps=[...new Set([...DATA.observaciones.map(o=>o.Componente).filter(Boolean),'Documental','Arquitectónico','Estructural','Urbano / Implantación','Accesibilidad','Instalaciones','Otros'])];
+ box.innerHTML=`<div class="field"><label class="check-line"><input type="checkbox" id="toggleTextosTecnicos" ${state.mostrarTextosTecnicos?'checked':''}> Mostrar acápite de textos técnicos para informe</label><div class="mini">Si se activa, el informe incluirá después de Base Legal un acápite que relaciona cada texto técnico con el número de observación de la tabla.</div></div>
+ <div class="field note-check-v37"><label class="check-line"><input type="checkbox" id="toggleNotaPreConclusiones" ${state.notaPreConclusiones.activo?'checked':''}> Incluir nota antes de conclusiones</label><div class="mini">Si se activa, el informe incluirá una nota antes de Conclusiones.</div>${state.notaPreConclusiones.activo?`<textarea id="notaPreConclusionesText" placeholder="Escriba la nota que aparecerá antes de Conclusiones">${esc(state.notaPreConclusiones.texto||'')}</textarea>`:''}</div>
+ <div class="row"><div class="field"><label>Filtrar componente</label><select id="obsFiltroComp"><option value="">Todos</option>${comps.map(c=>`<option>${esc(c)}</option>`).join('')}</select></div><div class="field"><label>Buscar</label><input id="obsBuscar" placeholder="Tema, código u observación"></div></div>
+ <div id="catalogoObs" class="catalog"></div>
+ <div class="buttons small-actions">
+   <button class="secondary" onclick="toggleManualObsPanel()">+ Agregar observación manual</button>
+   <button class="secondary" onclick="renderManualObsDB()">Ver base manual</button>
+   <button class="secondary" onclick="exportarObsManualesCSV()">Exportar CSV</button>
+ </div>
+ <div id="manualObsPanel" class="manual-panel collapsed">
+   <div class="section-title">Agregar observación manual</div>
+   <div class="row-v51 three">
+     <div class="field"><label>Código *</label><input id="manualCodigo" oninput="normalizeUpperInput(this)" placeholder="Ej.: MAN-001"></div>
+     <div class="field"><label>Componente *</label><select id="manualComponente"><option value="">Seleccione...</option>${comps.map(c=>`<option>${esc(c)}</option>`).join('')}</select></div>
+     <div class="field"><label>Tema *</label><input id="manualTema" oninput="normalizeUpperInput(this)" placeholder="Ej.: PLANIMETRÍA / RETIROS"></div>
+   </div>
+   <div class="row-v51">
+     <div class="field"><label>Artículo *</label><input id="manualNorma" oninput="normalizeUpperInput(this)" placeholder="Ej.: ARTÍCULO 98"></div>
+     <div class="field"><label>Observación *</label><textarea id="manualObservacion" oninput="normalizeUpperInput(this)" placeholder="Escriba la observación específica detectada"></textarea></div>
+   </div>
+   <div class="buttons small-actions">
+     <button class="success" onclick="agregarObsManual()">Guardar y agregar al informe</button>
+     <button class="secondary" onclick="toggleManualObsPanel()">Cerrar</button>
+   </div>
+   <div class="mini">Las observaciones manuales se guardan en la base local del navegador para analizarlas después y decidir cuáles se incorporan oficialmente al catálogo.</div>
+   <div id="manualObsDB" class="manual-db"></div>
+ </div>
+ <div class="section-title">Tabla de observaciones del informe</div><div id="obsSeleccionadas"></div>`;
+ document.getElementById('toggleTextosTecnicos').addEventListener('change', e=>{ state.mostrarTextosTecnicos=e.target.checked; renderReport(); renderPreview(); });
+ document.getElementById('toggleNotaPreConclusiones').addEventListener('change', e=>{ state.notaPreConclusiones.activo=e.target.checked; renderObservacionesForm(); renderReport(); renderPreview(); });
+ const nota=document.getElementById('notaPreConclusionesText'); if(nota) nota.addEventListener('input',e=>{ state.notaPreConclusiones.texto=smartInputCase(e.target.value); renderReport(); renderPreview(); });
+ document.getElementById('obsFiltroComp').addEventListener('input', renderCatalogoObs);
+ document.getElementById('obsBuscar').addEventListener('input', e=>{ normalizeUpperInput(e.target); renderCatalogoObs(); });
+ renderCatalogoObs(); renderObsSeleccionadas(); renderManualObsDB();
+};
+agregarObsManual = async function(){
+ collectTop();
+ const codigo=upper(document.getElementById('manualCodigo')?.value||'').trim();
+ const componente=document.getElementById('manualComponente')?.value||'';
+ const tema=upper(document.getElementById('manualTema')?.value||'').trim();
+ const norma=upper(document.getElementById('manualNorma')?.value||'').trim();
+ const observacion=upper(document.getElementById('manualObservacion')?.value||'').trim();
+ if(!codigo || !componente || !tema || !norma || !observacion){
+   msg('Para agregar una observación manual debe llenar Código, Componente, Tema, Artículo y Observación.');
+   return;
+ }
+ const item={id:crypto.randomUUID(), codigo, componente, tema, observacion, texto:observacion, norma, correccion:'', documento:'', nota:'', manual:true, egob:state.egob||'', tecnico:state.tecnico||'', tipoInforme:state.tipoInforme||'', fechaRevision:state.fechaRevision||'', createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(), estado:'PENDIENTE DE ANÁLISIS'};
+ state.obsSeleccionadas.push({...item});
+ if(db) await manualObsPut({...item});
+ ['manualCodigo','manualTema','manualNorma','manualObservacion'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+ const c=document.getElementById('manualComponente'); if(c) c.value='';
+ renderObsSeleccionadas(); renderManualObsDB(); renderReport(); renderPreview();
+ msg('Observación manual agregada al informe y guardada para análisis.', true);
+};
+renderManualObsDB = async function(){
+ const box=document.getElementById('manualObsDB'); if(!box) return;
+ if(!db){ box.innerHTML='<p class="mini" style="padding:10px">La base local aún no está lista.</p>'; return; }
+ const arr=(await manualObsAll()).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+ if(!arr.length){ box.innerHTML='<p class="mini" style="padding:10px">Aún no existen observaciones manuales guardadas.</p>'; return; }
+ const rows=arr.slice(0,80).map((o,i)=>`<tr><td>${i+1}</td><td>${esc(o.codigo||'')}</td><td>${esc(o.componente)}</td><td>${esc(o.tema||'')}</td><td>${esc(o.norma||'')}</td><td>${esc(o.observacion||'')}</td><td>${esc(o.egob||'')}</td><td class="small-actions"><button class="secondary" onclick="usarObsManualEnInforme('${esc(o.id)}')">Usar</button><button class="secondary" onclick="agregarObsManualAlCatalogoTemporal('${esc(o.id)}')">Catálogo temporal</button><button class="danger" onclick="eliminarObsManual('${esc(o.id)}')">Eliminar</button></td></tr>`).join('');
+ box.innerHTML=`<table><thead><tr><th>Nro.</th><th>Código</th><th>Componente</th><th>Tema</th><th>Artículo</th><th>Observación</th><th>eGOB</th><th>Acciones</th></tr></thead><tbody>${rows}</tbody></table>`;
+};
+exportarObsManualesCSV = async function(){
+ const arr=await manualObsAll();
+ if(!arr.length){ msg('No existen observaciones manuales para exportar.'); return; }
+ const headers=['codigo','componente','tema','articulo','observacion','egob_origen','tecnico','fecha_revision','fecha_registro','estado'];
+ const lines=['sep=;'];
+ lines.push(headers.map(csvCell).join(';'));
+ arr.forEach(o=>lines.push([o.codigo,o.componente,o.tema,o.norma,o.observacion,o.egob,o.tecnico,o.fechaRevision,o.createdAt,o.estado].map(csvCell).join(';')));
+ const blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='OBSERVACIONES_MANUALES_PARA_ANALISIS_'+today()+'.csv'; a.click(); URL.revokeObjectURL(a.href);
+};
+
+// 4) Requisitos de más de 2 pisos o 400 m2 con No Aplica
+function isReqMasDe2V51(grupo){
+ const g=upper(grupo||'');
+ return (g.includes('MÁS DE 2') || g.includes('MAS DE 2') || g.includes('400'));
+}
+renderRequisitosForm = function(rebuild=true){
+ const box=document.getElementById('requisitosForm'); if(!box) return;
+ const reqs=DATA.requisitos.filter(shouldShowReq);
+ const cond=(numVal(infoValue('ALTURA EDIFICACIÓN'))>2 || numVal(infoValue('Área Bruta'))>400);
+ let html=`<div class="field"><label class="check-line"><input type="checkbox" id="toggleComplementarios" ${state.mostrarComplementarios?'checked':''}> Mostrar requisitos complementarios cuando apliquen</label></div>`;
+ const groups=[...new Set(reqs.map(r=>r.grupo))];
+ groups.forEach(grupo=>{
+   const rows=reqs.filter(r=>r.grupo===grupo);
+   const forceNA=isReqMasDe2V51(grupo);
+   const showNA=forceNA || rows.some(r=>(r.opciones||[]).includes('No Aplica'));
+   html+=`<div class="section-title">${esc(grupo)}</div><table class="req-compact"><thead><tr><th style="width:54%">Requisito</th><th style="width:11%">Cumple</th><th style="width:13%">No cumple</th>${showNA?'<th style="width:12%">No aplica</th>':''}<th>Observación para el usuario</th></tr></thead><tbody>`;
+   rows.forEach(req=>{
+     const val=state.requisitos[req.id]||{estado:'', observacion:''};
+     const opts=(req.opciones&&req.opciones.length?req.opciones:['Cumple','No Cumple']);
+     const hasNA=forceNA || opts.includes('No Aplica');
+     html+=`<tr><td>${esc(req.texto)}</td>
+      <td class="center"><input type="checkbox" data-req-id="${esc(req.id)}" value="Cumple" ${val.estado==='Cumple'?'checked':''} onchange="setReqEstado('${esc(req.id)}','Cumple',this.checked)"></td>
+      <td class="center"><input type="checkbox" data-req-id="${esc(req.id)}" value="No Cumple" ${val.estado==='No Cumple'?'checked':''} onchange="setReqEstado('${esc(req.id)}','No Cumple',this.checked)"></td>
+      ${showNA?`<td class="center">${hasNA?`<input type="checkbox" data-req-id="${esc(req.id)}" value="No Aplica" ${val.estado==='No Aplica'?'checked':''} onchange="setReqEstado('${esc(req.id)}','No Aplica',this.checked)">`:''}</td>`:''}
+      <td><textarea id="req_obs_${req.id}" placeholder="Solo si no cumple" style="display:${val.estado==='No Cumple'?'block':'none'}">${esc(val.observacion||'')}</textarea></td></tr>`;
+   });
+   html+='</tbody></table>';
+ });
+ html+=`<div class="note-box">Condición automática: ALTURA EDIFICACIÓN = ${esc(infoValue('ALTURA EDIFICACIÓN')||'0')} PISOS / ÁREA BRUTA = ${esc(infoValue('Área Bruta')||'0')} M². ${cond?'SE ACTIVAN':'NO SE ACTIVAN'} LOS REQUISITOS DE MÁS DE 2 PISOS O 400 M².</div>`;
+ box.innerHTML=html;
+ document.getElementById('toggleComplementarios').addEventListener('change',e=>{ state.mostrarComplementarios=e.target.checked; renderRequisitosForm(); renderObsSeleccionadas(); renderReport(); renderPreview(); });
+ reqs.forEach(req=>{
+  const obs=document.getElementById(`req_obs_${req.id}`);
+  if(obs) obs.addEventListener('input',()=>{ if(shouldForceUpper()) normalizeUpperInput(obs); if(!state.requisitos[req.id]) state.requisitos[req.id]={}; state.requisitos[req.id].observacion=obs.value; renderObsSeleccionadas(); renderReport(); renderPreview(); });
+ });
 };
 </script>
 
