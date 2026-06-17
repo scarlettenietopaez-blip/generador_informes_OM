@@ -699,6 +699,49 @@
   .manual-panel .row-v51,.manual-panel .row-v51.three{grid-template-columns:1fr}
 }
 
+
+/* ===== V52 observaciones desde artículos Ordenanza 016-2023 ===== */
+.catalog-ordenanza-v52 table{
+  table-layout:fixed;
+  width:100%;
+}
+.catalog-ordenanza-v52 th:nth-child(1){width:72px}
+.catalog-ordenanza-v52 th:nth-child(2){width:150px}
+.catalog-ordenanza-v52 th:nth-child(3){width:190px}
+.catalog-ordenanza-v52 th:nth-child(4){width:86px}
+.catalog-ordenanza-v52 th:nth-child(6){width:220px}
+.catalog-ordenanza-v52 th:nth-child(7){width:88px}
+.article-preview-v52{
+  max-height:86px;
+  overflow:auto;
+  white-space:pre-wrap;
+  font-size:11px;
+  line-height:1.25;
+  color:#334155;
+}
+.article-observation-v52{
+  min-height:72px;
+  font-size:12px;
+}
+.article-toolbar-v52{
+  display:grid;
+  grid-template-columns:220px 1fr;
+  gap:10px;
+}
+.catalog-limit-v52{
+  font-size:12px;
+  color:#53657d;
+  margin:6px 0 8px;
+}
+.tech-note-table td{
+  vertical-align:top;
+}
+@media(max-width:1000px){
+  .article-toolbar-v52{grid-template-columns:1fr}
+  .catalog-ordenanza-v52{overflow-x:auto}
+  .catalog-ordenanza-v52 table{min-width:1100px}
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -5329,6 +5372,203 @@ renderRequisitosForm = function(rebuild=true){
   if(obs) obs.addEventListener('input',()=>{ if(shouldForceUpper()) normalizeUpperInput(obs); if(!state.requisitos[req.id]) state.requisitos[req.id]={}; state.requisitos[req.id].observacion=obs.value; renderObsSeleccionadas(); renderReport(); renderPreview(); });
  });
 };
+</script>
+
+
+<script>
+/* ==========================================================
+   V52 - Observaciones desde artículos de Ordenanza 016-2023
+   Fuente generada desde el PDF oficial cargado en data.
+   ========================================================== */
+
+function ensureOrdenanzaV52(){
+  if(!Array.isArray(DATA.ordenanzaArticulos)) DATA.ordenanzaArticulos=[];
+  if(!window.__ORDENANZA_V52_LOADED__) window.__ORDENANZA_V52_LOADED__=false;
+}
+function activeArticleV52(r){
+  const v=String(r.Activo||r.activo||'Sí').trim().toLowerCase();
+  return !['no','false','0','inactivo'].includes(v);
+}
+function cleanArticleRowV52(r){
+  return {
+    Codigo: String(r.Codigo||r.codigo||'').trim(),
+    Componente: String(r.Componente||r.componente||'').trim(),
+    Tema: String(r.Tema||r.tema||'').trim(),
+    Articulo: String(r.Articulo||r.articulo||'').trim(),
+    Texto_Articulo: String(r.Texto_Articulo||r.texto_articulo||r['Texto del artículo']||'').trim(),
+    Activo: String(r.Activo||r.activo||'Sí').trim()
+  };
+}
+async function loadOrdenanzaArticulosV52(){
+  ensureOrdenanzaV52();
+  if(window.__ORDENANZA_V52_LOADED__ && DATA.ordenanzaArticulos.length) return DATA.ordenanzaArticulos;
+  try{
+    const txt=await fetchCSVTextV32('data/ordenanza_016_2023_articulos.csv');
+    const rows=parseCSVV32(txt).map(cleanArticleRowV52).filter(r=>r.Codigo && activeArticleV52(r));
+    DATA.ordenanzaArticulos=rows;
+    window.__ORDENANZA_V52_LOADED__=true;
+    console.log('Ordenanza 016-2023 artículos cargados:', rows.length);
+    return rows;
+  }catch(e){
+    console.warn('No se pudo cargar data/ordenanza_016_2023_articulos.csv', e);
+    DATA.ordenanzaArticulos=[];
+    return [];
+  }
+}
+const _loadExternalCSVsV32_base_V52 = typeof loadExternalCSVsV32 === 'function' ? loadExternalCSVsV32 : async()=>{};
+loadExternalCSVsV32 = async function(){
+  await _loadExternalCSVsV32_base_V52();
+  await loadOrdenanzaArticulosV52();
+};
+
+function normSearchV52(v){
+  return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+}
+function articleComponentsV52(){
+  ensureOrdenanzaV52();
+  return [...new Set(DATA.ordenanzaArticulos.map(a=>a.Componente).filter(Boolean))];
+}
+function renderObservacionesForm(){
+ ensureV37State();
+ ensureOrdenanzaV52();
+ const box=document.getElementById('observacionesForm');
+ const comps=articleComponentsV52();
+ box.innerHTML=`<div class="field"><label class="check-line"><input type="checkbox" id="toggleTextosTecnicos" ${state.mostrarTextosTecnicos?'checked':''}> Mostrar acápite de textos técnicos para informe</label><div class="mini">Si se activa, el informe incluirá después de Base Legal el texto del artículo relacionado con cada observación seleccionada.</div></div>
+ <div class="field note-check-v37"><label class="check-line"><input type="checkbox" id="toggleNotaPreConclusiones" ${state.notaPreConclusiones.activo?'checked':''}> Incluir nota antes de conclusiones</label><div class="mini">Si se activa, el informe incluirá una nota antes de Conclusiones.</div>${state.notaPreConclusiones.activo?`<textarea id="notaPreConclusionesText" placeholder="Escriba la nota que aparecerá antes de Conclusiones">${esc(state.notaPreConclusiones.texto||'')}</textarea>`:''}</div>
+ <div class="note-box">Las observaciones se seleccionan por artículo de la Ordenanza No. 016-2023. Escriba la observación puntual del trámite en la última columna y presione Agregar.</div>
+ <div class="article-toolbar-v52">
+   <div class="field"><label>Filtrar componente</label><select id="obsFiltroComp"><option value="">Todos</option>${comps.map(c=>`<option>${esc(c)}</option>`).join('')}</select></div>
+   <div class="field"><label>Buscar artículo / tema / texto</label><input id="obsBuscar" placeholder="Ej.: Artículo 92, retiros, iluminación, estacionamientos"></div>
+ </div>
+ <div id="catalogoObs" class="catalog catalog-ordenanza-v52"></div>
+ <div class="section-title">Tabla de observaciones del informe</div><div id="obsSeleccionadas"></div>`;
+ document.getElementById('toggleTextosTecnicos').addEventListener('change', e=>{ state.mostrarTextosTecnicos=e.target.checked; renderReport(); renderPreview(); });
+ document.getElementById('toggleNotaPreConclusiones').addEventListener('change', e=>{ state.notaPreConclusiones.activo=e.target.checked; renderObservacionesForm(); renderReport(); renderPreview(); });
+ const nota=document.getElementById('notaPreConclusionesText'); if(nota) nota.addEventListener('input',e=>{ state.notaPreConclusiones.texto=smartInputCase(e.target.value); renderReport(); renderPreview(); });
+ document.getElementById('obsFiltroComp').addEventListener('input', renderCatalogoObs);
+ document.getElementById('obsBuscar').addEventListener('input', e=>{ renderCatalogoObs(); });
+ if(!DATA.ordenanzaArticulos.length){
+   document.getElementById('catalogoObs').innerHTML='<p class="mini">Cargando artículos de la Ordenanza 016-2023...</p>';
+   loadOrdenanzaArticulosV52().then(()=>renderObservacionesForm());
+ }else{
+   renderCatalogoObs();
+ }
+ renderObsSeleccionadas();
+}
+function renderCatalogoObs(){
+ ensureOrdenanzaV52();
+ const box=document.getElementById('catalogoObs');
+ if(!box) return;
+ if(!DATA.ordenanzaArticulos.length){
+   box.innerHTML='<p class="mini">Cargando artículos de la Ordenanza 016-2023...</p>';
+   return;
+ }
+ const comp=document.getElementById('obsFiltroComp')?.value||'';
+ const q=normSearchV52(document.getElementById('obsBuscar')?.value||'');
+ let rows=DATA.ordenanzaArticulos.filter(a=>{
+   if(comp && a.Componente!==comp) return false;
+   if(!q) return true;
+   return normSearchV52(`${a.Codigo} ${a.Componente} ${a.Tema} ${a.Articulo} ${a.Texto_Articulo}`).includes(q);
+ });
+ const total=rows.length;
+ rows=rows.slice(0,80);
+ const aviso=total>80?`<div class="catalog-limit-v52">Se muestran 80 de ${total} artículos encontrados. Use una búsqueda más específica para reducir resultados.</div>`:`<div class="catalog-limit-v52">${total} artículo(s) encontrado(s).</div>`;
+ box.innerHTML=`${aviso}<table><thead><tr><th>Código</th><th>Componente</th><th>Tema</th><th>Artículo</th><th>Texto del artículo</th><th>Observación</th><th>Acción</th></tr></thead><tbody>${rows.map(a=>{
+   const code=esc(a.Codigo);
+   return `<tr>
+     <td>${code}</td>
+     <td>${esc(a.Componente)}</td>
+     <td>${esc(a.Tema)}</td>
+     <td>${esc(a.Articulo)}</td>
+     <td><div class="article-preview-v52">${esc(a.Texto_Articulo)}</div></td>
+     <td><textarea class="article-observation-v52" id="obsArt_${code}" placeholder="Escriba aquí la observación puntual para este artículo"></textarea></td>
+     <td><button class="secondary" onclick="agregarArticuloOrdenanzaV52('${code}')">Agregar</button></td>
+   </tr>`;
+ }).join('') || '<tr><td colspan="7">No hay coincidencias.</td></tr>'}</tbody></table>`;
+}
+function agregarArticuloOrdenanzaV52(code){
+ ensureOrdenanzaV52();
+ const a=DATA.ordenanzaArticulos.find(x=>x.Codigo===code);
+ if(!a){ msg('No se encontró el artículo seleccionado.'); return; }
+ const obsEl=document.getElementById('obsArt_'+code);
+ const observacion=smartInputCase((obsEl?.value||'').trim());
+ if(!observacion){
+   msg('Escriba la observación puntual antes de agregar el artículo al informe.');
+   if(obsEl) obsEl.focus();
+   return;
+ }
+ const item={
+   id:crypto.randomUUID(),
+   codigo:a.Codigo||'',
+   componente:a.Componente||'',
+   tema:a.Tema||'',
+   articulo:a.Articulo||'',
+   observacion:observacion,
+   texto:a.Texto_Articulo||'',
+   norma:a.Articulo||'',
+   correccion:'',
+   documento:'',
+   nota:'',
+   source:'obs',
+   ordenanza:true
+ };
+ state.obsSeleccionadas.push(item);
+ if(obsEl) obsEl.value='';
+ renderObsSeleccionadas(); renderReport(); renderPreview();
+ msg('Observación agregada al informe.', true);
+}
+function combinedObsRows(){ return [...requisitoObsRows(), ...state.obsSeleccionadas.map(o=>({...o, source:o.source||'obs'}))]; }
+function renderObsSeleccionadas(){
+ const box=document.getElementById('obsSeleccionadas'); if(!box) return;
+ const rows=combinedObsRows();
+ if(!rows.length){ box.innerHTML='<p class="mini">Aún no se han seleccionado observaciones y no existen requisitos marcados como No Cumple.</p>'; return; }
+ box.innerHTML=`<table><thead><tr><th>Nro.</th><th>Código</th><th>Componente</th><th>Tema</th><th>Artículo / Norma</th><th>Observación</th><th></th></tr></thead><tbody>${rows.map((o,idx)=>`<tr>
+   <td>${idx+1}</td>
+   <td>${esc(o.codigo||'')}</td>
+   <td>${esc(o.componente||'')}</td>
+   <td>${esc(o.tema||'')}</td>
+   <td>${esc(o.articulo||o.norma||'')}</td>
+   <td><textarea oninput="updObsNota('${o.id}','${o.source}',this.value)">${esc(o.source==='req' ? (o.correccion||o.observacion||'') : (o.observacion||''))}</textarea></td>
+   <td>${o.source==='obs'?`<button class="danger" onclick="quitarObs('${o.id}')">Quitar</button>`:'<span class="mini">Requisito</span>'}</td>
+ </tr>`).join('')}</tbody></table>`;
+}
+function updObsNota(id,source,val){
+ val=smartInputCase(val);
+ if(source==='req'){ 
+   if(!state.requisitos[id]) state.requisitos[id]={}; 
+   state.requisitos[id].observacion=val; 
+   const el=document.getElementById('req_obs_'+id); if(el) el.value=val; 
+ } else { 
+   const o=state.obsSeleccionadas.find(x=>x.id===id); 
+   if(o) o.observacion=val; 
+ }
+ renderReport(); renderPreview();
+}
+function selectedObsTable(){
+ const rows=combinedObsRows();
+ if(!rows.length) return '<p>No se registran observaciones técnicas.</p>';
+ return `<table><thead><tr><th>Nro.</th><th>Código</th><th>Componente</th><th>Tema</th><th>Artículo / Norma</th><th>Observación</th></tr></thead><tbody>${rows.map((o,i)=>`<tr>
+   <td>${i+1}</td>
+   <td>${esc(o.codigo||'')}</td>
+   <td>${esc(o.componente||'')}</td>
+   <td>${esc(o.tema||'')}</td>
+   <td>${esc(o.articulo||o.norma||'')}</td>
+   <td>${esc(o.source==='req' ? (o.correccion||o.observacion||'') : (o.observacion||''))}</td>
+ </tr>`).join('')}</tbody></table>`;
+}
+function textosTecnicosSection(){
+ if(!state.mostrarTextosTecnicos) return '';
+ const rows=combinedObsRows().map((o,i)=>({num:i+1, codigo:o.codigo||'', componente:o.componente||'', articulo:o.articulo||o.norma||'', texto:o.texto||''})).filter(o=>String(o.texto||'').trim());
+ if(!rows.length) return '';
+ return `<h2>Sustento técnico de las observaciones</h2><p>Los siguientes textos técnicos corresponden a los artículos de la Ordenanza No. 016-2023 relacionados con cada observación.</p><table class="tech-note-table"><thead><tr><th>Nro. obs.</th><th>Código / artículo</th><th>Texto del artículo</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.num}</td><td>${esc(r.codigo)}<br>${esc(r.articulo)}<br>${esc(r.componente)}</td><td>${esc(r.texto)}</td></tr>`).join('')}</tbody></table>`;
+}
+window.addEventListener('load',()=>{
+  loadOrdenanzaArticulosV52().then(()=>{
+    if(document.getElementById('observacionesForm')) {
+      try{ renderObservacionesForm(); }catch(e){ console.warn('No se pudo renderizar Observaciones V52', e); }
+    }
+  });
+});
 </script>
 
 </body>
