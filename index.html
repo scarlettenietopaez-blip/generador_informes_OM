@@ -742,6 +742,44 @@
   .catalog-ordenanza-v52 table{min-width:1100px}
 }
 
+
+/* ===== V53 observaciones manuales + imagen en artículos ===== */
+.catalog-ordenanza-v53 table{table-layout:fixed;width:100%}
+.catalog-ordenanza-v53 th:nth-child(1){width:70px}
+.catalog-ordenanza-v53 th:nth-child(2){width:140px}
+.catalog-ordenanza-v53 th:nth-child(3){width:160px}
+.catalog-ordenanza-v53 th:nth-child(4){width:78px}
+.catalog-ordenanza-v53 th:nth-child(6){width:190px}
+.catalog-ordenanza-v53 th:nth-child(7){width:180px}
+.catalog-ordenanza-v53 th:nth-child(8){width:82px}
+.image-tools-v53{display:flex;flex-direction:column;gap:5px}
+.image-tools-v53 input[type=file]{font-size:10px;max-width:160px}
+.paste-zone-v53{
+  border:1px dashed #94a3b8;
+  border-radius:8px;
+  padding:7px;
+  min-height:34px;
+  background:#f8fafc;
+  font-size:10.5px;
+  color:#475569;
+  cursor:text;
+}
+.paste-zone-v53:focus{outline:2px solid #60a5fa;background:#fff}
+.img-preview-v53{max-width:150px;max-height:90px;object-fit:contain;border:1px solid #cbd5e1;border-radius:6px;background:#fff}
+.manual-panel .row-v53{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.manual-panel .row-v53.three{grid-template-columns:1fr 1fr 1fr}
+.manual-panel .row-v53.single{grid-template-columns:1fr}
+.obs-image-cell-v53{min-width:160px}
+.obs-image-cell-v53 img{max-width:145px;max-height:90px;object-fit:contain;border:1px solid #cbd5e1;border-radius:6px;background:#fff}
+.report-obs-img-v53{display:block;max-width:42mm;max-height:32mm;object-fit:contain;border:1px solid #999;border-radius:3px;margin:auto}
+@media(max-width:1100px){
+  .catalog-ordenanza-v53{overflow-x:auto}
+  .catalog-ordenanza-v53 table{min-width:1280px}
+}
+@media(max-width:900px){
+  .manual-panel .row-v53,.manual-panel .row-v53.three{grid-template-columns:1fr}
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -5566,6 +5604,344 @@ window.addEventListener('load',()=>{
   loadOrdenanzaArticulosV52().then(()=>{
     if(document.getElementById('observacionesForm')) {
       try{ renderObservacionesForm(); }catch(e){ console.warn('No se pudo renderizar Observaciones V52', e); }
+    }
+  });
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V53 - Mantiene observaciones manuales y agrega imagen
+   ========================================================== */
+window.__ORD_IMG_TMP_V53 = window.__ORD_IMG_TMP_V53 || {};
+window.__MANUAL_IMG_TMP_V53 = window.__MANUAL_IMG_TMP_V53 || null;
+
+function readImageFileV53(file, cb){
+  if(!file || !String(file.type||'').startsWith('image/')){ msg('Seleccione o pegue un archivo de imagen.'); return; }
+  const reader=new FileReader();
+  reader.onload=()=>cb(reader.result);
+  reader.readAsDataURL(file);
+}
+function setArticleImageV53(code,input){
+  const file=input.files && input.files[0];
+  readImageFileV53(file, data=>{
+    window.__ORD_IMG_TMP_V53[code]=data;
+    renderCatalogoObs();
+  });
+}
+function pasteArticleImageV53(code, ev){
+  const items=ev.clipboardData && ev.clipboardData.items ? [...ev.clipboardData.items] : [];
+  const it=items.find(x=>String(x.type||'').startsWith('image/'));
+  if(!it) return;
+  ev.preventDefault();
+  readImageFileV53(it.getAsFile(), data=>{
+    window.__ORD_IMG_TMP_V53[code]=data;
+    renderCatalogoObs();
+  });
+}
+function clearArticleImageV53(code){
+  delete window.__ORD_IMG_TMP_V53[code];
+  renderCatalogoObs();
+}
+function imageToolsArticleV53(code){
+  const img=window.__ORD_IMG_TMP_V53[code]||'';
+  return `<div class="image-tools-v53">
+    <input type="file" accept="image/*" onchange="setArticleImageV53('${esc(code)}',this)">
+    <div class="paste-zone-v53" contenteditable="true" onpaste="pasteArticleImageV53('${esc(code)}',event)">Pegar captura aquí</div>
+    ${img?`<img class="img-preview-v53" src="${esc(img)}"><button type="button" class="secondary mini-btn" onclick="clearArticleImageV53('${esc(code)}')">Quitar imagen</button>`:''}
+  </div>`;
+}
+function setManualImageV53(input){
+  const file=input.files && input.files[0];
+  readImageFileV53(file, data=>{
+    window.__MANUAL_IMG_TMP_V53=data;
+    renderManualImagePreviewV53();
+  });
+}
+function pasteManualImageV53(ev){
+  const items=ev.clipboardData && ev.clipboardData.items ? [...ev.clipboardData.items] : [];
+  const it=items.find(x=>String(x.type||'').startsWith('image/'));
+  if(!it) return;
+  ev.preventDefault();
+  readImageFileV53(it.getAsFile(), data=>{
+    window.__MANUAL_IMG_TMP_V53=data;
+    renderManualImagePreviewV53();
+  });
+}
+function clearManualImageV53(){
+  window.__MANUAL_IMG_TMP_V53=null;
+  renderManualImagePreviewV53();
+}
+function renderManualImagePreviewV53(){
+  const box=document.getElementById('manualImagePreviewV53');
+  if(!box) return;
+  const img=window.__MANUAL_IMG_TMP_V53;
+  box.innerHTML=img?`<img class="img-preview-v53" src="${esc(img)}"><button type="button" class="secondary mini-btn" onclick="clearManualImageV53()">Quitar imagen</button>`:'';
+}
+function setObsImageV53(id,input){
+  const file=input.files && input.files[0];
+  readImageFileV53(file, data=>{
+    const target=state.obsSeleccionadas.find(x=>x.id===id);
+    if(target){ target.imagen=data; renderObsSeleccionadas(); renderReport(); renderPreview(); }
+  });
+}
+function pasteObsImageV53(id,ev){
+  const items=ev.clipboardData && ev.clipboardData.items ? [...ev.clipboardData.items] : [];
+  const it=items.find(x=>String(x.type||'').startsWith('image/'));
+  if(!it) return;
+  ev.preventDefault();
+  readImageFileV53(it.getAsFile(), data=>{
+    const target=state.obsSeleccionadas.find(x=>x.id===id);
+    if(target){ target.imagen=data; renderObsSeleccionadas(); renderReport(); renderPreview(); }
+  });
+}
+function clearObsImageV53(id){
+  const target=state.obsSeleccionadas.find(x=>x.id===id);
+  if(target){ delete target.imagen; renderObsSeleccionadas(); renderReport(); renderPreview(); }
+}
+function toggleManualObsPanel(){
+  const p=document.getElementById('manualObsPanel');
+  if(!p) return;
+  p.classList.toggle('collapsed');
+  if(!p.classList.contains('collapsed')){
+    renderManualObsDB();
+    renderManualImagePreviewV53();
+  }
+}
+function findArticuloOrdenanzaV53(ref){
+  ensureOrdenanzaV52();
+  const raw=String(ref||'').trim();
+  const n=(raw.match(/\d+/)||[''])[0].replace(/^0+/,'');
+  if(!n) return null;
+  return DATA.ordenanzaArticulos.find(a=>{
+    const an=(String(a.Articulo||'').match(/\d+/)||[''])[0].replace(/^0+/,'');
+    const code=(String(a.Codigo||'').match(/\d+/)||[''])[0].replace(/^0+/,'');
+    return an===n || code===n;
+  }) || null;
+}
+function renderObservacionesForm(){
+ ensureV37State();
+ ensureOrdenanzaV52();
+ const box=document.getElementById('observacionesForm');
+ const comps=articleComponentsV52();
+ const manualComps=[...new Set([...comps,'Documental','Arquitectónico','Estructural','Urbano / Implantación','Accesibilidad','Instalaciones','Otros'])].filter(Boolean);
+ box.innerHTML=`<div class="field"><label class="check-line"><input type="checkbox" id="toggleTextosTecnicos" ${state.mostrarTextosTecnicos?'checked':''}> Mostrar acápite de textos técnicos para informe</label><div class="mini">Si se activa, el informe incluirá después de Base Legal el texto del artículo relacionado con cada observación seleccionada.</div></div>
+ <div class="field note-check-v37"><label class="check-line"><input type="checkbox" id="toggleNotaPreConclusiones" ${state.notaPreConclusiones.activo?'checked':''}> Incluir nota antes de conclusiones</label><div class="mini">Si se activa, el informe incluirá una nota antes de Conclusiones.</div>${state.notaPreConclusiones.activo?`<textarea id="notaPreConclusionesText" placeholder="Escriba la nota que aparecerá antes de Conclusiones">${esc(state.notaPreConclusiones.texto||'')}</textarea>`:''}</div>
+ <div class="note-box">Las observaciones se seleccionan por artículo de la Ordenanza No. 016-2023. Escriba la observación puntual del trámite, agregue una imagen si aplica y presione Agregar.</div>
+ <div class="article-toolbar-v52">
+   <div class="field"><label>Filtrar componente</label><select id="obsFiltroComp"><option value="">Todos</option>${comps.map(c=>`<option>${esc(c)}</option>`).join('')}</select></div>
+   <div class="field"><label>Buscar artículo / tema / texto</label><input id="obsBuscar" placeholder="Ej.: Artículo 92, retiros, iluminación, estacionamientos"></div>
+ </div>
+ <div id="catalogoObs" class="catalog catalog-ordenanza-v52 catalog-ordenanza-v53"></div>
+ <div class="buttons small-actions">
+   <button class="secondary" onclick="toggleManualObsPanel()">+ Agregar observación manual</button>
+   <button class="secondary" onclick="renderManualObsDB()">Ver base manual</button>
+   <button class="secondary" onclick="exportarObsManualesCSV()">Exportar CSV</button>
+ </div>
+ <div id="manualObsPanel" class="manual-panel collapsed">
+   <div class="section-title">Agregar observación manual</div>
+   <div class="row-v53 three">
+     <div class="field"><label>Código *</label><input id="manualCodigo" oninput="normalizeUpperInput(this)" placeholder="Ej.: MAN-001"></div>
+     <div class="field"><label>Componente *</label><select id="manualComponente"><option value="">Seleccione...</option>${manualComps.map(c=>`<option>${esc(c)}</option>`).join('')}</select></div>
+     <div class="field"><label>Tema *</label><input id="manualTema" oninput="normalizeUpperInput(this)" placeholder="Ej.: PLANIMETRÍA / RETIROS"></div>
+   </div>
+   <div class="row-v53">
+     <div class="field"><label>Artículo *</label><input id="manualNorma" oninput="normalizeUpperInput(this)" placeholder="Ej.: Artículo 150 o 150"></div>
+     <div class="field"><label>Observación *</label><textarea id="manualObservacion" oninput="normalizeUpperInput(this)" placeholder="Escriba la observación específica detectada"></textarea></div>
+   </div>
+   <div class="row-v53 single">
+     <div class="field"><label>Imagen</label>
+       <div class="image-tools-v53">
+         <input type="file" accept="image/*" onchange="setManualImageV53(this)">
+         <div class="paste-zone-v53" contenteditable="true" onpaste="pasteManualImageV53(event)">Pegar captura aquí</div>
+         <div id="manualImagePreviewV53"></div>
+       </div>
+     </div>
+   </div>
+   <div class="buttons small-actions">
+     <button class="success" onclick="agregarObsManual()">Guardar y agregar al informe</button>
+     <button class="secondary" onclick="toggleManualObsPanel()">Cerrar</button>
+   </div>
+   <div class="mini">Las observaciones manuales se guardan en la base local del navegador para analizarlas después.</div>
+   <div id="manualObsDB" class="manual-db"></div>
+ </div>
+ <div class="section-title">Tabla de observaciones del informe</div><div id="obsSeleccionadas"></div>`;
+ document.getElementById('toggleTextosTecnicos').addEventListener('change', e=>{ state.mostrarTextosTecnicos=e.target.checked; renderReport(); renderPreview(); });
+ document.getElementById('toggleNotaPreConclusiones').addEventListener('change', e=>{ state.notaPreConclusiones.activo=e.target.checked; renderObservacionesForm(); renderReport(); renderPreview(); });
+ const nota=document.getElementById('notaPreConclusionesText'); if(nota) nota.addEventListener('input',e=>{ state.notaPreConclusiones.texto=smartInputCase(e.target.value); renderReport(); renderPreview(); });
+ document.getElementById('obsFiltroComp').addEventListener('input', renderCatalogoObs);
+ document.getElementById('obsBuscar').addEventListener('input', e=>{ renderCatalogoObs(); });
+ if(!DATA.ordenanzaArticulos.length){
+   document.getElementById('catalogoObs').innerHTML='<p class="mini">Cargando artículos de la Ordenanza 016-2023...</p>';
+   loadOrdenanzaArticulosV52().then(()=>renderObservacionesForm());
+ }else{
+   renderCatalogoObs();
+ }
+ renderObsSeleccionadas();
+ renderManualObsDB();
+ renderManualImagePreviewV53();
+}
+function renderCatalogoObs(){
+ ensureOrdenanzaV52();
+ const box=document.getElementById('catalogoObs');
+ if(!box) return;
+ if(!DATA.ordenanzaArticulos.length){
+   box.innerHTML='<p class="mini">Cargando artículos de la Ordenanza 016-2023...</p>';
+   return;
+ }
+ const comp=document.getElementById('obsFiltroComp')?.value||'';
+ const q=normSearchV52(document.getElementById('obsBuscar')?.value||'');
+ let rows=DATA.ordenanzaArticulos.filter(a=>{
+   if(comp && a.Componente!==comp) return false;
+   if(!q) return true;
+   return normSearchV52(`${a.Codigo} ${a.Componente} ${a.Tema} ${a.Articulo} ${a.Texto_Articulo}`).includes(q);
+ });
+ const total=rows.length;
+ rows=rows.slice(0,80);
+ const aviso=total>80?`<div class="catalog-limit-v52">Se muestran 80 de ${total} artículos encontrados. Use una búsqueda más específica para reducir resultados.</div>`:`<div class="catalog-limit-v52">${total} artículo(s) encontrado(s).</div>`;
+ box.innerHTML=`${aviso}<table><thead><tr><th>Código</th><th>Componente</th><th>Tema</th><th>Artículo</th><th>Texto del artículo</th><th>Observación</th><th>Imagen</th><th>Acción</th></tr></thead><tbody>${rows.map(a=>{
+   const code=esc(a.Codigo);
+   return `<tr>
+     <td>${code}</td>
+     <td>${esc(a.Componente)}</td>
+     <td>${esc(a.Tema)}</td>
+     <td>${esc(a.Articulo)}</td>
+     <td><div class="article-preview-v52">${esc(a.Texto_Articulo)}</div></td>
+     <td><textarea class="article-observation-v52" id="obsArt_${code}" placeholder="Escriba aquí la observación puntual para este artículo"></textarea></td>
+     <td>${imageToolsArticleV53(a.Codigo)}</td>
+     <td><button class="secondary" onclick="agregarArticuloOrdenanzaV52('${code}')">Agregar</button></td>
+   </tr>`;
+ }).join('') || '<tr><td colspan="8">No hay coincidencias.</td></tr>'}</tbody></table>`;
+}
+function agregarArticuloOrdenanzaV52(code){
+ ensureOrdenanzaV52();
+ const a=DATA.ordenanzaArticulos.find(x=>x.Codigo===code);
+ if(!a){ msg('No se encontró el artículo seleccionado.'); return; }
+ const obsEl=document.getElementById('obsArt_'+code);
+ const observacion=smartInputCase((obsEl?.value||'').trim());
+ if(!observacion){
+   msg('Escriba la observación puntual antes de agregar el artículo al informe.');
+   if(obsEl) obsEl.focus();
+   return;
+ }
+ const item={
+   id:crypto.randomUUID(),
+   codigo:a.Codigo||'',
+   componente:a.Componente||'',
+   tema:a.Tema||'',
+   articulo:a.Articulo||'',
+   observacion:observacion,
+   texto:a.Texto_Articulo||'',
+   norma:a.Articulo||'',
+   correccion:'',
+   documento:'',
+   nota:'',
+   source:'obs',
+   ordenanza:true,
+   imagen:window.__ORD_IMG_TMP_V53[code]||''
+ };
+ state.obsSeleccionadas.push(item);
+ if(obsEl) obsEl.value='';
+ delete window.__ORD_IMG_TMP_V53[code];
+ renderCatalogoObs();
+ renderObsSeleccionadas(); renderReport(); renderPreview();
+ msg('Observación agregada al informe.', true);
+}
+async function agregarObsManual(){
+ collectTop();
+ const codigo=upper(document.getElementById('manualCodigo')?.value||'').trim() || ('MAN-'+Date.now());
+ const componente=document.getElementById('manualComponente')?.value||'';
+ const tema=smartInputCase((document.getElementById('manualTema')?.value||'').trim());
+ const norma=smartInputCase((document.getElementById('manualNorma')?.value||'').trim());
+ const observacion=smartInputCase((document.getElementById('manualObservacion')?.value||'').trim());
+ if(!codigo || !componente || !tema || !norma || !observacion){
+   msg('Para agregar una observación manual debe llenar Código, Componente, Tema, Artículo y Observación.');
+   return;
+ }
+ const art=findArticuloOrdenanzaV53(norma);
+ const texto=art ? (art.Texto_Articulo||'') : `Artículo ingresado manualmente: ${norma}.`;
+ const item={
+   id:crypto.randomUUID(),
+   codigo,
+   componente,
+   tema,
+   articulo: art ? (art.Articulo||norma) : norma,
+   observacion,
+   texto,
+   norma: art ? (art.Articulo||norma) : norma,
+   correccion:'',
+   documento:'',
+   nota:'',
+   manual:true,
+   source:'obs',
+   ordenanza:!!art,
+   imagen:window.__MANUAL_IMG_TMP_V53||'',
+   egob:state.egob||'',
+   tecnico:state.tecnico||'',
+   tipoInforme:state.tipoInforme||'',
+   fechaRevision:state.fechaRevision||'',
+   createdAt:new Date().toISOString(),
+   updatedAt:new Date().toISOString(),
+   estado:'PENDIENTE DE ANÁLISIS'
+ };
+ state.obsSeleccionadas.push({...item});
+ if(db) await manualObsPut({...item});
+ ['manualCodigo','manualTema','manualNorma','manualObservacion'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+ const c=document.getElementById('manualComponente'); if(c) c.value='';
+ window.__MANUAL_IMG_TMP_V53=null;
+ renderManualImagePreviewV53();
+ renderObsSeleccionadas(); renderManualObsDB(); renderReport(); renderPreview();
+ msg(art?'Observación manual agregada con texto del artículo de la Ordenanza.':'Observación manual agregada. El artículo no fue encontrado en la base de la Ordenanza.', true);
+}
+function renderManualObsDB(){
+ const box=document.getElementById('manualObsDB'); if(!box) return;
+ if(!db){ box.innerHTML='<p class="mini" style="padding:10px">La base local aún no está lista.</p>'; return; }
+ manualObsAll().then(arr=>{
+   arr=(arr||[]).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+   if(!arr.length){ box.innerHTML='<p class="mini" style="padding:10px">Aún no existen observaciones manuales guardadas.</p>'; return; }
+   const rows=arr.slice(0,80).map((o,i)=>`<tr><td>${i+1}</td><td>${esc(o.codigo||'')}</td><td>${esc(o.componente||'')}</td><td>${esc(o.tema||'')}</td><td>${esc(o.articulo||o.norma||'')}</td><td>${esc(o.observacion||'')}</td><td>${o.imagen?'<span class="mini">Con imagen</span>':''}</td><td class="small-actions"><button class="secondary" onclick="usarObsManualEnInforme('${esc(o.id)}')">Usar</button><button class="danger" onclick="eliminarObsManual('${esc(o.id)}')">Eliminar</button></td></tr>`).join('');
+   box.innerHTML=`<table><thead><tr><th>Nro.</th><th>Código</th><th>Componente</th><th>Tema</th><th>Artículo</th><th>Observación</th><th>Imagen</th><th>Acciones</th></tr></thead><tbody>${rows}</tbody></table>`;
+ });
+}
+function renderObsSeleccionadas(){
+ const box=document.getElementById('obsSeleccionadas'); if(!box) return;
+ const rows=combinedObsRows();
+ if(!rows.length){ box.innerHTML='<p class="mini">Aún no se han seleccionado observaciones y no existen requisitos marcados como No Cumple.</p>'; return; }
+ box.innerHTML=`<table><thead><tr><th>Nro.</th><th>Código</th><th>Componente</th><th>Tema</th><th>Artículo / Norma</th><th>Observación</th><th>Imagen</th><th></th></tr></thead><tbody>${rows.map((o,idx)=>`<tr>
+   <td>${idx+1}</td>
+   <td>${esc(o.codigo||'')}</td>
+   <td>${esc(o.componente||'')}</td>
+   <td>${esc(o.tema||'')}</td>
+   <td>${esc(o.articulo||o.norma||'')}</td>
+   <td><textarea oninput="updObsNota('${o.id}','${o.source}',this.value)">${esc(o.source==='req' ? (o.correccion||o.observacion||'') : (o.observacion||''))}</textarea></td>
+   <td class="obs-image-cell-v53">${o.source==='obs'?`<div class="image-tools-v53"><input type="file" accept="image/*" onchange="setObsImageV53('${o.id}',this)"><div class="paste-zone-v53" contenteditable="true" onpaste="pasteObsImageV53('${o.id}',event)">Pegar captura aquí</div>${o.imagen?`<img src="${esc(o.imagen)}"><button type="button" class="secondary mini-btn" onclick="clearObsImageV53('${o.id}')">Quitar imagen</button>`:''}</div>`:'<span class="mini">No aplica</span>'}</td>
+   <td>${o.source==='obs'?`<button class="danger" onclick="quitarObs('${o.id}')">Quitar</button>`:'<span class="mini">Requisito</span>'}</td>
+ </tr>`).join('')}</tbody></table>`;
+}
+function selectedObsTable(){
+ const rows=combinedObsRows();
+ if(!rows.length) return '<p>No se registran observaciones técnicas.</p>';
+ return `<table><thead><tr><th>Nro.</th><th>Código</th><th>Componente</th><th>Tema</th><th>Artículo / Norma</th><th>Observación</th><th>Imagen</th></tr></thead><tbody>${rows.map((o,i)=>`<tr>
+   <td>${i+1}</td>
+   <td>${esc(o.codigo||'')}</td>
+   <td>${esc(o.componente||'')}</td>
+   <td>${esc(o.tema||'')}</td>
+   <td>${esc(o.articulo||o.norma||'')}</td>
+   <td>${esc(o.source==='req' ? (o.correccion||o.observacion||'') : (o.observacion||''))}</td>
+   <td>${o.imagen?`<img class="report-obs-img-v53" src="${esc(o.imagen)}">`:''}</td>
+ </tr>`).join('')}</tbody></table>`;
+}
+function textosTecnicosSection(){
+ if(!state.mostrarTextosTecnicos) return '';
+ const rows=combinedObsRows().map((o,i)=>({num:i+1, codigo:o.codigo||'', componente:o.componente||'', articulo:o.articulo||o.norma||'', texto:o.texto||''})).filter(o=>String(o.texto||'').trim());
+ if(!rows.length) return '';
+ return `<h2>Sustento técnico de las observaciones</h2><p>Los siguientes textos técnicos corresponden a los artículos de la Ordenanza No. 016-2023 relacionados con cada observación.</p><table class="tech-note-table"><thead><tr><th>Nro. obs.</th><th>Código / artículo</th><th>Texto del artículo</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.num}</td><td>${esc(r.codigo)}<br>${esc(r.articulo)}<br>${esc(r.componente)}</td><td>${esc(r.texto)}</td></tr>`).join('')}</tbody></table>`;
+}
+window.addEventListener('load',()=>{
+  loadOrdenanzaArticulosV52().then(()=>{
+    if(document.getElementById('observacionesForm')) {
+      try{ renderObservacionesForm(); }catch(e){ console.warn('No se pudo renderizar Observaciones V53', e); }
     }
   });
 });
