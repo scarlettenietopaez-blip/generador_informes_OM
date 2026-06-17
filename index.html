@@ -671,6 +671,17 @@
   .info-row-v49,.info-row-v49.three{grid-template-columns:1fr}
 }
 
+
+/* ===== V50 ajustes visuales listas PARR/ZONA ===== */
+.catastral-line-v49 select{
+  text-align:left!important;
+  text-align-last:left!important;
+  padding-left:8px!important;
+}
+.catastral-line-v49 select option{
+  text-align:left!important;
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -5013,6 +5024,93 @@ window.addEventListener('load',()=>{
   setTimeout(regroupInfoGeneralV49,1500);
   setTimeout(regroupInfoGeneralV49,3000);
 });
+</script>
+
+
+<script>
+/* ==========================================================
+   V50 - Selects PARR/ZONA:
+   - La lista muestra código + nombre.
+   - El recuadro cerrado muestra solo el código.
+   - Se elimina PARR/ZONA como opción seleccionable.
+   - Texto alineado a la izquierda.
+   ========================================================== */
+function optionTextV50(type, row){
+  if(type==='parro'){
+    const val=String(row.parro||'').padStart(2,'0');
+    return `${val}-${row.parroquia||''}`;
+  }
+  const val=String(row.zona||'').padStart(3,'0');
+  return `${val}-${row.zonaNombre||('Zona '+val)}`;
+}
+function parroquiasOptionsV49(selected){
+  ensureCatDBV46();
+  const sel=String(selected||'').padStart(2,'0');
+  const seen={};
+  const rows=(DATA.catastralBase||[]).filter(r=>{
+    const val=String(r.parro||'').padStart(2,'0');
+    if(!val || seen[val]) return false;
+    seen[val]=true;
+    return true;
+  }).sort((a,b)=>String(a.parro).localeCompare(String(b.parro)));
+  return `<option value="" data-full=""></option>` + rows.map(r=>{
+    const val=String(r.parro).padStart(2,'0');
+    const full=optionTextV50('parro',r);
+    const txt=(val===sel ? val : full);
+    return `<option value="${esc(val)}" data-full="${esc(full)}" ${val===sel?'selected':''}>${esc(txt)}</option>`;
+  }).join('');
+}
+function zonasOptionsV49(parro, selected){
+  ensureCatDBV46();
+  const p=String(parro||'').padStart(2,'0');
+  const sel=String(selected||'').padStart(3,'0');
+  const rows=(DATA.catastralBase||[]).filter(r=>String(r.parro||'').padStart(2,'0')===p)
+    .sort((a,b)=>String(a.zona).localeCompare(String(b.zona)));
+  return `<option value="" data-full=""></option>` + rows.map(r=>{
+    const val=String(r.zona).padStart(3,'0');
+    const full=optionTextV50('zona',r);
+    const txt=(val===sel ? val : full);
+    return `<option value="${esc(val)}" data-full="${esc(full)}" ${val===sel?'selected':''}>${esc(txt)}</option>`;
+  }).join('');
+}
+function setSelectModeV50(sel, open){
+  if(!sel) return;
+  [...sel.options].forEach(op=>{
+    if(!op.value){
+      op.textContent='';
+      return;
+    }
+    const full=op.dataset.full || op.textContent;
+    op.dataset.full=full;
+    op.textContent = open ? full : (op.selected ? op.value : full);
+  });
+}
+function bindSelectVisualV50(sel){
+  if(!sel || sel.dataset.v50Bound==='1') return;
+  sel.dataset.v50Bound='1';
+  sel.style.textAlign='left';
+  sel.style.textAlignLast='left';
+  sel.addEventListener('mousedown',()=>setSelectModeV50(sel,true));
+  sel.addEventListener('focus',()=>setSelectModeV50(sel,true));
+  sel.addEventListener('keydown',()=>setSelectModeV50(sel,true));
+  sel.addEventListener('change',()=>setTimeout(()=>setSelectModeV50(sel,false),0));
+  sel.addEventListener('blur',()=>setSelectModeV50(sel,false));
+  setSelectModeV50(sel,false);
+}
+const _bindCatastralPanelV36_base_V50 = typeof bindCatastralPanelV36==='function' ? bindCatastralPanelV36 : null;
+bindCatastralPanelV36 = function(f){
+  if(_bindCatastralPanelV36_base_V50) _bindCatastralPanelV36_base_V50(f);
+  bindSelectVisualV50(document.getElementById('catParro'));
+  bindSelectVisualV50(document.getElementById('catZona'));
+};
+const _renderInfoForm_base_V50 = typeof renderInfoForm==='function' ? renderInfoForm : null;
+renderInfoForm = function(){
+  if(_renderInfoForm_base_V50) _renderInfoForm_base_V50();
+  setTimeout(()=>{
+    bindSelectVisualV50(document.getElementById('catParro'));
+    bindSelectVisualV50(document.getElementById('catZona'));
+  },0);
+};
 </script>
 
 </body>
