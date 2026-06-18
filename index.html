@@ -928,268 +928,58 @@
 }
 
 
-/* ===== V56 correcciones base manual, favoritas, subsanación y aprobatorio ===== */
-.fav-item-v56{
-  display:grid;
-  grid-template-columns:1fr auto;
-  gap:10px;
-  align-items:center;
+/* ===== V56 botón único PIT + favoritos desmarcables ===== */
+.pit-header-v56{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
 }
-.fav-item-v56 .fav-actions-v56{
-  display:flex;
-  gap:6px;
-  justify-content:flex-end;
-  align-items:center;
-  white-space:nowrap;
+.pit-header-v56 .pit-title-v56{
+  flex:1;
 }
-.manual-db-v56 table{
-  table-layout:fixed;
-  width:100%;
-}
-.manual-db-v56 th:nth-child(1){width:50px}
-.manual-db-v56 th:nth-child(2){width:160px}
-.manual-db-v56 th:nth-child(5){width:170px}
-.apr-note-v56{
-  border:1px solid #d5e0ee;
-  background:#f8fbff;
-  border-radius:12px;
-  padding:10px;
-  margin-bottom:12px;
-}
-.apr-note-v56 textarea{
-  min-height:90px;
-}
-@media(max-width:800px){
-  .fav-item-v56{grid-template-columns:1fr}
-  .fav-item-v56 .fav-actions-v56{justify-content:flex-start}
-}
-
-
-/* ===== V57 compactación visual, PIT colapsable y correcciones informe ===== */
-header p, .header p, .topbar p, .hero p{
-  display:none!important;
-}
-.tools-note:empty,
-.mini:empty{
-  display:none!important;
-}
-.card{
-  border-color:#b8c9dc!important;
-  background:#fbfdff!important;
-  box-shadow:0 8px 20px rgba(10,35,65,.07)!important;
-}
-.info-block-v49,
-.info-block-v48,
-.info-block-v47,
-.info-block-v56,
-.info-block-v57,
-.anteproyecto-box,
-.catastral-panel-v49,
-.apr-note-v56{
-  background:#f4f8fc!important;
-  border:1.5px solid #aebfd2!important;
-}
-.section-title{
-  background:#eef4fb!important;
-  border-left-width:4px!important;
-  padding:9px 11px!important;
-  font-size:14px!important;
-}
-label{
-  font-size:11px!important;
-}
-button,.button-label button{
-  font-size:11px!important;
-  padding:8px 10px!important;
+.pit-toggle-v56{
+  width:auto!important;
+  min-width:78px!important;
+  border:0!important;
   border-radius:9px!important;
-}
-input,select,textarea{
-  font-size:13px!important;
-}
-.side-actions{
-  grid-template-columns:1fr 1fr!important;
-}
-.side-actions button:nth-of-type(1),
-.side-actions button:nth-of-type(4){
-  display:none!important;
-}
-.side-actions-title{
+  background:#e8eef6!important;
+  color:#082b4c!important;
   font-size:11px!important;
-  grid-column:1 / -1;
+  font-weight:900!important;
+  padding:7px 10px!important;
+  cursor:pointer!important;
 }
-#fechaSubsanacionWrap label{
-  font-size:10px!important;
-  line-height:1.1!important;
+#pitDetailCardV41.pit-collapsed-v56 #pitDetailContentV41{
+  display:none!important;
 }
-#fechaSubsanacionWrap .mini{
-  font-size:10.5px!important;
-  line-height:1.1!important;
-}
-.subsanacion-5dias-v55{
-  font-size:10.5px!important;
-  margin-top:3px!important;
-}
-#pitDetailCardV41{
-  margin-top:14px!important;
-}
-#pitDetailCardV41 .section-title{
-  display:flex!important;
-  justify-content:space-between!important;
-  align-items:center!important;
-}
-.pit-toggle-v57{
-  border:0!important;
-  background:#dfeaf5!important;
-  color:#0b2b4c!important;
+.star-btn-v56{
+  border:1px solid #eab308!important;
+  background:#fff8d6!important;
+  color:#92400e!important;
+  border-radius:999px!important;
   width:auto!important;
-  font-size:10px!important;
-  padding:5px 8px!important;
+  min-width:36px!important;
+  padding:6px 10px!important;
+  font-weight:900!important;
+  font-size:15px!important;
+  line-height:1!important;
 }
-#pitDetailCardV41.collapsed-v57 #pitDetailContentV41{
-  display:none!important;
+.star-btn-v56.active{
+  background:#facc15!important;
+  color:#111827!important;
+  border-color:#ca8a04!important;
 }
-.pit-pill,
-.geo-status-v42,
-.pit-geo-note-v43,
-.pit-map-note-v44,
-.pit-map-caption-v43,
-#pitCoordToolsV42 .geo-status-v42{
-  display:none!important;
+.star-btn-v56:disabled{
+  opacity:.55;
+  cursor:not-allowed!important;
 }
-.pit-map-actions-v44{
-  margin-top:0!important;
-}
-.fav-box-v55{
-  margin:8px 0!important;
-  padding:8px!important;
-}
-.fav-box-v55 h3{
-  font-size:13px!important;
-}
-.fav-list-v55{
-  gap:6px!important;
-}
-.fav-item-v57{
-  display:grid;
-  grid-template-columns:1fr auto;
-  gap:8px;
-  align-items:center;
-  padding:7px 8px!important;
-}
-.fav-item-v57 .fav-actions-v57{
-  display:flex;
-  gap:5px;
-  justify-content:flex-end;
-}
-.obs-selected-v55 th:nth-child(6),
-.obs-selected-v55 td:nth-child(6){
-  width:88px!important;
-}
-.obs-selected-v55 th:nth-child(7),
-.obs-selected-v55 td:nth-child(7){
-  width:88px!important;
-}
-.obs-action-stack-v57{
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  align-items:center;
-}
-.star-btn-v55.saved-v57,
-.star-btn-v55.is-saved,
-.star-btn-v55.saved{
-  background:#f59e0b!important;
-  color:#fff!important;
-  border-color:#d97706!important;
-}
-.manual-db-v57 table{
-  table-layout:fixed;
-  width:100%;
-}
-.manual-db-v57 th:nth-child(1){width:48px}
-.manual-db-v57 th:nth-child(2){width:170px}
-.manual-db-v57 th:nth-child(5){width:170px}
-.no-print .note-box,
-.no-print .mini{
-  line-height:1.22;
-}
-#tab-req > .note-box,
-#tab-obs .note-box{
-  display:none!important;
-}
-.apr-note-v56 .mini,
-.anteproyecto-box > .mini,
-#toggleTextosTecnicos + .mini,
-#toggleNotaPreConclusiones + .mini{
-  display:none!important;
-}
-@media(max-width:800px){
-  .fav-item-v57{grid-template-columns:1fr}
-  .fav-item-v57 .fav-actions-v57{justify-content:flex-start}
-}
-
-
-/* ===== V58 PIT visible, favoritas integradas y CSV tildes ===== */
-#pitDetailCardV41{
-  padding:14px!important;
-}
-#pitDetailCardV41 h2,
-#pitDetailCardV41 .section-title{
-  display:flex!important;
-  justify-content:space-between!important;
-  align-items:center!important;
-  margin-bottom:10px!important;
-}
-#pitDetailContentV41,
-.pit-detail-content-v58{
-  display:block;
-  font-size:12px;
-  color:#23364d;
-}
-#pitDetailCardV41.collapsed-v58 #pitDetailContentV41{
-  display:none!important;
-}
-#pitDetailCardV41:not(.collapsed-v58) #pitDetailContentV41{
-  display:block!important;
-}
-#pitDetailCardV41.collapsed-v57:not(.collapsed-v58) #pitDetailContentV41{
-  display:block!important;
-}
-.pit-toggle-v58{
-  border:0!important;
-  background:#dfeaf5!important;
-  color:#0b2b4c!important;
-  width:auto!important;
-  font-size:10px!important;
-  padding:5px 8px!important;
-  border-radius:8px!important;
-  cursor:pointer;
-}
-.favorite-row-v58 td{
-  background:#fffdfa!important;
-  border-top:1px solid #eadb95!important;
-  border-bottom:1px solid #eadb95!important;
-}
-.favorite-badge-v58{
-  display:inline-block;
-  font-size:10.5px;
-  font-weight:900;
+.catalog-ordenanza-v56 th:nth-child(3){width:72px}
+.catalog-ordenanza-v56 th:nth-child(4){width:90px}
+.fav-status-v56{
+  font-size:11px;
   color:#92400e;
-  background:#fff7cc;
-  border:1px solid #facc15;
-  border-radius:999px;
-  padding:2px 6px;
-  margin-bottom:4px;
-}
-.favorite-obs-v58{
-  font-size:12px;
-  color:#111827;
-  margin-top:5px;
-  padding-top:5px;
-  border-top:1px dashed #e2e8f0;
-}
-#favoritasObsV55{
-  display:none!important;
+  margin-top:3px;
 }
 
 </style>
@@ -1212,7 +1002,7 @@ input,select,textarea{
 
 <header class="no-print">
   <h1>Generador Local de Informes de Obras Mayores</h1>
-  <p><br><span id="dataSourceStatus">Fuente de datos: verificando CSV...</span></p>
+  <p>Formulario local con guardado por Nro. eGOB, generación de informe con observaciones o aprobatorio e impresión en PDF.<br><span id="dataSourceStatus">Fuente de datos: verificando CSV...</span></p>
 </header>
 
 
@@ -1222,11 +1012,11 @@ input,select,textarea{
       <div class="card">
         <h2>1. Identificación del informe</h2>
         <div class="field"><label>Nro. eGOB Principal *</label><input id="egob" inputmode="numeric" placeholder="Ej.: 1157249" /></div>
-        <div class="field"><label>Técnico revisor *</label><input id="tecnico" list="listaTecnicos" placeholder="Buscar o escribir nombre" /><datalist id="listaTecnicos"></datalist><div class="tools-note mini"></div></div>
+        <div class="field"><label>Técnico revisor *</label><input id="tecnico" list="listaTecnicos" placeholder="Buscar o escribir nombre" /><datalist id="listaTecnicos"></datalist><div class="tools-note mini">Solo se permitirá guardar si coincide con la hoja Técnicos.</div></div>
         <div class="field"><label>Tipo de informe *</label><select id="tipoInforme"><option value="">Seleccione...</option><option>Informe con Observaciones</option><option>Informe Técnico Aprobatorio</option></select></div>
         <div class="row" id="dateRow">
           <div class="field" id="fechaRevisionWrap"><label id="fechaRevisionLabel">Fecha de revisión *</label><input type="date" id="fechaRevision" /><div class="mini" id="fechaRevisionNote"></div></div>
-          <div class="field" id="fechaSubsanacionWrap"><label>F. máx. subsanación *</label><input type="date" id="fechaSubsanacion" /><div class="mini">Calcula automáticamente 10 días laborables</div></div>
+          <div class="field" id="fechaSubsanacionWrap"><label>Fecha máxima de subsanación *</label><input type="date" id="fechaSubsanacion" /><div class="mini">Se calcula automáticamente 10 días laborables desde la revisión, pero puede editarse.</div></div>
         </div>
         <div class="side-actions">
           <div class="side-actions-title">Acciones del informe</div>
@@ -2042,7 +1832,7 @@ function updateCSVStatusV32(){
   const el = document.getElementById('dataSourceStatus');
   if(!el) return;
   if(window.__CSV_STATUS__.ok){
-    el.textContent = '';
+    el.textContent = 'Fuente de datos: CSV cargados desde carpeta data';
     el.style.color = '#d8ffd8';
   }else{
     el.textContent = 'Fuente de datos: base interna del HTML';
@@ -6541,7 +6331,7 @@ function insertSubsanacion5DiasV55(){
   if(!wrap || document.getElementById('calc5DiasSubsanacionV55')) return;
   const div=document.createElement('label');
   div.className='subsanacion-5dias-v55';
-  div.innerHTML=`<input type="checkbox" id="calc5DiasSubsanacionV55"> Segunda observación`;
+  div.innerHTML=`<input type="checkbox" id="calc5DiasSubsanacionV55"> Calcular 5 días laborables (segunda observación)`;
   wrap.appendChild(div);
   const cb=document.getElementById('calc5DiasSubsanacionV55');
   cb.checked=!!state.fechaSubsanacionCincoDias;
@@ -6918,812 +6708,162 @@ window.addEventListener('load',()=>{
 
 <script>
 /* ==========================================================
-   V56 - Correcciones solicitadas
+   V56 - Un solo botón para PIT y estrella favorita desmarcable
    ========================================================== */
-function ensureV56State(){
-  if(!state.aprobatorio) state.aprobatorio={};
-  if(!state.aprobatorio.notaPreConclusiones) state.aprobatorio.notaPreConclusiones={activo:false,texto:''};
+function normalizeFavTextV56(v){
+  return String(v||'').replace(/\s+/g,' ').trim().toUpperCase();
 }
-
-/* 1) Al desmarcar 5 días, vuelve a 10 días laborables */
-function patchSubsanacion5DiasV56(){
-  const cb=document.getElementById('calc5DiasSubsanacionV55');
-  if(!cb || cb.dataset.v56Patched==='1') return;
-  cb.dataset.v56Patched='1';
-  cb.addEventListener('change',()=>{
-    ensureV55State();
-    if(!cb.checked){
-      collectTop();
-      state.fechaSubsanacionCincoDias=false;
-      const val=addBusinessDays(state.fechaRevision||today(),10);
-      const fs=document.getElementById('fechaSubsanacion');
-      if(fs) fs.value=val;
-      state.fechaSubsanacion=val;
-      state.fechaSubsanacionManual=false;
-      updateAll();
-      msg('Fecha máxima de subsanación calculada a 10 días laborables.', true);
-    }
-  });
+function favMatchV56(f, articulo, observacion){
+  const sameArt=normalizeFavTextV56(f.articulo)===normalizeFavTextV56(articulo);
+  if(observacion===undefined || observacion===null) return sameArt;
+  return sameArt && normalizeFavTextV56(f.observacion)===normalizeFavTextV56(observacion);
 }
-const _insertSubsanacion5DiasV55_base_V56 = typeof insertSubsanacion5DiasV55==='function' ? insertSubsanacion5DiasV55 : null;
-insertSubsanacion5DiasV55 = function(){
-  if(_insertSubsanacion5DiasV55_base_V56) _insertSubsanacion5DiasV55_base_V56();
-  patchSubsanacion5DiasV56();
-};
-window.addEventListener('load',()=>setTimeout(patchSubsanacion5DiasV56,500));
-
-/* 2) Base manual visible y con opción de favorita */
-function manualToFavoriteV56(id){
-  if(!db){msg('La base local aún no está lista.');return;}
-  manualObsGet(id).then(o=>{
-    if(!o){msg('No se encontró la observación manual.');return;}
-    const fav={
-      id:crypto.randomUUID(),
-      articulo:o.articulo||o.norma||'',
-      texto:o.texto||'',
-      observacion:o.observacion||'',
-      createdAt:new Date().toISOString()
-    };
-    const arr=getFavoritesV55().filter(x=>!(x.articulo===fav.articulo && x.observacion===fav.observacion));
-    arr.unshift(fav);
-    setFavoritesV55(arr);
-    renderFavoritesV55();
-    msg('Observación manual guardada como favorita.', true);
-  });
+function findFavoriteV56(articulo, observacion){
+  return getFavoritesV55().find(f=>favMatchV56(f, articulo, observacion)) || null;
 }
-function openManualObsDBV56(){
-  const panel=document.getElementById('manualObsPanel');
-  if(panel) panel.classList.remove('collapsed');
-  renderManualObsDB();
-  setTimeout(()=>{
-    const dbBox=document.getElementById('manualObsDB');
-    if(dbBox) dbBox.scrollIntoView({behavior:'smooth',block:'start'});
-  },80);
+function isArticleFavoritedV56(articulo){
+  return !!findFavoriteV56(articulo, null);
 }
-function patchManualButtonsV56(){
-  document.querySelectorAll('button').forEach(btn=>{
-    const txt=(btn.textContent||'').trim().toUpperCase();
-    if(txt==='VER BASE MANUAL'){
-      btn.onclick=openManualObsDBV56;
-    }
-  });
-}
-function renderManualObsDB(){
- const box=document.getElementById('manualObsDB'); 
- if(!box) return;
- if(!db){ box.innerHTML='<p class="mini" style="padding:10px">La base local aún no está lista.</p>'; return; }
- manualObsAll().then(arr=>{
-   arr=(arr||[]).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
-   if(!arr.length){ box.innerHTML='<p class="mini" style="padding:10px">Aún no existen observaciones manuales guardadas.</p>'; return; }
-   const rows=arr.slice(0,100).map((o,i)=>`<tr>
-     <td>${i+1}</td>
-     <td>${esc(o.articulo||o.norma||'')}</td>
-     <td><div class="article-preview-v55">${esc(formatArticleTextV55(o.texto||''))}</div></td>
-     <td>${esc(o.observacion||'')}</td>
-     <td class="small-actions">
-       <button class="secondary" onclick="usarObsManualEnInforme('${esc(o.id)}')">Usar</button>
-       <button class="star-btn-v55" onclick="manualToFavoriteV56('${esc(o.id)}')">★ Favorita</button>
-       <button class="danger" onclick="eliminarObsManual('${esc(o.id)}')">Eliminar</button>
-     </td>
-   </tr>`).join('');
-   box.classList.add('manual-db-v56');
-   box.innerHTML=`<table><thead><tr><th>Nro.</th><th>Artículo</th><th>Texto del artículo</th><th>Observación específica</th><th>Acciones</th></tr></thead><tbody>${rows}</tbody></table>`;
- });
-}
-async function exportarObsManualesCSV(){
- const arr=await manualObsAll();
- if(!arr.length){ msg('No existen observaciones manuales para exportar.'); return; }
- const headers=['articulo','texto_del_articulo','observacion_especifica'];
- const lines=['sep=;'];
- lines.push(headers.map(csvCell).join(';'));
- arr.forEach(o=>lines.push([o.articulo||o.norma||'', formatArticleTextV55(o.texto||''), o.observacion||''].map(csvCell).join(';')));
- const blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
- const a=document.createElement('a'); 
- a.href=URL.createObjectURL(blob); 
- a.download='OBSERVACIONES_MANUALES_ARTICULOS_'+today()+'.csv'; 
- a.click(); 
- URL.revokeObjectURL(a.href);
-}
-
-/* 4) Favoritas con botones a la derecha */
-function renderFavoritesV55(){
-  const box=document.getElementById('favoritasObsV55');
-  if(!box) return;
-  const arr=getFavoritesV55();
-  if(!arr.length){ box.innerHTML=''; return; }
-  box.innerHTML=`<div class="fav-box-v55"><h3>★ Observaciones favoritas</h3><div class="fav-list-v55">${arr.slice(0,20).map(f=>`<div class="fav-item-v55 fav-item-v56">
-    <div>
-      <div class="meta"><strong>${esc(f.articulo||'Artículo')}</strong></div>
-      <div class="obs">${esc(f.observacion||'')}</div>
-    </div>
-    <div class="fav-actions-v56">
-      <button class="secondary" onclick="useFavoriteV55('${esc(f.id)}')">Usar</button>
-      <button class="danger" onclick="removeFavoriteV55('${esc(f.id)}')">Quitar</button>
-    </div>
-  </div>`).join('')}</div></div>`;
-}
-
-/* 5) Requisitos: Artículo/Norma con Ordenanza Nro. 016-2023 */
-function requisitoObsRows(){
- return requisitosPorEstado('No Cumple').map(r=>{
-   return {
-     id:r.id,
-     articulo:'Ordenanza Nro. 016-2023, Artículo 98',
-     norma:'Ordenanza Nro. 016-2023, Artículo 98',
-     observacion:r.texto,
-     texto:'',
-     source:'req'
-   };
- });
-}
-
-/* 8) Nota antes de conclusiones en Informe Técnico Aprobatorio */
-function renderAprobatorioNotaV56(){
-  ensureV56State();
-  return `<div class="apr-note-v56">
-    <label class="check-line"><input type="checkbox" id="toggleNotaAprobatorioV56" ${state.aprobatorio.notaPreConclusiones.activo?'checked':''}> Incluir nota antes de conclusiones</label>
-    <div class="mini">Si se activa, la nota aparecerá antes de la sección Conclusión técnica del informe aprobatorio.</div>
-    ${state.aprobatorio.notaPreConclusiones.activo?`<textarea id="notaAprobatorioTextoV56" placeholder="Escriba la nota para el informe aprobatorio">${esc(state.aprobatorio.notaPreConclusiones.texto||'')}</textarea>`:''}
-  </div>`;
-}
-const _renderAprobatorioForm_base_V56 = typeof renderAprobatorioForm==='function' ? renderAprobatorioForm : null;
-renderAprobatorioForm = function(){
-  if(_renderAprobatorioForm_base_V56) _renderAprobatorioForm_base_V56();
-  ensureV56State();
-  const box=document.getElementById('aprobatorioForm');
-  if(!box) return;
-  if(!document.getElementById('notaAprobatorioBoxV56')){
-    const div=document.createElement('div');
-    div.id='notaAprobatorioBoxV56';
-    div.innerHTML=renderAprobatorioNotaV56();
-    box.insertBefore(div, box.firstChild);
-  }else{
-    document.getElementById('notaAprobatorioBoxV56').innerHTML=renderAprobatorioNotaV56();
-  }
-  const tog=document.getElementById('toggleNotaAprobatorioV56');
-  if(tog) tog.addEventListener('change',()=>{
-    ensureV56State();
-    state.aprobatorio.notaPreConclusiones.activo=tog.checked;
-    renderAprobatorioForm();
-    renderReport(); renderPreview();
-  });
-  const txt=document.getElementById('notaAprobatorioTextoV56');
-  if(txt) txt.addEventListener('input',()=>{
-    ensureV56State();
-    state.aprobatorio.notaPreConclusiones.texto=smartInputCase(txt.value);
-    renderReport(); renderPreview();
-  });
-}
-function notaAprobatorioReportV56(){
-  ensureV56State();
-  const n=state.aprobatorio.notaPreConclusiones;
-  if(!n || !n.activo || !String(n.texto||'').trim()) return '';
-  return `<h2>Nota</h2><p>${nl2br(esc(n.texto))}</p>`;
-}
-function renderInformeAprobatorio(){
- const t=DATA.plantillaAprobatorio; 
- const title=tmplRow(t,'ENC_002').Texto_Base||tmplRow(t,'ENC_002').Título||'INFORME TÉCNICO APROBATORIO DE OBRA MAYOR'; 
- const base=tmplRow(t,'BLG_001').Texto_Base||''; 
- const con2=replaceTemplate(tmplRow(t,'CON_002').Texto_Base||'').replaceAll('{{TABLA_HOJA_CONCLUSION_TECNICA_BASE}}','');
- let n=1;
- const incumplidos=requisitosPorEstado('No Cumple');
- let alertReq=incumplidos.length?`<div class="apr-alert">ALERTA: Existen ${incumplidos.length} requisito(s) marcado(s) como NO CUMPLE. Revise la pestaña Requisitos antes de emitir el informe técnico aprobatorio.</div>`:'';
- let html=`${reportHeaderAprobatorioV55(title)}${alertReq}<h2>${n++}. Información general</h2>${reportInfoGeneralAprobatorio()}<h2>${n++}. Detalle del proyecto</h2><p>${nl2br(tmplRow(t,'INF_002').Texto_Base||'')}</p>${reqTable(requisitosPorEstado('Cumple'),'apr')}<h2>${n++}. Base técnico - legal</h2>${formatBaseTecnicoLegalAprobatorio(base)}`;
- syncAnteproyectoAuto(); 
- if(anteproyectoActivo()) html+=`<h2>${n++}. Resolución de Anteproyecto</h2>${anteproyectoReport()}`;
- html+=`<h2>${n++}. Consideraciones estructurales</h2>${aprobatorioStructuralTable()}<h2>${n++}. Estudios complementarios</h2>${estudiosReport()}${notaAprobatorioReportV56()}<h2>${n++}. Conclusión técnica</h2><p>En concordancia a lo dispuesto en la Ordenanza No. 016-2023 de Actualización del Código Urbano, <strong>Artículo 92</strong> Componentes del Proyecto Técnico de Edificación de Obras Mayores, se concluye emitir el presente <strong>INFORME TÉCNICO FAVORABLE</strong>, de conformidad al siguiente detalle:</p>${conclusionReport()}<p>${nl2br(con2)}</p>`;
- return html;
-}
-
-/* Parchear render Observaciones para que el botón Ver Base Manual abra la tabla */
-const _renderObservacionesForm_base_V56 = typeof renderObservacionesForm==='function' ? renderObservacionesForm : null;
-renderObservacionesForm = function(){
-  if(_renderObservacionesForm_base_V56) _renderObservacionesForm_base_V56();
-  setTimeout(patchManualButtonsV56,0);
-};
-window.addEventListener('load',()=>{
-  setTimeout(()=>{patchManualButtonsV56(); patchSubsanacion5DiasV56();},600);
-});
-</script>
-
-
-<script>
-/* ==========================================================
-   V57 - Correcciones visuales, mojibake, PIT colapsable y favoritos compactos
-   ========================================================== */
-function fixTextV57(v){
-  let s=String(v??'');
-  const hasMojibake=/Ã.|Â.|â€|â€œ|â€|â€“|â€¢|�/.test(s);
-  if(hasMojibake){
-    try{
-      // Reinterpretar texto mal decodificado como UTF-8 cuando venga como Latin-1.
-      s=decodeURIComponent(escape(s));
-    }catch(e){}
-  }
-  return s
-    .replace(/ArtÃ­culo/g,'Artículo')
-    .replace(/Nro\./g,'Nro.')
-    .replace(/â€¢/g,'●')
-    .replace(/Â/g,'');
-}
-function escV57(v){ return esc(fixTextV57(v)); }
-function articleNormLabelV57(ref){
-  let s=fixTextV57(ref||'').trim();
-  if(!s) return '';
-  if(/^Ordenanza\s+Nro\.\s*016-2023/i.test(s)) return s;
-  if(/^Ordenanza\s+016-2023/i.test(s)) return s.replace(/^Ordenanza\s+016-2023/i,'Ordenanza Nro. 016-2023');
-  if(/^Ordenanza/i.test(s) && /016-2023/i.test(s)) return s;
-  if(/^Art[ií]culo/i.test(s)) return 'Ordenanza Nro. 016-2023, '+s;
-  const n=(s.match(/\d+/)||[''])[0];
-  if(n && s.length<=5) return 'Ordenanza Nro. 016-2023, Artículo '+n;
-  return s;
-}
-function formatArticleTextV55(text){
-  return fixTextV57(text)
-    .replace(/\s*●\s*/g,'\n● ')
-    .replace(/\n{3,}/g,'\n\n')
-    .trim();
-}
-function obsSpecificV55(o){
-  if(o.source==='req') return fixTextV57(o.observacion || o.texto || 'Requisito documental no cumplido');
-  return fixTextV57(o.observacion || '');
-}
-function isFavoriteObsV57(o){
-  const arr=getFavoritesV55();
-  const art=articleNormLabelV57(o.articulo||o.norma||'');
-  const obs=String(o.observacion||'').trim();
-  return arr.some(f=>articleNormLabelV57(f.articulo||'')===art && String(f.observacion||'').trim()===obs);
-}
-
-/* 1) Desmarcar 5 días => 10 días */
-function patchSubsanacionV57(){
-  const cb=document.getElementById('calc5DiasSubsanacionV55');
-  if(!cb || cb.dataset.v57Patched==='1') return;
-  cb.dataset.v57Patched='1';
-  cb.addEventListener('change',()=>{
-    ensureV55State();
-    collectTop();
-    state.fechaSubsanacionCincoDias=cb.checked;
-    const days=cb.checked?5:10;
-    const val=addBusinessDays(state.fechaRevision||today(),days);
-    const fs=document.getElementById('fechaSubsanacion');
-    if(fs) fs.value=val;
-    state.fechaSubsanacion=val;
-    state.fechaSubsanacionManual=!!cb.checked;
-    updateAll();
-  });
-}
-const _insertSubsanacion5DiasV55_base_V57 = typeof insertSubsanacion5DiasV55==='function' ? insertSubsanacion5DiasV55 : null;
-insertSubsanacion5DiasV55 = function(){
-  if(_insertSubsanacion5DiasV55_base_V57) _insertSubsanacion5DiasV55_base_V57();
-  const lbl=document.querySelector('label.subsanacion-5dias-v55');
-  if(lbl){
-    const input=lbl.querySelector('input');
-    lbl.innerHTML='';
-    if(input) lbl.appendChild(input);
-    lbl.appendChild(document.createTextNode(' Segunda observación'));
-  }
-  patchSubsanacionV57();
-};
-
-/* 2) Base manual con codificación corregida, exportación y favoritas */
-function manualToFavoriteV57(id){
-  if(!db){msg('La base local aún no está lista.');return;}
-  manualObsGet(id).then(o=>{
-    if(!o){msg('No se encontró la observación manual.');return;}
-    const fav={
-      id:crypto.randomUUID(),
-      articulo:articleNormLabelV57(o.articulo||o.norma||''),
-      texto:formatArticleTextV55(o.texto||''),
-      observacion:fixTextV57(o.observacion||''),
-      createdAt:new Date().toISOString()
-    };
-    const arr=getFavoritesV55().filter(x=>!(articleNormLabelV57(x.articulo||'')===fav.articulo && String(x.observacion||'').trim()===fav.observacion));
-    arr.unshift(fav);
-    setFavoritesV55(arr);
-    renderFavoritesV55();
-    msg('Observación manual guardada como favorita.', true);
-  });
-}
-function openManualObsDBV57(){
-  const panel=document.getElementById('manualObsPanel');
-  if(panel) panel.classList.remove('collapsed');
-  renderManualObsDB();
-  setTimeout(()=>{
-    const dbBox=document.getElementById('manualObsDB');
-    if(dbBox) dbBox.scrollIntoView({behavior:'smooth',block:'start'});
-  },80);
-}
-function renderManualObsDB(){
- const box=document.getElementById('manualObsDB'); 
- if(!box) return;
- if(!db){ box.innerHTML='<p class="mini" style="padding:10px">La base local aún no está lista.</p>'; return; }
- manualObsAll().then(arr=>{
-   arr=(arr||[]).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
-   if(!arr.length){ box.innerHTML='<p class="mini" style="padding:10px">Aún no existen observaciones manuales guardadas.</p>'; return; }
-   const rows=arr.slice(0,100).map((o,i)=>`<tr>
-     <td>${i+1}</td>
-     <td>${escV57(articleNormLabelV57(o.articulo||o.norma||''))}</td>
-     <td><div class="article-preview-v55">${escV57(formatArticleTextV55(o.texto||''))}</div></td>
-     <td>${escV57(o.observacion||'')}</td>
-     <td class="small-actions">
-       <button class="secondary" onclick="usarObsManualEnInforme('${esc(o.id)}')">Usar</button>
-       <button class="star-btn-v55" onclick="manualToFavoriteV57('${esc(o.id)}')">★</button>
-       <button class="danger" onclick="eliminarObsManual('${esc(o.id)}')">Eliminar</button>
-     </td>
-   </tr>`).join('');
-   box.classList.add('manual-db-v57');
-   box.innerHTML=`<table><thead><tr><th>Nro.</th><th>Artículo</th><th>Texto del artículo</th><th>Observación específica</th><th>Acciones</th></tr></thead><tbody>${rows}</tbody></table>`;
- });
-}
-async function exportarObsManualesCSV(){
- const arr=await manualObsAll();
- if(!arr.length){ msg('No existen observaciones manuales para exportar.'); return; }
- const headers=['articulo','texto_del_articulo','observacion_especifica'];
- const lines=['sep=;'];
- lines.push(headers.map(csvCell).join(';'));
- arr.forEach(o=>lines.push([articleNormLabelV57(o.articulo||o.norma||''), formatArticleTextV55(o.texto||''), fixTextV57(o.observacion||'')].map(csvCell).join(';')));
- const blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
- const a=document.createElement('a'); 
- a.href=URL.createObjectURL(blob); 
- a.download='OBSERVACIONES_MANUALES_ARTICULOS_'+today()+'.csv'; 
- a.click(); 
- URL.revokeObjectURL(a.href);
-}
-function patchManualButtonsV57(){
-  document.querySelectorAll('button').forEach(btn=>{
-    const txt=(btn.textContent||'').trim().toUpperCase();
-    if(txt==='VER BASE MANUAL') btn.onclick=openManualObsDBV57;
-  });
-}
-
-/* 3) Favoritas al inicio, compactas y a la derecha */
-function renderFavoritesV55(){
-  const box=document.getElementById('favoritasObsV55');
-  if(!box) return;
-  const arr=getFavoritesV55();
-  if(!arr.length){ box.innerHTML=''; return; }
-  box.innerHTML=`<div class="fav-box-v55"><h3>★ Favoritas</h3><div class="fav-list-v55">${arr.slice(0,20).map(f=>`<div class="fav-item-v55 fav-item-v57">
-    <div>
-      <div class="meta"><strong>${escV57(articleNormLabelV57(f.articulo||'Artículo'))}</strong></div>
-      <div class="obs">${escV57(f.observacion||'')}</div>
-    </div>
-    <div class="fav-actions-v57">
-      <button class="secondary" onclick="useFavoriteV55('${esc(f.id)}')">Usar</button>
-      <button class="danger" onclick="removeFavoriteV55('${esc(f.id)}')">Quitar</button>
-    </div>
-  </div>`).join('')}</div></div>`;
-}
-function saveFavoriteV55(id){
-  const o=state.obsSeleccionadas.find(x=>x.id===id);
-  if(!o){msg('No se encontró la observación.');return;}
-  const obs=(o.observacion||'').trim();
-  if(!obs){msg('Escriba primero la Observación Específica antes de marcarla como favorita.');return;}
-  const fav={
-    id:crypto.randomUUID(),
-    articulo:articleNormLabelV57(o.articulo||o.norma||''),
-    texto:formatArticleTextV55(o.texto||''),
-    observacion:fixTextV57(obs),
-    createdAt:new Date().toISOString()
-  };
-  const arr=getFavoritesV55().filter(x=>!(articleNormLabelV57(x.articulo||'')===fav.articulo && String(x.observacion||'').trim()===fav.observacion));
-  arr.unshift(fav);
-  setFavoritesV55(arr);
+function removeFavoritesByArticleV56(articulo){
+  const before=getFavoritesV55();
+  const after=before.filter(f=>!favMatchV56(f, articulo, null));
+  setFavoritesV55(after);
   renderFavoritesV55();
+  renderCatalogoObs();
   renderObsSeleccionadas();
-  msg('Observación guardada como favorita.', true);
+  msg('Favorito desmarcado.', true);
 }
-
-/* 4) Observaciones: Artículo/Norma siempre con Ordenanza y botones Favorita/Quitar en una columna */
-function requisitoObsRows(){
- return requisitosPorEstado('No Cumple').map(r=>{
-   return {
-     id:r.id,
-     articulo:'Ordenanza Nro. 016-2023, Artículo 98',
-     norma:'Ordenanza Nro. 016-2023, Artículo 98',
-     observacion:fixTextV57(r.texto),
-     texto:'',
-     source:'req'
-   };
- });
-}
-function renderCatalogoObs(){
- ensureOrdenanzaV52();
- const box=document.getElementById('catalogoObs');
- if(!box) return;
- if(!DATA.ordenanzaArticulos.length){ box.innerHTML='<p class="mini">Cargando artículos...</p>'; return; }
- const q=normSearchV52(document.getElementById('obsBuscar')?.value||'');
- let rows=DATA.ordenanzaArticulos.filter(a=>{
-   if(!q) return true;
-   return normSearchV52(`${a.Articulo} ${fixTextV57(a.Texto_Articulo)}`).includes(q);
- });
- const total=rows.length;
- rows=rows.slice(0,80);
- const aviso=total>80?`<div class="catalog-limit-v52">Se muestran 80 de ${total} artículos encontrados.</div>`:`<div class="catalog-limit-v52">${total} artículo(s) encontrado(s).</div>`;
- box.innerHTML=`${aviso}<table><thead><tr><th>Artículo</th><th>Texto del artículo</th><th>Acción</th></tr></thead><tbody>${rows.map(a=>`<tr>
-   <td>${escV57(articleNormLabelV57(a.Articulo))}</td>
-   <td><div class="article-preview-v55">${escV57(formatArticleTextV55(a.Texto_Articulo))}</div></td>
-   <td><button class="secondary" onclick="agregarArticuloOrdenanzaV52('${esc(a.Codigo)}')">Agregar</button></td>
- </tr>`).join('') || '<tr><td colspan="3">No hay coincidencias.</td></tr>'}</tbody></table>`;
-}
-function agregarArticuloOrdenanzaV52(code){
- ensureOrdenanzaV52();
- const a=DATA.ordenanzaArticulos.find(x=>x.Codigo===code);
- if(!a){msg('No se encontró el artículo seleccionado.');return;}
- state.obsSeleccionadas.push({
-   id:crypto.randomUUID(),
-   articulo:articleNormLabelV57(a.Articulo||''),
-   texto:formatArticleTextV55(a.Texto_Articulo||''),
-   observacion:'',
-   norma:articleNormLabelV57(a.Articulo||''),
-   source:'obs',
-   ordenanza:true,
-   imagen:''
- });
- renderObsSeleccionadas(); renderReport(); renderPreview();
- msg('Artículo agregado. Complete Observación Específica e Imagen en la tabla inferior.', true);
- const target=document.getElementById('obsSeleccionadas');
- if(target) target.scrollIntoView({behavior:'smooth', block:'start'});
-}
-function renderObsSeleccionadas(){
- const box=document.getElementById('obsSeleccionadas'); if(!box) return;
- const rows=combinedObsRows();
- if(!rows.length){box.innerHTML='<p class="mini">Aún no se han seleccionado observaciones y no existen requisitos marcados como No Cumple.</p>';return;}
- box.innerHTML=`<div class="obs-selected-note-v54">Complete la Observación Específica y agregue imagen si aplica.</div><table><thead><tr><th>Nro.</th><th>Artículo</th><th>Texto del artículo</th><th>Observación específica</th><th>Imagen</th><th>Acciones</th></tr></thead><tbody>${rows.map((o,idx)=>{
-   const fav=isFavoriteObsV57(o);
-   return `<tr>
-   <td>${idx+1}</td>
-   <td>${escV57(articleNormLabelV57(o.articulo||o.norma||''))}</td>
-   <td><div class="article-preview-v55">${escV57(formatArticleTextV55(o.texto||''))}</div></td>
-   <td><textarea placeholder="Escriba la observación específica" oninput="updObsNota('${o.id}','${o.source}',this.value)">${escV57(obsSpecificV55(o))}</textarea></td>
-   <td class="obs-image-cell-v55">${o.source==='obs'?`<div class="image-tools-v53"><input type="file" accept="image/*" onchange="setObsImageV53('${o.id}',this)"><div class="paste-zone-v53" contenteditable="true" onpaste="pasteObsImageV53('${o.id}',event)">Pegar captura aquí</div>${o.imagen?`<img src="${esc(o.imagen)}"><button type="button" class="secondary mini-btn" onclick="clearObsImageV53('${o.id}')">Quitar imagen</button>`:''}</div>`:'<span class="mini">No aplica</span>'}</td>
-   <td><div class="obs-action-stack-v57">${o.source==='obs'?`<button type="button" class="star-btn-v55 ${fav?'saved-v57':''}" onclick="saveFavoriteV55('${o.id}')">★</button><button class="danger" onclick="quitarObs('${o.id}')">Quitar</button>`:'<span class="mini">Requisito</span>'}</div></td>
- </tr>`}).join('')}</tbody></table>`;
-}
-function selectedObsTable(){
- const rows=combinedObsRows();
- if(!rows.length) return '<p>No se registran observaciones técnicas.</p>';
- return `<table class="criterio-simple-v55"><thead><tr><th>Nro.</th><th>Artículo / Norma</th><th>Observación específica</th></tr></thead><tbody>${rows.map((o,i)=>`<tr>
-   <td>${i+1}</td>
-   <td>${escV57(articleNormLabelV57(o.articulo||o.norma||''))}</td>
-   <td>${escV57(obsSpecificV55(o))}</td>
- </tr>`).join('')}</tbody></table>`;
-}
-function textosTecnicosSection(){
- if(!state.mostrarTextosTecnicos) return '';
- const rows=combinedObsRows().map((o,i)=>({num:i+1, articulo:articleNormLabelV57(o.articulo||o.norma||''), texto:formatArticleTextV55(o.texto||''), imagen:o.imagen||''})).filter(o=>String(o.texto||'').trim() || o.imagen);
- if(!rows.length) return '';
- return `<h2>Sustento técnico de las observaciones</h2><table class="tech-note-table"><thead><tr><th>Nro.</th><th>Texto del artículo</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.num}</td><td><strong>${escV57(r.articulo)}</strong><br><div class="article-text-v55">${escV57(r.texto)}</div></td></tr>${r.imagen?`<tr class="sustento-img-row-v55"><td colspan="2"><img class="sustento-img-v55" src="${esc(r.imagen)}"></td></tr>`:''}`).join('')}</tbody></table>`;
-}
-
-/* 5) Limpiar textos explicativos y botones */
-function compactUIV57(){
-  // Encabezado secundario
-  document.querySelectorAll('header p,.header p,.hero p,.topbar p').forEach(el=>el.style.display='none');
-  // Nota técnicos
-  document.querySelectorAll('.tools-note').forEach(el=>{ if((el.textContent||'').includes('Solo se permitirá')) el.remove(); });
-  // Fechas
-  document.querySelectorAll('#fechaSubsanacionWrap .mini').forEach(el=>{ if((el.textContent||'').includes('Calcula') || (el.textContent||'').includes('calcula')) el.textContent='Calcula automáticamente 10 días laborables'; });
-  const fsLabel=document.querySelector('#fechaSubsanacionWrap label');
-  if(fsLabel) fsLabel.textContent='F. máx. subsanación *';
-  const f5=document.querySelector('.subsanacion-5dias-v55');
-  if(f5){
-    const input=f5.querySelector('input');
-    f5.innerHTML='';
-    if(input) f5.appendChild(input);
-    f5.appendChild(document.createTextNode(' Segunda observación'));
-  }
-  // Acciones del informe: solo Nuevo y Guardar
-  document.querySelectorAll('.side-actions button').forEach(btn=>{
-    const t=(btn.textContent||'').trim().toUpperCase();
-    if(t==='ATRÁS' || t==='ATRAS' || t.includes('GUARDAR Y')) btn.style.display='none';
-  });
-  // Textos explicativos observaciones/aprobatorio/anteproyecto
-  document.querySelectorAll('.note-box,.mini').forEach(el=>{
-    const t=(el.textContent||'').trim();
-    if(
-      t.includes('Si se activa, el informe incluirá') ||
-      t.includes('Busque por número de artículo') ||
-      t.includes('la nota aparecerá antes') ||
-      t.includes('Active esta opción únicamente') ||
-      t.includes('Base IPRUS/PIT cargada') ||
-      t.includes('Fuente: data/iprus') ||
-      t.includes('Cuadro de ubicación del PIT') ||
-      t.includes('Al agrandar puede') ||
-      t.includes('El anteproyecto se activa automáticamente')
-    ){
-      el.style.display='none';
-    }
-  });
-}
-const _renderObservacionesForm_base_V57 = typeof renderObservacionesForm==='function' ? renderObservacionesForm : null;
-renderObservacionesForm = function(){
-  if(_renderObservacionesForm_base_V57) _renderObservacionesForm_base_V57();
-  setTimeout(()=>{renderFavoritesV55(); patchManualButtonsV57(); compactUIV57();},0);
-};
-
-/* 6) Panel PIT Mostrar/Ocultar */
-function patchPitPanelV57(){
-  const card=document.getElementById('pitDetailCardV41');
-  if(!card || card.dataset.v57Ready==='1') return;
-  card.dataset.v57Ready='1';
-  const title=card.querySelector('.section-title') || card.querySelector('h2,h3');
-  if(title){
-    const btn=document.createElement('button');
-    btn.type='button';
-    btn.className='pit-toggle-v57';
-    btn.textContent='Ocultar';
-    btn.onclick=(ev)=>{
-      ev.stopPropagation();
-      card.classList.toggle('collapsed-v57');
-      btn.textContent=card.classList.contains('collapsed-v57')?'Mostrar':'Ocultar';
-    };
-    title.appendChild(btn);
-  }
-}
-const _renderPitDetailV41_base_V57 = typeof renderPitDetailV41==='function' ? renderPitDetailV41 : null;
-renderPitDetailV41 = function(){
-  if(_renderPitDetailV41_base_V57) _renderPitDetailV41_base_V57();
-  setTimeout(()=>{patchPitPanelV57(); compactUIV57();},0);
-};
-
-/* 7) Aprobatorio: quitar texto explicativo de nota y anteproyecto */
-const _renderAprobatorioForm_base_V57 = typeof renderAprobatorioForm==='function' ? renderAprobatorioForm : null;
-renderAprobatorioForm = function(){
-  if(_renderAprobatorioForm_base_V57) _renderAprobatorioForm_base_V57();
-  setTimeout(compactUIV57,0);
-};
-
-window.addEventListener('load',()=>{
-  setTimeout(()=>{compactUIV57(); patchSubsanacionV57(); patchManualButtonsV57(); patchPitPanelV57();},500);
-  setTimeout(()=>{compactUIV57(); patchManualButtonsV57();},1500);
-});
-</script>
-
-
-<script>
-/* ==========================================================
-   V58 - PIT visible, favoritas dentro de Buscar artículo,
-   y CSV descargable compatible con tildes en Excel.
-   ========================================================== */
-
-/* Mojibake más robusto */
-function fixTextV58(v){
-  let s=String(v??'');
-  if(/[ÃÂ�]|â€|â€¢|Â/.test(s)){
-    try{
-      const bytes=[];
-      for(const ch of s){
-        const code=ch.charCodeAt(0);
-        if(code<=255) bytes.push(code);
-        else {
-          // Si hay caracteres que no caben en Latin-1, conserva el texto como está.
-          bytes.length=0; 
-          break;
-        }
-      }
-      if(bytes.length){
-        s=new TextDecoder('utf-8',{fatal:false}).decode(new Uint8Array(bytes));
-      }
-    }catch(e){}
-  }
-  const map={
-    'ArtÃ­culo':'Artículo','artÃ­culo':'artículo',
-    'regulaciÃ³n':'regulación','regulaciÃ³n':'regulación',
-    'construcciÃ³n':'construcción','edificaciÃ³n':'edificación',
-    'cÃ¡lculos':'cálculos','cÃ¡lculo':'cálculo',
-    'CÃ³digo':'Código','cÃ³digo':'código',
-    'tÃ©cnico':'técnico','TÃ©cnico':'Técnico',
-    'mÃ­nimo':'mínimo','mÃ¡ximo':'máximo',
-    'pÃºblico':'público','PÃºblico':'Público',
-    'Ã¡':'á','Ã©':'é','Ã­':'í','Ã³':'ó','Ãº':'ú','Ã±':'ñ',
-    'Ã':'Á','Ã‰':'É','Ã':'Í','Ã“':'Ó','Ãš':'Ú','Ã‘':'Ñ',
-    'â€¢':'●','Â':''
-  };
-  Object.entries(map).forEach(([a,b])=>{ s=s.split(a).join(b); });
-  return s;
-}
-function fixTextV57(v){ return fixTextV58(v); }
-function escV57(v){ return esc(fixTextV58(v)); }
-function articleNormLabelV57(ref){
-  let s=fixTextV58(ref||'').trim();
-  if(!s) return '';
-  if(/^Ordenanza\s+Nro\.\s*016-2023/i.test(s)) return s;
-  if(/^Ordenanza\s+016-2023/i.test(s)) return s.replace(/^Ordenanza\s+016-2023/i,'Ordenanza Nro. 016-2023');
-  if(/^Ordenanza/i.test(s) && /016-2023/i.test(s)) return s;
-  if(/^Art[ií]culo/i.test(s)) return 'Ordenanza Nro. 016-2023, '+s;
-  const n=(s.match(/\d+/)||[''])[0];
-  if(n && s.length<=5) return 'Ordenanza Nro. 016-2023, Artículo '+n;
-  return s;
-}
-function formatArticleTextV55(text){
-  return fixTextV58(text)
-    .replace(/\s*●\s*/g,'\n● ')
-    .replace(/\n{3,}/g,'\n\n')
-    .trim();
-}
-
-/* 1) Detalle PIT siempre visible al mostrar */
-function ensurePitPanelVisibleV58(){
-  ensurePitPanelV41();
-  const card=document.getElementById('pitDetailCardV41');
-  if(!card) return;
-  card.classList.remove('collapsed-v57');
-  let title=card.querySelector('h2,.section-title');
-  if(!title){
-    title=document.createElement('h2');
-    title.textContent='Detalle del Código PIT';
-    card.insertBefore(title, card.firstChild);
-  }
-  const content=document.getElementById('pitDetailContentV41');
-  if(content){
-    content.classList.remove('mini');
-    content.classList.add('pit-detail-content-v58');
-    content.style.display=card.classList.contains('collapsed-v58')?'none':'block';
-  }
-  let btn=document.getElementById('pitToggleV58');
-  if(!btn){
-    btn=document.createElement('button');
-    btn.type='button';
-    btn.id='pitToggleV58';
-    btn.className='pit-toggle-v58';
-    title.appendChild(btn);
-  }
-  btn.textContent=card.classList.contains('collapsed-v58')?'Mostrar':'Ocultar';
-  btn.onclick=(ev)=>{
-    ev.stopPropagation();
-    card.classList.toggle('collapsed-v58');
-    const c=document.getElementById('pitDetailContentV41');
-    if(c) c.style.display=card.classList.contains('collapsed-v58')?'none':'block';
-    btn.textContent=card.classList.contains('collapsed-v58')?'Mostrar':'Ocultar';
-  };
-}
-function renderPitDetailV41(){
-  ensurePitPanelV41();
-  const box=document.getElementById('pitDetailContentV41');
-  if(!box) return;
-  box.classList.remove('mini');
-  box.classList.add('pit-detail-content-v58');
-  const code=currentPitCodeV41();
-  let item=null;
-  try{ item=getCurrentPitItemV44 ? getCurrentPitItemV44() : null; }catch(e){}
-  if(!item && code){
-    try{ item=findPitV41(code); }catch(e){}
-  }
-  let html='';
-  if(!code && !item){
-    html='<div class="pit-warning">Seleccione un Código PIT o busque por coordenadas X/Y.</div>';
-  }else if(!item){
-    html=`<div class="pit-warning">No se encontró información para el Código PIT <b>${esc(code||'')}</b>.</div>`;
-  }else{
-    const rows=pitDetailRowsV41(item).filter(x=>String(x[1]??'').trim()!=='');
-    const mapHtml=typeof miniMapV43==='function' ? miniMapV43(item) : '';
-    html=`${mapHtml}<table class="pit-detail-table"><tbody>${rows.map(([k,v])=>`<tr><th>${escV57(k)}</th><td>${escV57(v)}</td></tr>`).join('')}</tbody></table>`;
-  }
-  box.innerHTML=html;
-  ensurePitPanelVisibleV58();
-  if(document.getElementById('pitLeafletMapV44')){
-    setTimeout(()=>{try{initLeafletPitMapV44('pitLeafletMapV44',false);}catch(e){}},100);
-  }
-}
-
-/* 2) Favoritas sin límite y dentro de la tabla Buscar artículo */
-function setFavoritesV55(arr){
-  localStorage.setItem(FAV_KEY_V55, JSON.stringify(arr||[]));
-}
-function renderFavoritesV55(){
-  const box=document.getElementById('favoritasObsV55');
-  if(box) box.innerHTML='';
-}
-function favMatchesV58(f,q){
-  if(!q) return true;
-  return normSearchV52(`${f.articulo||''} ${f.texto||''} ${f.observacion||''}`).includes(q);
-}
-function useFavoriteV55(id){
-  const f=getFavoritesV55().find(x=>x.id===id);
-  if(!f) return;
-  const art=findArticleByRefV55(f.articulo);
-  state.obsSeleccionadas.push({
-    id:crypto.randomUUID(),
-    articulo:articleNormLabelV57(art?.Articulo||f.articulo||''),
-    texto:formatArticleTextV55(art?.Texto_Articulo||f.texto||''),
-    observacion:fixTextV58(f.observacion||''),
-    norma:articleNormLabelV57(art?.Articulo||f.articulo||''),
-    source:'obs',
-    ordenanza:!!art,
-    imagen:''
-  });
-  renderObsSeleccionadas(); renderReport(); renderPreview();
-  msg('Favorita agregada a la Tabla de observaciones.', true);
-}
-function saveFavoriteV55(id){
+function toggleFavoriteByObsV56(id){
   const o=state.obsSeleccionadas.find(x=>x.id===id);
-  if(!o){msg('No se encontró la observación.');return;}
-  const obs=fixTextV58((o.observacion||'').trim());
-  if(!obs){msg('Escriba primero la Observación Específica antes de marcarla como favorita.');return;}
+  if(!o){msg('No se encontró la observación.'); return;}
+  const articulo=o.articulo||o.norma||'';
+  const obs=(o.observacion||'').trim();
+  const existing=findFavoriteV56(articulo, obs || undefined);
+  if(existing){
+    setFavoritesV55(getFavoritesV55().filter(f=>f.id!==existing.id));
+    renderFavoritesV55();
+    renderCatalogoObs();
+    renderObsSeleccionadas();
+    msg('Favorito desmarcado.', true);
+    return;
+  }
+  if(!obs){
+    msg('Escriba primero la Observación Específica antes de marcarla como favorita.');
+    return;
+  }
   const fav={
     id:crypto.randomUUID(),
-    articulo:articleNormLabelV57(o.articulo||o.norma||''),
-    texto:formatArticleTextV55(o.texto||''),
+    articulo,
+    texto:o.texto||'',
     observacion:obs,
     createdAt:new Date().toISOString()
   };
-  const arr=getFavoritesV55();
-  // No se aplica límite artificial. Solo evita duplicados exactos.
-  const exists=arr.some(x=>articleNormLabelV57(x.articulo||'')===fav.articulo && fixTextV58(x.observacion||'')===fav.observacion);
-  if(!exists) arr.unshift(fav);
+  const arr=getFavoritesV55().filter(f=>!favMatchV56(f, fav.articulo, fav.observacion));
+  arr.unshift(fav);
   setFavoritesV55(arr);
+  renderFavoritesV55();
   renderCatalogoObs();
   renderObsSeleccionadas();
   msg('Observación guardada como favorita.', true);
 }
-function renderCatalogoObs(){
+// Sobrescribe saveFavoriteV55 para que la estrella funcione como toggle.
+saveFavoriteV55 = toggleFavoriteByObsV56;
+
+function toggleFavoriteFromCatalogV56(articulo){
+  if(isArticleFavoritedV56(articulo)){
+    removeFavoritesByArticleV56(articulo);
+  }else{
+    msg('Para marcar como favorita, primero agregue el artículo, complete la Observación Específica y presione la estrella en la Tabla de observaciones del informe.');
+  }
+}
+function starCatalogV56(articulo){
+  const active=isArticleFavoritedV56(articulo);
+  return `<button type="button" class="star-btn-v56 ${active?'active':''}" title="${active?'Desmarcar favorita':'Marcar como favorita después de escribir observación'}" onclick="toggleFavoriteFromCatalogV56('${esc(articulo)}')">${active?'★':'☆'}</button>${active?'<div class="fav-status-v56">Favorita</div>':''}`;
+}
+function starSelectedV56(o){
+  if(o.source!=='obs') return '';
+  const articulo=o.articulo||o.norma||'';
+  const obs=(o.observacion||'').trim();
+  const active=!!findFavoriteV56(articulo, obs || undefined);
+  return `<button type="button" class="star-btn-v56 ${active?'active':''}" title="${active?'Desmarcar favorita':'Guardar como favorita'}" onclick="toggleFavoriteByObsV56('${esc(o.id)}')">${active?'★':'☆'}</button>`;
+}
+
+/* Botón único para ocultar/mostrar Detalle PIT */
+function normalizePitHeaderV56(){
+  const card=document.getElementById('pitDetailCardV41');
+  if(!card) return;
+  const h2=card.querySelector('h2');
+  if(!h2) return;
+  // Elimina cualquier botón heredado/duplicado dentro del encabezado.
+  [...h2.querySelectorAll('button')].forEach(b=>b.remove());
+  const text=(h2.textContent||'Detalle del Código PIT').replace(/\s*(MOSTRAR|OCULTAR)\s*/gi,'').trim() || 'Detalle del Código PIT';
+  h2.classList.add('pit-header-v56');
+  h2.innerHTML=`<span class="pit-title-v56">${esc(text)}</span><button type="button" id="pitToggleBtnV56" class="pit-toggle-v56" onclick="togglePitPanelV56(event)">${card.classList.contains('pit-collapsed-v56')?'MOSTRAR':'OCULTAR'}</button>`;
+}
+function togglePitPanelV56(ev){
+  if(ev) ev.stopPropagation();
+  const card=document.getElementById('pitDetailCardV41');
+  if(!card) return;
+  const collapsed=card.classList.toggle('pit-collapsed-v56');
+  const btn=document.getElementById('pitToggleBtnV56');
+  if(btn) btn.textContent=collapsed?'MOSTRAR':'OCULTAR';
+}
+const _ensurePitPanelV41_base_V56 = typeof ensurePitPanelV41==='function' ? ensurePitPanelV41 : null;
+ensurePitPanelV41 = function(){
+  if(_ensurePitPanelV41_base_V56) _ensurePitPanelV41_base_V56();
+  normalizePitHeaderV56();
+};
+const _renderPitDetailV41_base_V56 = typeof renderPitDetailV41==='function' ? renderPitDetailV41 : null;
+renderPitDetailV41 = function(){
+  if(_renderPitDetailV41_base_V56) _renderPitDetailV41_base_V56();
+  normalizePitHeaderV56();
+};
+
+/* Catálogo con estrella visible y desmarcable */
+const _renderCatalogoObs_base_V56 = typeof renderCatalogoObs==='function' ? renderCatalogoObs : null;
+renderCatalogoObs = function(){
  ensureOrdenanzaV52();
  const box=document.getElementById('catalogoObs');
  if(!box) return;
- if(!DATA.ordenanzaArticulos.length){ box.innerHTML='<p class="mini">Cargando artículos...</p>'; return; }
+ if(!DATA.ordenanzaArticulos.length){
+   box.innerHTML='<p class="mini">Cargando artículos de la Ordenanza 016-2023...</p>';
+   return;
+ }
  const q=normSearchV52(document.getElementById('obsBuscar')?.value||'');
- const favs=getFavoritesV55().filter(f=>favMatchesV58(f,q));
  let rows=DATA.ordenanzaArticulos.filter(a=>{
    if(!q) return true;
-   return normSearchV52(`${a.Articulo} ${fixTextV58(a.Texto_Articulo)}`).includes(q);
+   return normSearchV52(`${a.Articulo} ${a.Texto_Articulo}`).includes(q);
  });
  const total=rows.length;
  rows=rows.slice(0,80);
- const aviso=total>80?`<div class="catalog-limit-v52">Se muestran 80 de ${total} artículos encontrados.</div>`:`<div class="catalog-limit-v52">${total} artículo(s) encontrado(s).</div>`;
- const favRows=favs.map(f=>`<tr class="favorite-row-v58">
-   <td>${escV57(articleNormLabelV57(f.articulo||''))}</td>
-   <td><span class="favorite-badge-v58">★ Favorita</span><div class="article-preview-v55">${escV57(formatArticleTextV55(f.texto||''))}</div><div class="favorite-obs-v58">${escV57(f.observacion||'')}</div></td>
-   <td><button class="secondary" onclick="useFavoriteV55('${esc(f.id)}')">Usar</button></td>
- </tr>`).join('');
- const articleRows=rows.map(a=>`<tr>
-   <td>${escV57(articleNormLabelV57(a.Articulo))}</td>
-   <td><div class="article-preview-v55">${escV57(formatArticleTextV55(a.Texto_Articulo))}</div></td>
+ const aviso=total>80?`<div class="catalog-limit-v52">Se muestran 80 de ${total} artículos encontrados. Use una búsqueda más específica.</div>`:`<div class="catalog-limit-v52">${total} artículo(s) encontrado(s).</div>`;
+ box.classList.add('catalog-ordenanza-v56');
+ box.innerHTML=`${aviso}<table><thead><tr><th>Artículo</th><th>Texto del artículo</th><th>★</th><th>Acción</th></tr></thead><tbody>${rows.map(a=>`<tr>
+   <td>${esc(a.Articulo)}</td>
+   <td><div class="article-preview-v55">${esc(formatArticleTextV55(a.Texto_Articulo))}</div></td>
+   <td>${starCatalogV56(a.Articulo)}</td>
    <td><button class="secondary" onclick="agregarArticuloOrdenanzaV52('${esc(a.Codigo)}')">Agregar</button></td>
- </tr>`).join('');
- box.innerHTML=`${aviso}<table><thead><tr><th>Artículo</th><th>Texto del artículo</th><th>Acción</th></tr></thead><tbody>${favRows}${articleRows || (!favRows?'<tr><td colspan="3">No hay coincidencias.</td></tr>':'')}</tbody></table>`;
-}
+ </tr>`).join('') || '<tr><td colspan="4">No hay coincidencias.</td></tr>'}</tbody></table>`;
+};
 
-/* 3) CSV descargable con tildes: UTF-16LE, muy compatible con Excel */
-function makeUtf16LEBlobV58(text){
-  const buf=new ArrayBuffer(2 + text.length*2);
-  const view=new DataView(buf);
-  view.setUint16(0,0xFEFF,true);
-  for(let i=0;i<text.length;i++){
-    view.setUint16(2+i*2,text.charCodeAt(i),true);
-  }
-  return new Blob([buf],{type:'text/csv;charset=utf-16le'});
-}
-async function exportarObsManualesCSV(){
- const arr=await manualObsAll();
- if(!arr.length){ msg('No existen observaciones manuales para exportar.'); return; }
- const headers=['articulo','texto_del_articulo','observacion_especifica'];
- const lines=['sep=;'];
- lines.push(headers.map(csvCell).join(';'));
- arr.forEach(o=>lines.push([articleNormLabelV57(o.articulo||o.norma||''), formatArticleTextV55(o.texto||''), fixTextV58(o.observacion||'')].map(csvCell).join(';')));
- const blob=makeUtf16LEBlobV58(lines.join('\r\n'));
- const a=document.createElement('a'); 
- a.href=URL.createObjectURL(blob); 
- a.download='OBSERVACIONES_MANUALES_ARTICULOS_'+today()+'.csv'; 
- a.click(); 
- URL.revokeObjectURL(a.href);
-}
-
-/* 4) Reforzar tabla del informe */
-function selectedObsTable(){
+/* Tabla seleccionada con estrella toggle */
+renderObsSeleccionadas = function(){
+ const box=document.getElementById('obsSeleccionadas'); if(!box) return;
  const rows=combinedObsRows();
- if(!rows.length) return '<p>No se registran observaciones técnicas.</p>';
- return `<table class="criterio-simple-v55"><thead><tr><th>Nro.</th><th>Artículo / Norma</th><th>Observación específica</th></tr></thead><tbody>${rows.map((o,i)=>`<tr>
-   <td>${i+1}</td>
-   <td>${escV57(articleNormLabelV57(o.articulo||o.norma||''))}</td>
-   <td>${escV57(obsSpecificV55(o))}</td>
+ if(!rows.length){box.innerHTML='<p class="mini">Aún no se han seleccionado observaciones y no existen requisitos marcados como No Cumple.</p>';return;}
+ box.innerHTML=`<div class="obs-selected-note-v54">Complete aquí la Observación Específica, agregue imagen si aplica y marque/desmarque ★ para guardar o quitar de favoritas.</div><table><thead><tr><th>Nro.</th><th>Artículo</th><th>Texto del artículo</th><th>Observación específica</th><th>Imagen</th><th>Favorita</th><th></th></tr></thead><tbody>${rows.map((o,idx)=>`<tr>
+   <td>${idx+1}</td>
+   <td>${esc(o.articulo||o.norma||'')}</td>
+   <td><div class="article-preview-v55">${esc(formatArticleTextV55(o.texto||''))}</div></td>
+   <td><textarea placeholder="Escriba la observación específica" oninput="updObsNota('${o.id}','${o.source}',this.value)">${esc(obsSpecificV55(o))}</textarea></td>
+   <td class="obs-image-cell-v55">${o.source==='obs'?`<div class="image-tools-v53"><input type="file" accept="image/*" onchange="setObsImageV53('${o.id}',this)"><div class="paste-zone-v53" contenteditable="true" onpaste="pasteObsImageV53('${o.id}',event)">Pegar captura aquí</div>${o.imagen?`<img src="${esc(o.imagen)}"><button type="button" class="secondary mini-btn" onclick="clearObsImageV53('${o.id}')">Quitar imagen</button>`:''}</div>`:'<span class="mini">No aplica</span>'}</td>
+   <td>${starSelectedV56(o)}</td>
+   <td>${o.source==='obs'?`<button class="danger" onclick="quitarObs('${o.id}')">Quitar</button>`:'<span class="mini">Requisito</span>'}</td>
  </tr>`).join('')}</tbody></table>`;
-}
+};
 
-/* Reaplicar parches */
 window.addEventListener('load',()=>{
-  setTimeout(()=>{renderPitDetailV41(); renderCatalogoObs();},800);
-  setTimeout(()=>{ensurePitPanelVisibleV58();},1500);
+  setTimeout(()=>{ normalizePitHeaderV56(); renderCatalogoObs(); renderObsSeleccionadas(); renderFavoritesV55(); },700);
 });
 </script>
 
