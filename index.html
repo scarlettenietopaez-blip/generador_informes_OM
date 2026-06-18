@@ -1277,6 +1277,50 @@ input,select,textarea{
   text-align:center;
 }
 
+
+/* ===== V60: restaurar botón buscar PIT y estrella dentro de Acción ===== */
+#pitCoordToolsV42{
+  display:block!important;
+  margin:0 0 10px 0!important;
+}
+#pitCoordToolsV42 .pit-coord-tools{
+  display:block!important;
+  border:1px solid #c7d5e6;
+  border-radius:10px;
+  background:#f8fbff;
+  padding:8px;
+}
+#pitCoordToolsV42 .pit-coord-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+  font-size:11px;
+  color:#334155;
+  margin:4px 0 6px;
+}
+#pitCoordToolsV42 button{
+  width:100%!important;
+  padding:7px 8px!important;
+  font-size:12px!important;
+}
+.catalog-ordenanza-v60 th:nth-child(3){
+  width:130px!important;
+  text-align:center!important;
+}
+.catalog-ordenanza-v60 td:nth-child(3){
+  text-align:center!important;
+}
+.catalog-actions-v60{
+  display:flex;
+  gap:6px;
+  justify-content:center;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.catalog-actions-v60 .secondary{
+  padding:7px 10px!important;
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -8023,6 +8067,113 @@ renderObsSeleccionadas = function(){
 window.addEventListener('load',()=>{
   setTimeout(()=>{ cleanPitToggleButtonsV59(); renderCatalogoObs(); renderObsSeleccionadas(); },900);
   setTimeout(()=>{ cleanPitToggleButtonsV59(); },1800);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V60 SOBRE V59
+   1) Restaura botón "Buscar PIT por X/Y".
+   2) Elimina columna exclusiva de favoritos: estrella va en Acción.
+   ========================================================== */
+
+function pitCoordToolsHTMLV60(){
+  const x=(typeof coordValueV43==='function' ? coordValueV43('X') : (typeof coordValueV42==='function' ? coordValueV42('X') : '')) || '—';
+  const y=(typeof coordValueV43==='function' ? coordValueV43('Y') : (typeof coordValueV42==='function' ? coordValueV42('Y') : '')) || '—';
+  const count=(DATA.iprusPitIndex||DATA.pitGeoIndex||[]).length;
+  return `<div class="pit-coord-tools">
+    <div class="mini"><b>Búsqueda por coordenadas</b></div>
+    <div class="pit-coord-grid"><div><b>X:</b> ${esc(x)}</div><div><b>Y:</b> ${esc(y)}</div></div>
+    <button type="button" class="secondary" onclick="buscarPitPorCoordenadasV42()">Buscar PIT por X/Y</button>
+    <div class="geo-status-v42">${count?`Base geográfica cargada: ${count} polígonos.`:'Base geográfica pendiente de carga.'}</div>
+  </div>`;
+}
+
+function renderPitDetailV41(){
+  ensurePitPanelV41();
+  const box=document.getElementById('pitDetailContentV41');
+  if(!box) return;
+
+  box.classList.remove('mini');
+  box.classList.add('pit-detail-content-v58');
+
+  const code=currentPitCodeV41();
+  let item=null;
+  try{ item=getCurrentPitItemV44 ? getCurrentPitItemV44() : null; }catch(e){}
+  if(!item && code){
+    try{ item=findPitV41(code); }catch(e){}
+  }
+
+  let main='';
+  if(!code && !item){
+    main='<div class="pit-warning">Seleccione un Código PIT o busque por coordenadas X/Y.</div>';
+  }else if(!item){
+    main=`<div class="pit-warning">No se encontró información para el Código PIT <b>${esc(code||'')}</b>.</div>`;
+  }else{
+    const rows=pitDetailRowsV41(item).filter(x=>String(x[1]??'').trim()!=='');
+    const mapHtml=typeof miniMapV43==='function' ? miniMapV43(item) : '';
+    main=`${mapHtml}<table class="pit-detail-table"><tbody>${rows.map(([k,v])=>`<tr><th>${escV57(k)}</th><td>${escV57(v)}</td></tr>`).join('')}</tbody></table>`;
+  }
+
+  box.innerHTML=`<div id="pitCoordToolsV42">${pitCoordToolsHTMLV60()}</div>${main}`;
+
+  if(typeof ensurePitPanelVisibleV58==='function') ensurePitPanelVisibleV58();
+  if(typeof cleanPitToggleButtonsV59==='function') cleanPitToggleButtonsV59();
+
+  if(document.getElementById('pitLeafletMapV44')){
+    setTimeout(()=>{try{initLeafletPitMapV44('pitLeafletMapV44',false);}catch(e){}},100);
+  }
+}
+
+/* Acción del catálogo: estrella + Agregar en la misma columna */
+function actionSearchV60(a){
+  const articulo=articleNormLabelV57(a.Articulo);
+  return `<div class="catalog-actions-v60">${starSearchV59(articulo)}<button class="secondary" onclick="agregarArticuloOrdenanzaV52('${esc(a.Codigo)}')">Agregar</button></div>`;
+}
+
+renderCatalogoObs = function(){
+ ensureOrdenanzaV52();
+ const box=document.getElementById('catalogoObs');
+ if(!box) return;
+ if(!DATA.ordenanzaArticulos.length){
+   box.innerHTML='<p class="mini">Cargando artículos...</p>';
+   return;
+ }
+
+ const q=normSearchV52(document.getElementById('obsBuscar')?.value||'');
+ const favs=(getFavoritesV55()||[]).filter(f=>favMatchesV58(f,q));
+
+ let rows=DATA.ordenanzaArticulos.filter(a=>{
+   if(!q) return true;
+   return normSearchV52(`${a.Articulo} ${fixTextV58(a.Texto_Articulo)}`).includes(q);
+ });
+
+ const total=rows.length;
+ rows=rows.slice(0,80);
+ const aviso=total>80
+   ? `<div class="catalog-limit-v52">Se muestran 80 de ${total} artículos encontrados.</div>`
+   : `<div class="catalog-limit-v52">${total} artículo(s) encontrado(s).</div>`;
+
+ const favRows=favs.map(f=>`<tr class="favorite-row-v59">
+   <td>${escV57(articleNormLabelV57(f.articulo||''))}</td>
+   <td><span class="favorite-badge-v59">★ Favorita</span><div class="article-preview-v55">${escV57(formatArticleTextV55(f.texto||''))}</div><div class="favorite-obs-v59">${escV57(f.observacion||'')}</div></td>
+   <td><div class="catalog-actions-v60"><button type="button" class="star-btn-v59 active" title="Quitar de favoritas" onclick="removeFavoriteByIdV59('${esc(f.id)}')">★</button><button class="secondary" onclick="useFavoriteV55('${esc(f.id)}')">Usar</button></div></td>
+ </tr>`).join('');
+
+ const articleRows=rows.map(a=>`<tr>
+     <td>${escV57(articleNormLabelV57(a.Articulo))}</td>
+     <td><div class="article-preview-v55">${escV57(formatArticleTextV55(a.Texto_Articulo))}</div></td>
+     <td>${actionSearchV60(a)}</td>
+   </tr>`).join('');
+
+ box.classList.add('catalog-ordenanza-v60');
+ box.innerHTML=`${aviso}<table><thead><tr><th>Artículo</th><th>Texto del artículo</th><th>Acción</th></tr></thead><tbody>${favRows}${articleRows || (!favRows?'<tr><td colspan="3">No hay coincidencias.</td></tr>':'')}</tbody></table>`;
+};
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{ renderPitDetailV41(); renderCatalogoObs(); },900);
+  setTimeout(()=>{ renderPitDetailV41(); },1800);
 });
 </script>
 
