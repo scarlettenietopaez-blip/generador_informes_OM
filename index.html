@@ -928,17 +928,17 @@
 }
 
 
-/* ===== V56 botón único PIT + favoritos desmarcables ===== */
-.pit-header-v56{
+/* ===== V56 CORREGIDA SOBRE V55: botón PIT único + favoritos toggle ===== */
+.pit-header-v56fix{
   display:flex!important;
   align-items:center!important;
   justify-content:space-between!important;
-  gap:10px!important;
+  gap:8px!important;
 }
-.pit-header-v56 .pit-title-v56{
+.pit-header-v56fix .pit-title-v56fix{
   flex:1;
 }
-.pit-toggle-v56{
+.pit-toggle-v56fix{
   width:auto!important;
   min-width:78px!important;
   border:0!important;
@@ -950,10 +950,10 @@
   padding:7px 10px!important;
   cursor:pointer!important;
 }
-#pitDetailCardV41.pit-collapsed-v56 #pitDetailContentV41{
+#pitDetailCardV41.pit-collapsed-v56fix #pitDetailContentV41{
   display:none!important;
 }
-.star-btn-v56{
+.star-btn-v56fix{
   border:1px solid #eab308!important;
   background:#fff8d6!important;
   color:#92400e!important;
@@ -965,22 +965,19 @@
   font-size:15px!important;
   line-height:1!important;
 }
-.star-btn-v56.active{
+.star-btn-v56fix.active{
   background:#facc15!important;
   color:#111827!important;
   border-color:#ca8a04!important;
 }
-.star-btn-v56:disabled{
-  opacity:.55;
-  cursor:not-allowed!important;
-}
-.catalog-ordenanza-v56 th:nth-child(3){width:72px}
-.catalog-ordenanza-v56 th:nth-child(4){width:90px}
-.fav-status-v56{
+.fav-status-v56fix{
   font-size:11px;
   color:#92400e;
   margin-top:3px;
 }
+.catalog-ordenanza-v56fix th:nth-child(1){width:110px}
+.catalog-ordenanza-v56fix th:nth-child(3){width:70px}
+.catalog-ordenanza-v56fix th:nth-child(4){width:90px}
 
 </style>
 
@@ -6708,119 +6705,137 @@ window.addEventListener('load',()=>{
 
 <script>
 /* ==========================================================
-   V56 - Un solo botón para PIT y estrella favorita desmarcable
+   V56 CORREGIDA SOBRE V55
+   Solo corrige:
+   1) un botón OCULTAR/MOSTRAR en Detalle PIT
+   2) favoritos con estrella desmarcable
+   Mantiene estructura v55 de observaciones.
    ========================================================== */
-function normalizeFavTextV56(v){
-  return String(v||'').replace(/\s+/g,' ').trim().toUpperCase();
-}
-function favMatchV56(f, articulo, observacion){
-  const sameArt=normalizeFavTextV56(f.articulo)===normalizeFavTextV56(articulo);
-  if(observacion===undefined || observacion===null) return sameArt;
-  return sameArt && normalizeFavTextV56(f.observacion)===normalizeFavTextV56(observacion);
-}
-function findFavoriteV56(articulo, observacion){
-  return getFavoritesV55().find(f=>favMatchV56(f, articulo, observacion)) || null;
-}
-function isArticleFavoritedV56(articulo){
-  return !!findFavoriteV56(articulo, null);
-}
-function removeFavoritesByArticleV56(articulo){
-  const before=getFavoritesV55();
-  const after=before.filter(f=>!favMatchV56(f, articulo, null));
-  setFavoritesV55(after);
-  renderFavoritesV55();
-  renderCatalogoObs();
-  renderObsSeleccionadas();
-  msg('Favorito desmarcado.', true);
-}
-function toggleFavoriteByObsV56(id){
-  const o=state.obsSeleccionadas.find(x=>x.id===id);
-  if(!o){msg('No se encontró la observación.'); return;}
-  const articulo=o.articulo||o.norma||'';
-  const obs=(o.observacion||'').trim();
-  const existing=findFavoriteV56(articulo, obs || undefined);
-  if(existing){
-    setFavoritesV55(getFavoritesV55().filter(f=>f.id!==existing.id));
-    renderFavoritesV55();
-    renderCatalogoObs();
-    renderObsSeleccionadas();
-    msg('Favorito desmarcado.', true);
-    return;
-  }
-  if(!obs){
-    msg('Escriba primero la Observación Específica antes de marcarla como favorita.');
-    return;
-  }
-  const fav={
-    id:crypto.randomUUID(),
-    articulo,
-    texto:o.texto||'',
-    observacion:obs,
-    createdAt:new Date().toISOString()
-  };
-  const arr=getFavoritesV55().filter(f=>!favMatchV56(f, fav.articulo, fav.observacion));
-  arr.unshift(fav);
-  setFavoritesV55(arr);
-  renderFavoritesV55();
-  renderCatalogoObs();
-  renderObsSeleccionadas();
-  msg('Observación guardada como favorita.', true);
-}
-// Sobrescribe saveFavoriteV55 para que la estrella funcione como toggle.
-saveFavoriteV55 = toggleFavoriteByObsV56;
 
-function toggleFavoriteFromCatalogV56(articulo){
-  if(isArticleFavoritedV56(articulo)){
-    removeFavoritesByArticleV56(articulo);
-  }else{
-    msg('Para marcar como favorita, primero agregue el artículo, complete la Observación Específica y presione la estrella en la Tabla de observaciones del informe.');
-  }
-}
-function starCatalogV56(articulo){
-  const active=isArticleFavoritedV56(articulo);
-  return `<button type="button" class="star-btn-v56 ${active?'active':''}" title="${active?'Desmarcar favorita':'Marcar como favorita después de escribir observación'}" onclick="toggleFavoriteFromCatalogV56('${esc(articulo)}')">${active?'★':'☆'}</button>${active?'<div class="fav-status-v56">Favorita</div>':''}`;
-}
-function starSelectedV56(o){
-  if(o.source!=='obs') return '';
-  const articulo=o.articulo||o.norma||'';
-  const obs=(o.observacion||'').trim();
-  const active=!!findFavoriteV56(articulo, obs || undefined);
-  return `<button type="button" class="star-btn-v56 ${active?'active':''}" title="${active?'Desmarcar favorita':'Guardar como favorita'}" onclick="toggleFavoriteByObsV56('${esc(o.id)}')">${active?'★':'☆'}</button>`;
-}
-
-/* Botón único para ocultar/mostrar Detalle PIT */
-function normalizePitHeaderV56(){
+/* ---------- Botón único Detalle PIT ---------- */
+function normalizePitHeaderV56FIX(){
   const card=document.getElementById('pitDetailCardV41');
   if(!card) return;
   const h2=card.querySelector('h2');
   if(!h2) return;
-  // Elimina cualquier botón heredado/duplicado dentro del encabezado.
+
+  // Elimina todos los botones heredados o duplicados dentro del h2.
   [...h2.querySelectorAll('button')].forEach(b=>b.remove());
-  const text=(h2.textContent||'Detalle del Código PIT').replace(/\s*(MOSTRAR|OCULTAR)\s*/gi,'').trim() || 'Detalle del Código PIT';
-  h2.classList.add('pit-header-v56');
-  h2.innerHTML=`<span class="pit-title-v56">${esc(text)}</span><button type="button" id="pitToggleBtnV56" class="pit-toggle-v56" onclick="togglePitPanelV56(event)">${card.classList.contains('pit-collapsed-v56')?'MOSTRAR':'OCULTAR'}</button>`;
+
+  const raw=(h2.textContent||'Detalle del Código PIT')
+    .replace(/\b(MOSTRAR|OCULTAR)\b/gi,'')
+    .replace(/\s+/g,' ')
+    .trim() || 'Detalle del Código PIT';
+
+  h2.classList.add('pit-header-v56fix');
+  h2.innerHTML=`<span class="pit-title-v56fix">${esc(raw)}</span><button type="button" id="pitToggleBtnV56FIX" class="pit-toggle-v56fix" onclick="togglePitPanelV56FIX(event)">${card.classList.contains('pit-collapsed-v56fix')?'MOSTRAR':'OCULTAR'}</button>`;
 }
-function togglePitPanelV56(ev){
+function togglePitPanelV56FIX(ev){
   if(ev) ev.stopPropagation();
   const card=document.getElementById('pitDetailCardV41');
   if(!card) return;
-  const collapsed=card.classList.toggle('pit-collapsed-v56');
-  const btn=document.getElementById('pitToggleBtnV56');
+  const collapsed=card.classList.toggle('pit-collapsed-v56fix');
+  const btn=document.getElementById('pitToggleBtnV56FIX');
   if(btn) btn.textContent=collapsed?'MOSTRAR':'OCULTAR';
 }
-const _ensurePitPanelV41_base_V56 = typeof ensurePitPanelV41==='function' ? ensurePitPanelV41 : null;
+const _ensurePitPanelV41_base_V56FIX = typeof ensurePitPanelV41==='function' ? ensurePitPanelV41 : null;
 ensurePitPanelV41 = function(){
-  if(_ensurePitPanelV41_base_V56) _ensurePitPanelV41_base_V56();
-  normalizePitHeaderV56();
+  if(_ensurePitPanelV41_base_V56FIX) _ensurePitPanelV41_base_V56FIX();
+  normalizePitHeaderV56FIX();
 };
-const _renderPitDetailV41_base_V56 = typeof renderPitDetailV41==='function' ? renderPitDetailV41 : null;
+const _renderPitDetailV41_base_V56FIX = typeof renderPitDetailV41==='function' ? renderPitDetailV41 : null;
 renderPitDetailV41 = function(){
-  if(_renderPitDetailV41_base_V56) _renderPitDetailV41_base_V56();
-  normalizePitHeaderV56();
+  if(_renderPitDetailV41_base_V56FIX) _renderPitDetailV41_base_V56FIX();
+  normalizePitHeaderV56FIX();
 };
 
-/* Catálogo con estrella visible y desmarcable */
-const _renderCatalogoObs_base_V56 = typeof renderCatalogoObs==='function' ? renderCatalogoObs : null;
+/* ---------- Favoritos desmarcables ---------- */
+function favNormV56FIX(v){
+  return String(v||'').replace(/\s+/g,' ').trim().toUpperCase();
+}
+function favListV56FIX(){
+  try{return JSON.parse(localStorage.getItem(FAV_KEY_V55)||'[]')||[];}catch(e){return [];}
+}
+function favSetV56FIX(arr){
+  localStorage.setItem(FAV_KEY_V55, JSON.stringify((arr||[]).slice(0,80)));
+}
+function favFindExactV56FIX(articulo, observacion){
+  const a=favNormV56FIX(articulo), o=favNormV56FIX(observacion);
+  return favListV56FIX().find(f=>favNormV56FIX(f.articulo)===a && favNormV56FIX(f.observacion)===o) || null;
+}
+function favFindByArticleV56FIX(articulo){
+  const a=favNormV56FIX(articulo);
+  return favListV56FIX().find(f=>favNormV56FIX(f.articulo)===a) || null;
+}
+function removeFavoriteByIdV56FIX(id){
+  favSetV56FIX(favListV56FIX().filter(f=>f.id!==id));
+}
+function removeFavoritesByArticleV56FIX(articulo){
+  const a=favNormV56FIX(articulo);
+  favSetV56FIX(favListV56FIX().filter(f=>favNormV56FIX(f.articulo)!==a));
+}
+function refreshFavUIV56FIX(){
+  try{ renderFavoritesV55(); }catch(e){}
+  try{ renderCatalogoObs(); }catch(e){}
+  try{ renderObsSeleccionadas(); }catch(e){}
+}
+function toggleFavoriteObsV56FIX(id){
+  const o=state.obsSeleccionadas.find(x=>x.id===id);
+  if(!o){msg('No se encontró la observación.');return;}
+  const articulo=o.articulo||o.norma||'';
+  const observacion=(o.observacion||'').trim();
+  const existing=favFindExactV56FIX(articulo, observacion);
+
+  if(existing){
+    removeFavoriteByIdV56FIX(existing.id);
+    refreshFavUIV56FIX();
+    msg('Favorito desmarcado.', true);
+    return;
+  }
+
+  if(!observacion){
+    msg('Escriba primero la Observación Específica antes de marcarla como favorita.');
+    return;
+  }
+
+  const fav={
+    id:crypto.randomUUID(),
+    articulo,
+    texto:o.texto||'',
+    observacion,
+    createdAt:new Date().toISOString()
+  };
+
+  const arr=favListV56FIX().filter(f=>!(favNormV56FIX(f.articulo)===favNormV56FIX(fav.articulo) && favNormV56FIX(f.observacion)===favNormV56FIX(fav.observacion)));
+  arr.unshift(fav);
+  favSetV56FIX(arr);
+  refreshFavUIV56FIX();
+  msg('Observación guardada como favorita.', true);
+}
+// Mantiene compatibilidad con botones existentes de v55.
+saveFavoriteV55 = toggleFavoriteObsV56FIX;
+
+function toggleFavoriteCatalogV56FIX(articulo){
+  const existing=favFindByArticleV56FIX(articulo);
+  if(existing){
+    removeFavoritesByArticleV56FIX(articulo);
+    refreshFavUIV56FIX();
+    msg('Favorito desmarcado.', true);
+  }else{
+    msg('Para guardar una favorita, agregue el artículo, escriba la Observación Específica y marque la estrella en la Tabla de observaciones del informe.');
+  }
+}
+function starCatalogV56FIX(articulo){
+  const active=!!favFindByArticleV56FIX(articulo);
+  return `<button type="button" class="star-btn-v56fix ${active?'active':''}" onclick="toggleFavoriteCatalogV56FIX('${esc(articulo)}')" title="${active?'Desmarcar favorito':'Primero agregue y escriba la observación'}">${active?'★':'☆'}</button>${active?'<div class="fav-status-v56fix">Favorita</div>':''}`;
+}
+function starSelectedV56FIX(o){
+  if(o.source!=='obs') return '';
+  const active=!!favFindExactV56FIX(o.articulo||o.norma||'', o.observacion||'');
+  return `<button type="button" class="star-btn-v56fix ${active?'active':''}" onclick="toggleFavoriteObsV56FIX('${esc(o.id)}')" title="${active?'Desmarcar favorita':'Guardar como favorita'}">${active?'★':'☆'}</button>`;
+}
+
+/* Catálogo: conserva la estructura v55 limpia: Artículo | Texto del artículo | ★ | Acción */
 renderCatalogoObs = function(){
  ensureOrdenanzaV52();
  const box=document.getElementById('catalogoObs');
@@ -6837,16 +6852,16 @@ renderCatalogoObs = function(){
  const total=rows.length;
  rows=rows.slice(0,80);
  const aviso=total>80?`<div class="catalog-limit-v52">Se muestran 80 de ${total} artículos encontrados. Use una búsqueda más específica.</div>`:`<div class="catalog-limit-v52">${total} artículo(s) encontrado(s).</div>`;
- box.classList.add('catalog-ordenanza-v56');
+ box.classList.add('catalog-ordenanza-v55','catalog-ordenanza-v56fix');
  box.innerHTML=`${aviso}<table><thead><tr><th>Artículo</th><th>Texto del artículo</th><th>★</th><th>Acción</th></tr></thead><tbody>${rows.map(a=>`<tr>
    <td>${esc(a.Articulo)}</td>
    <td><div class="article-preview-v55">${esc(formatArticleTextV55(a.Texto_Articulo))}</div></td>
-   <td>${starCatalogV56(a.Articulo)}</td>
+   <td>${starCatalogV56FIX(a.Articulo)}</td>
    <td><button class="secondary" onclick="agregarArticuloOrdenanzaV52('${esc(a.Codigo)}')">Agregar</button></td>
  </tr>`).join('') || '<tr><td colspan="4">No hay coincidencias.</td></tr>'}</tbody></table>`;
 };
 
-/* Tabla seleccionada con estrella toggle */
+/* Tabla de observaciones: conserva la estructura v55 y solo cambia la estrella a toggle */
 renderObsSeleccionadas = function(){
  const box=document.getElementById('obsSeleccionadas'); if(!box) return;
  const rows=combinedObsRows();
@@ -6857,13 +6872,13 @@ renderObsSeleccionadas = function(){
    <td><div class="article-preview-v55">${esc(formatArticleTextV55(o.texto||''))}</div></td>
    <td><textarea placeholder="Escriba la observación específica" oninput="updObsNota('${o.id}','${o.source}',this.value)">${esc(obsSpecificV55(o))}</textarea></td>
    <td class="obs-image-cell-v55">${o.source==='obs'?`<div class="image-tools-v53"><input type="file" accept="image/*" onchange="setObsImageV53('${o.id}',this)"><div class="paste-zone-v53" contenteditable="true" onpaste="pasteObsImageV53('${o.id}',event)">Pegar captura aquí</div>${o.imagen?`<img src="${esc(o.imagen)}"><button type="button" class="secondary mini-btn" onclick="clearObsImageV53('${o.id}')">Quitar imagen</button>`:''}</div>`:'<span class="mini">No aplica</span>'}</td>
-   <td>${starSelectedV56(o)}</td>
+   <td>${starSelectedV56FIX(o)}</td>
    <td>${o.source==='obs'?`<button class="danger" onclick="quitarObs('${o.id}')">Quitar</button>`:'<span class="mini">Requisito</span>'}</td>
  </tr>`).join('')}</tbody></table>`;
 };
 
 window.addEventListener('load',()=>{
-  setTimeout(()=>{ normalizePitHeaderV56(); renderCatalogoObs(); renderObsSeleccionadas(); renderFavoritesV55(); },700);
+  setTimeout(()=>{ normalizePitHeaderV56FIX(); try{renderCatalogoObs(); renderObsSeleccionadas(); renderFavoritesV55();}catch(e){} },800);
 });
 </script>
 
