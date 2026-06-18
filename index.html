@@ -1321,6 +1321,56 @@ input,select,textarea{
   padding:7px 10px!important;
 }
 
+
+/* ===== V61: usar favoritas directamente desde búsqueda ===== */
+.catalog-actions-v61{
+  display:flex;
+  gap:6px;
+  justify-content:center;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.use-fav-btn-v61{
+  border:1px solid #eab308!important;
+  background:#facc15!important;
+  color:#111827!important;
+  border-radius:9px!important;
+  font-weight:900!important;
+  padding:7px 9px!important;
+  width:auto!important;
+}
+.remove-fav-btn-v61{
+  border:1px solid #f3c9c9!important;
+  background:#fff1f2!important;
+  color:#9f1239!important;
+  border-radius:9px!important;
+  font-weight:900!important;
+  padding:7px 9px!important;
+  width:auto!important;
+}
+.fav-count-v61{
+  display:inline-block;
+  font-size:10px;
+  line-height:1;
+  background:#fff7cc;
+  border:1px solid #eab308;
+  border-radius:999px;
+  padding:3px 6px;
+  margin-left:2px;
+}
+
+
+/* ===== V62: observación para usuario dentro del criterio técnico ===== */
+.req-user-obs-v62{
+  display:block;
+  margin-top:8px;
+  padding-top:6px;
+  border-top:1px solid #d7dde7;
+}
+.req-user-obs-v62 strong{
+  font-weight:900;
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -8174,6 +8224,204 @@ renderCatalogoObs = function(){
 window.addEventListener('load',()=>{
   setTimeout(()=>{ renderPitDetailV41(); renderCatalogoObs(); },900);
   setTimeout(()=>{ renderPitDetailV41(); },1800);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V61 SOBRE V60
+   Permite usar una observación favorita directamente desde la búsqueda,
+   sin escribir nuevamente la Observación Específica.
+   ========================================================== */
+
+function favoritesForArticleV61(articulo){
+  const art = articleNormLabelV57(articulo||'');
+  return (getFavoritesV55()||[]).filter(f => favSameArticleV59(f, art));
+}
+
+function useFirstFavoriteByArticleV61(articulo){
+  const favs = favoritesForArticleV61(articulo);
+  if(!favs.length){
+    msg('Este artículo todavía no tiene observaciones favoritas guardadas.');
+    return;
+  }
+  const f = favs[0];
+  const art = findArticleByRefV55(f.articulo);
+  state.obsSeleccionadas.push({
+    id: crypto.randomUUID(),
+    articulo: articleNormLabelV57(art?.Articulo || f.articulo || articulo || ''),
+    texto: formatArticleTextV55(art?.Texto_Articulo || f.texto || ''),
+    observacion: fixTextV58(f.observacion || ''),
+    norma: articleNormLabelV57(art?.Articulo || f.articulo || articulo || ''),
+    source: 'obs',
+    ordenanza: !!art,
+    imagen: ''
+  });
+  renderObsSeleccionadas();
+  renderReport();
+  renderPreview();
+  msg('Observación favorita agregada al informe.', true);
+  const target=document.getElementById('obsSeleccionadas');
+  if(target) target.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function useFavoriteV55(id){
+  const f=(getFavoritesV55()||[]).find(x=>x.id===id);
+  if(!f) return;
+  const art=findArticleByRefV55(f.articulo);
+  state.obsSeleccionadas.push({
+    id:crypto.randomUUID(),
+    articulo:articleNormLabelV57(art?.Articulo||f.articulo||''),
+    texto:formatArticleTextV55(art?.Texto_Articulo||f.texto||''),
+    observacion:fixTextV58(f.observacion||''),
+    norma:articleNormLabelV57(art?.Articulo||f.articulo||''),
+    source:'obs',
+    ordenanza:!!art,
+    imagen:''
+  });
+  renderObsSeleccionadas(); 
+  renderReport(); 
+  renderPreview();
+  msg('Favorita agregada a la Tabla de observaciones.', true);
+}
+
+function actionSearchV60(a){
+  const articulo=articleNormLabelV57(a.Articulo);
+  const favs=favoritesForArticleV61(articulo);
+  if(favs.length){
+    return `<div class="catalog-actions-v61">
+      <button type="button" class="use-fav-btn-v61" title="Usar observación favorita sin escribir una nueva" onclick="useFirstFavoriteByArticleV61('${esc(articulo)}')">★ Usar fav.<span class="fav-count-v61">${favs.length}</span></button>
+      <button type="button" class="remove-fav-btn-v61" title="Quitar favoritas de este artículo" onclick="removeFavoritesByArticleV59('${esc(articulo)}')">Quitar ★</button>
+      <button class="secondary" onclick="agregarArticuloOrdenanzaV52('${esc(a.Codigo)}')">Agregar nuevo</button>
+    </div>`;
+  }
+  return `<div class="catalog-actions-v61">
+    <button type="button" class="star-btn-v59" title="Para guardar como favorita: agregue el artículo, escriba la observación y marque la estrella en la tabla inferior" onclick="msg('Para guardar como favorita, primero agregue el artículo, escriba la Observación Específica y marque ☆ en la Tabla de observaciones del informe.')">☆</button>
+    <button class="secondary" onclick="agregarArticuloOrdenanzaV52('${esc(a.Codigo)}')">Agregar</button>
+  </div>`;
+}
+
+renderCatalogoObs = function(){
+ ensureOrdenanzaV52();
+ const box=document.getElementById('catalogoObs');
+ if(!box) return;
+ if(!DATA.ordenanzaArticulos.length){
+   box.innerHTML='<p class="mini">Cargando artículos...</p>';
+   return;
+ }
+
+ const q=normSearchV52(document.getElementById('obsBuscar')?.value||'');
+ const favs=(getFavoritesV55()||[]).filter(f=>favMatchesV58(f,q));
+
+ let rows=DATA.ordenanzaArticulos.filter(a=>{
+   if(!q) return true;
+   return normSearchV52(`${a.Articulo} ${fixTextV58(a.Texto_Articulo)}`).includes(q);
+ });
+
+ const total=rows.length;
+ rows=rows.slice(0,80);
+ const aviso=total>80
+   ? `<div class="catalog-limit-v52">Se muestran 80 de ${total} artículos encontrados.</div>`
+   : `<div class="catalog-limit-v52">${total} artículo(s) encontrado(s).</div>`;
+
+ const favRows=favs.map(f=>`<tr class="favorite-row-v59">
+   <td>${escV57(articleNormLabelV57(f.articulo||''))}</td>
+   <td><span class="favorite-badge-v59">★ Favorita</span><div class="article-preview-v55">${escV57(formatArticleTextV55(f.texto||''))}</div><div class="favorite-obs-v59">${escV57(f.observacion||'')}</div></td>
+   <td><div class="catalog-actions-v61"><button type="button" class="use-fav-btn-v61" onclick="useFavoriteV55('${esc(f.id)}')">Usar</button><button type="button" class="remove-fav-btn-v61" onclick="removeFavoriteByIdV59('${esc(f.id)}')">Quitar ★</button></div></td>
+ </tr>`).join('');
+
+ const articleRows=rows.map(a=>`<tr>
+     <td>${escV57(articleNormLabelV57(a.Articulo))}</td>
+     <td><div class="article-preview-v55">${escV57(formatArticleTextV55(a.Texto_Articulo))}</div></td>
+     <td>${actionSearchV60(a)}</td>
+   </tr>`).join('');
+
+ box.classList.add('catalog-ordenanza-v60');
+ box.innerHTML=`${aviso}<table><thead><tr><th>Artículo</th><th>Texto del artículo</th><th>Acción</th></tr></thead><tbody>${favRows}${articleRows || (!favRows?'<tr><td colspan="3">No hay coincidencias.</td></tr>':'')}</tbody></table>`;
+};
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{ renderCatalogoObs(); },800);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V62 SOBRE V61
+   Incluye "Observación para el usuario" de requisitos no cumplidos
+   dentro de Observación Específica del Criterio Técnico.
+   ========================================================== */
+
+function reqObservationTextV62(req){
+  const userObs = (state.requisitos?.[req.id]?.observacion || '').trim();
+  const base = fixTextV58(req.texto || '');
+  if(!userObs) return base;
+  return `${base}\n\nObservación para el usuario: ${fixTextV58(userObs)}`;
+}
+
+function reqObservationHtmlV62(text){
+  const raw = String(text||'');
+  const parts = raw.split(/\n\nObservación para el usuario:\s*/);
+  if(parts.length < 2) return escV57(raw);
+  return `${escV57(parts[0])}<span class="req-user-obs-v62"><strong>Observación para el usuario:</strong><br>${escV57(parts.slice(1).join('\n\nObservación para el usuario: '))}</span>`;
+}
+
+function requisitoObsRows(){
+ return requisitosPorEstado('No Cumple').map(r=>{
+   return {
+     id:r.id,
+     articulo:r.normaDefault||'Ordenanza 016-2023, Artículo 98',
+     norma:r.normaDefault||'Ordenanza 016-2023, Artículo 98',
+     observacion:reqObservationTextV62(r),
+     texto:'',
+     source:'req'
+   };
+ });
+}
+
+function obsSpecificV55(o){
+  if(o.source==='req') return o.observacion || o.texto || 'Requisito documental no cumplido';
+  return o.observacion || '';
+}
+
+function selectedObsTable(){
+ const rows=combinedObsRows();
+ if(!rows.length) return '<p>No se registran observaciones técnicas.</p>';
+ return `<table class="criterio-simple-v55"><thead><tr><th>Nro.</th><th>Artículo / Norma</th><th>Observación específica</th></tr></thead><tbody>${rows.map((o,i)=>{
+   const obs = obsSpecificV55(o);
+   return `<tr>
+     <td>${i+1}</td>
+     <td>${escV57(o.articulo||o.norma||'')}</td>
+     <td>${o.source==='req' ? reqObservationHtmlV62(obs) : escV57(obs)}</td>
+   </tr>`;
+ }).join('')}</tbody></table>`;
+}
+
+function renderObsSeleccionadas(){
+ const box=document.getElementById('obsSeleccionadas'); 
+ if(!box) return;
+ const rows=combinedObsRows();
+ if(!rows.length){
+   box.innerHTML='<p class="mini">Aún no se han seleccionado observaciones y no existen requisitos marcados como No Cumple.</p>';
+   return;
+ }
+ box.innerHTML=`<div class="obs-selected-note-v54">Complete la Observación Específica y agregue imagen si aplica.</div><table><thead><tr><th>Nro.</th><th>Artículo</th><th>Texto del artículo</th><th>Observación específica</th><th>Imagen</th><th>Acciones</th></tr></thead><tbody>${rows.map((o,idx)=>{
+   const obs=obsSpecificV55(o);
+   return `<tr>
+   <td>${idx+1}</td>
+   <td>${escV57(articleNormLabelV57(o.articulo||o.norma||''))}</td>
+   <td><div class="article-preview-v55">${escV57(formatArticleTextV55(o.texto||''))}</div></td>
+   <td>${o.source==='req' ? `<div class="article-preview-v55">${reqObservationHtmlV62(obs)}</div>` : `<textarea placeholder="Escriba la observación específica" oninput="updObsNota('${o.id}','${o.source}',this.value)">${escV57(obs)}</textarea>`}</td>
+   <td class="obs-image-cell-v55">${o.source==='obs'?`<div class="image-tools-v53"><input type="file" accept="image/*" onchange="setObsImageV53('${o.id}',this)"><div class="paste-zone-v53" contenteditable="true" onpaste="pasteObsImageV53('${o.id}',event)">Pegar captura aquí</div>${o.imagen?`<img src="${esc(o.imagen)}"><button type="button" class="secondary mini-btn" onclick="clearObsImageV53('${o.id}')">Quitar imagen</button>`:''}</div>`:'<span class="mini">No aplica</span>'}</td>
+   <td><div class="obs-action-stack-v59">${o.source==='obs'?`${starSelectedV59(o)}<button class="danger" onclick="quitarObs('${o.id}')">Quitar</button>`:'<span class="mini">Requisito</span>'}</div></td>
+ </tr>`;
+ }).join('')}</tbody></table>`;
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{ renderObsSeleccionadas(); renderReport(); renderPreview(); },900);
 });
 </script>
 
