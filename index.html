@@ -964,6 +964,170 @@
   .fav-item-v56 .fav-actions-v56{justify-content:flex-start}
 }
 
+
+/* ===== V57 compactación visual, PIT colapsable y correcciones informe ===== */
+header p, .header p, .topbar p, .hero p{
+  display:none!important;
+}
+.tools-note:empty,
+.mini:empty{
+  display:none!important;
+}
+.card{
+  border-color:#b8c9dc!important;
+  background:#fbfdff!important;
+  box-shadow:0 8px 20px rgba(10,35,65,.07)!important;
+}
+.info-block-v49,
+.info-block-v48,
+.info-block-v47,
+.info-block-v56,
+.info-block-v57,
+.anteproyecto-box,
+.catastral-panel-v49,
+.apr-note-v56{
+  background:#f4f8fc!important;
+  border:1.5px solid #aebfd2!important;
+}
+.section-title{
+  background:#eef4fb!important;
+  border-left-width:4px!important;
+  padding:9px 11px!important;
+  font-size:14px!important;
+}
+label{
+  font-size:11px!important;
+}
+button,.button-label button{
+  font-size:11px!important;
+  padding:8px 10px!important;
+  border-radius:9px!important;
+}
+input,select,textarea{
+  font-size:13px!important;
+}
+.side-actions{
+  grid-template-columns:1fr 1fr!important;
+}
+.side-actions button:nth-of-type(1),
+.side-actions button:nth-of-type(4){
+  display:none!important;
+}
+.side-actions-title{
+  font-size:11px!important;
+  grid-column:1 / -1;
+}
+#fechaSubsanacionWrap label{
+  font-size:10px!important;
+  line-height:1.1!important;
+}
+#fechaSubsanacionWrap .mini{
+  font-size:10.5px!important;
+  line-height:1.1!important;
+}
+.subsanacion-5dias-v55{
+  font-size:10.5px!important;
+  margin-top:3px!important;
+}
+#pitDetailCardV41{
+  margin-top:14px!important;
+}
+#pitDetailCardV41 .section-title{
+  display:flex!important;
+  justify-content:space-between!important;
+  align-items:center!important;
+}
+.pit-toggle-v57{
+  border:0!important;
+  background:#dfeaf5!important;
+  color:#0b2b4c!important;
+  width:auto!important;
+  font-size:10px!important;
+  padding:5px 8px!important;
+}
+#pitDetailCardV41.collapsed-v57 #pitDetailContentV41{
+  display:none!important;
+}
+.pit-pill,
+.geo-status-v42,
+.pit-geo-note-v43,
+.pit-map-note-v44,
+.pit-map-caption-v43,
+#pitCoordToolsV42 .geo-status-v42{
+  display:none!important;
+}
+.pit-map-actions-v44{
+  margin-top:0!important;
+}
+.fav-box-v55{
+  margin:8px 0!important;
+  padding:8px!important;
+}
+.fav-box-v55 h3{
+  font-size:13px!important;
+}
+.fav-list-v55{
+  gap:6px!important;
+}
+.fav-item-v57{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:8px;
+  align-items:center;
+  padding:7px 8px!important;
+}
+.fav-item-v57 .fav-actions-v57{
+  display:flex;
+  gap:5px;
+  justify-content:flex-end;
+}
+.obs-selected-v55 th:nth-child(6),
+.obs-selected-v55 td:nth-child(6){
+  width:88px!important;
+}
+.obs-selected-v55 th:nth-child(7),
+.obs-selected-v55 td:nth-child(7){
+  width:88px!important;
+}
+.obs-action-stack-v57{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  align-items:center;
+}
+.star-btn-v55.saved-v57,
+.star-btn-v55.is-saved,
+.star-btn-v55.saved{
+  background:#f59e0b!important;
+  color:#fff!important;
+  border-color:#d97706!important;
+}
+.manual-db-v57 table{
+  table-layout:fixed;
+  width:100%;
+}
+.manual-db-v57 th:nth-child(1){width:48px}
+.manual-db-v57 th:nth-child(2){width:170px}
+.manual-db-v57 th:nth-child(5){width:170px}
+.no-print .note-box,
+.no-print .mini{
+  line-height:1.22;
+}
+#tab-req > .note-box,
+#tab-obs .note-box{
+  display:none!important;
+}
+.apr-note-v56 .mini,
+.anteproyecto-box > .mini,
+#toggleTextosTecnicos + .mini,
+#toggleNotaPreConclusiones + .mini{
+  display:none!important;
+}
+@media(max-width:800px){
+  .fav-item-v57{grid-template-columns:1fr}
+  .fav-item-v57 .fav-actions-v57{justify-content:flex-start}
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -984,7 +1148,7 @@
 
 <header class="no-print">
   <h1>Generador Local de Informes de Obras Mayores</h1>
-  <p>Formulario local con guardado por Nro. eGOB, generación de informe con observaciones o aprobatorio e impresión en PDF.<br><span id="dataSourceStatus">Fuente de datos: verificando CSV...</span></p>
+  <p><br><span id="dataSourceStatus">Fuente de datos: verificando CSV...</span></p>
 </header>
 
 
@@ -994,11 +1158,11 @@
       <div class="card">
         <h2>1. Identificación del informe</h2>
         <div class="field"><label>Nro. eGOB Principal *</label><input id="egob" inputmode="numeric" placeholder="Ej.: 1157249" /></div>
-        <div class="field"><label>Técnico revisor *</label><input id="tecnico" list="listaTecnicos" placeholder="Buscar o escribir nombre" /><datalist id="listaTecnicos"></datalist><div class="tools-note mini">Solo se permitirá guardar si coincide con la hoja Técnicos.</div></div>
+        <div class="field"><label>Técnico revisor *</label><input id="tecnico" list="listaTecnicos" placeholder="Buscar o escribir nombre" /><datalist id="listaTecnicos"></datalist><div class="tools-note mini"></div></div>
         <div class="field"><label>Tipo de informe *</label><select id="tipoInforme"><option value="">Seleccione...</option><option>Informe con Observaciones</option><option>Informe Técnico Aprobatorio</option></select></div>
         <div class="row" id="dateRow">
           <div class="field" id="fechaRevisionWrap"><label id="fechaRevisionLabel">Fecha de revisión *</label><input type="date" id="fechaRevision" /><div class="mini" id="fechaRevisionNote"></div></div>
-          <div class="field" id="fechaSubsanacionWrap"><label>Fecha máxima de subsanación *</label><input type="date" id="fechaSubsanacion" /><div class="mini">Se calcula automáticamente 10 días laborables desde la revisión, pero puede editarse.</div></div>
+          <div class="field" id="fechaSubsanacionWrap"><label>F. máx. subsanación *</label><input type="date" id="fechaSubsanacion" /><div class="mini">Calcula automáticamente 10 días laborables</div></div>
         </div>
         <div class="side-actions">
           <div class="side-actions-title">Acciones del informe</div>
@@ -1814,7 +1978,7 @@ function updateCSVStatusV32(){
   const el = document.getElementById('dataSourceStatus');
   if(!el) return;
   if(window.__CSV_STATUS__.ok){
-    el.textContent = 'Fuente de datos: CSV cargados desde carpeta data';
+    el.textContent = '';
     el.style.color = '#d8ffd8';
   }else{
     el.textContent = 'Fuente de datos: base interna del HTML';
@@ -6313,7 +6477,7 @@ function insertSubsanacion5DiasV55(){
   if(!wrap || document.getElementById('calc5DiasSubsanacionV55')) return;
   const div=document.createElement('label');
   div.className='subsanacion-5dias-v55';
-  div.innerHTML=`<input type="checkbox" id="calc5DiasSubsanacionV55"> Calcular 5 días laborables (segunda observación)`;
+  div.innerHTML=`<input type="checkbox" id="calc5DiasSubsanacionV55"> Segunda observación`;
   wrap.appendChild(div);
   const cb=document.getElementById('calc5DiasSubsanacionV55');
   cb.checked=!!state.fechaSubsanacionCincoDias;
@@ -6895,6 +7059,360 @@ renderObservacionesForm = function(){
 };
 window.addEventListener('load',()=>{
   setTimeout(()=>{patchManualButtonsV56(); patchSubsanacion5DiasV56();},600);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V57 - Correcciones visuales, mojibake, PIT colapsable y favoritos compactos
+   ========================================================== */
+function fixTextV57(v){
+  let s=String(v??'');
+  const hasMojibake=/Ã.|Â.|â€|â€œ|â€|â€“|â€¢|�/.test(s);
+  if(hasMojibake){
+    try{
+      // Reinterpretar texto mal decodificado como UTF-8 cuando venga como Latin-1.
+      s=decodeURIComponent(escape(s));
+    }catch(e){}
+  }
+  return s
+    .replace(/ArtÃ­culo/g,'Artículo')
+    .replace(/Nro\./g,'Nro.')
+    .replace(/â€¢/g,'●')
+    .replace(/Â/g,'');
+}
+function escV57(v){ return esc(fixTextV57(v)); }
+function articleNormLabelV57(ref){
+  let s=fixTextV57(ref||'').trim();
+  if(!s) return '';
+  if(/^Ordenanza\s+Nro\.\s*016-2023/i.test(s)) return s;
+  if(/^Ordenanza\s+016-2023/i.test(s)) return s.replace(/^Ordenanza\s+016-2023/i,'Ordenanza Nro. 016-2023');
+  if(/^Ordenanza/i.test(s) && /016-2023/i.test(s)) return s;
+  if(/^Art[ií]culo/i.test(s)) return 'Ordenanza Nro. 016-2023, '+s;
+  const n=(s.match(/\d+/)||[''])[0];
+  if(n && s.length<=5) return 'Ordenanza Nro. 016-2023, Artículo '+n;
+  return s;
+}
+function formatArticleTextV55(text){
+  return fixTextV57(text)
+    .replace(/\s*●\s*/g,'\n● ')
+    .replace(/\n{3,}/g,'\n\n')
+    .trim();
+}
+function obsSpecificV55(o){
+  if(o.source==='req') return fixTextV57(o.observacion || o.texto || 'Requisito documental no cumplido');
+  return fixTextV57(o.observacion || '');
+}
+function isFavoriteObsV57(o){
+  const arr=getFavoritesV55();
+  const art=articleNormLabelV57(o.articulo||o.norma||'');
+  const obs=String(o.observacion||'').trim();
+  return arr.some(f=>articleNormLabelV57(f.articulo||'')===art && String(f.observacion||'').trim()===obs);
+}
+
+/* 1) Desmarcar 5 días => 10 días */
+function patchSubsanacionV57(){
+  const cb=document.getElementById('calc5DiasSubsanacionV55');
+  if(!cb || cb.dataset.v57Patched==='1') return;
+  cb.dataset.v57Patched='1';
+  cb.addEventListener('change',()=>{
+    ensureV55State();
+    collectTop();
+    state.fechaSubsanacionCincoDias=cb.checked;
+    const days=cb.checked?5:10;
+    const val=addBusinessDays(state.fechaRevision||today(),days);
+    const fs=document.getElementById('fechaSubsanacion');
+    if(fs) fs.value=val;
+    state.fechaSubsanacion=val;
+    state.fechaSubsanacionManual=!!cb.checked;
+    updateAll();
+  });
+}
+const _insertSubsanacion5DiasV55_base_V57 = typeof insertSubsanacion5DiasV55==='function' ? insertSubsanacion5DiasV55 : null;
+insertSubsanacion5DiasV55 = function(){
+  if(_insertSubsanacion5DiasV55_base_V57) _insertSubsanacion5DiasV55_base_V57();
+  const lbl=document.querySelector('label.subsanacion-5dias-v55');
+  if(lbl){
+    const input=lbl.querySelector('input');
+    lbl.innerHTML='';
+    if(input) lbl.appendChild(input);
+    lbl.appendChild(document.createTextNode(' Segunda observación'));
+  }
+  patchSubsanacionV57();
+};
+
+/* 2) Base manual con codificación corregida, exportación y favoritas */
+function manualToFavoriteV57(id){
+  if(!db){msg('La base local aún no está lista.');return;}
+  manualObsGet(id).then(o=>{
+    if(!o){msg('No se encontró la observación manual.');return;}
+    const fav={
+      id:crypto.randomUUID(),
+      articulo:articleNormLabelV57(o.articulo||o.norma||''),
+      texto:formatArticleTextV55(o.texto||''),
+      observacion:fixTextV57(o.observacion||''),
+      createdAt:new Date().toISOString()
+    };
+    const arr=getFavoritesV55().filter(x=>!(articleNormLabelV57(x.articulo||'')===fav.articulo && String(x.observacion||'').trim()===fav.observacion));
+    arr.unshift(fav);
+    setFavoritesV55(arr);
+    renderFavoritesV55();
+    msg('Observación manual guardada como favorita.', true);
+  });
+}
+function openManualObsDBV57(){
+  const panel=document.getElementById('manualObsPanel');
+  if(panel) panel.classList.remove('collapsed');
+  renderManualObsDB();
+  setTimeout(()=>{
+    const dbBox=document.getElementById('manualObsDB');
+    if(dbBox) dbBox.scrollIntoView({behavior:'smooth',block:'start'});
+  },80);
+}
+function renderManualObsDB(){
+ const box=document.getElementById('manualObsDB'); 
+ if(!box) return;
+ if(!db){ box.innerHTML='<p class="mini" style="padding:10px">La base local aún no está lista.</p>'; return; }
+ manualObsAll().then(arr=>{
+   arr=(arr||[]).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+   if(!arr.length){ box.innerHTML='<p class="mini" style="padding:10px">Aún no existen observaciones manuales guardadas.</p>'; return; }
+   const rows=arr.slice(0,100).map((o,i)=>`<tr>
+     <td>${i+1}</td>
+     <td>${escV57(articleNormLabelV57(o.articulo||o.norma||''))}</td>
+     <td><div class="article-preview-v55">${escV57(formatArticleTextV55(o.texto||''))}</div></td>
+     <td>${escV57(o.observacion||'')}</td>
+     <td class="small-actions">
+       <button class="secondary" onclick="usarObsManualEnInforme('${esc(o.id)}')">Usar</button>
+       <button class="star-btn-v55" onclick="manualToFavoriteV57('${esc(o.id)}')">★</button>
+       <button class="danger" onclick="eliminarObsManual('${esc(o.id)}')">Eliminar</button>
+     </td>
+   </tr>`).join('');
+   box.classList.add('manual-db-v57');
+   box.innerHTML=`<table><thead><tr><th>Nro.</th><th>Artículo</th><th>Texto del artículo</th><th>Observación específica</th><th>Acciones</th></tr></thead><tbody>${rows}</tbody></table>`;
+ });
+}
+async function exportarObsManualesCSV(){
+ const arr=await manualObsAll();
+ if(!arr.length){ msg('No existen observaciones manuales para exportar.'); return; }
+ const headers=['articulo','texto_del_articulo','observacion_especifica'];
+ const lines=['sep=;'];
+ lines.push(headers.map(csvCell).join(';'));
+ arr.forEach(o=>lines.push([articleNormLabelV57(o.articulo||o.norma||''), formatArticleTextV55(o.texto||''), fixTextV57(o.observacion||'')].map(csvCell).join(';')));
+ const blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+ const a=document.createElement('a'); 
+ a.href=URL.createObjectURL(blob); 
+ a.download='OBSERVACIONES_MANUALES_ARTICULOS_'+today()+'.csv'; 
+ a.click(); 
+ URL.revokeObjectURL(a.href);
+}
+function patchManualButtonsV57(){
+  document.querySelectorAll('button').forEach(btn=>{
+    const txt=(btn.textContent||'').trim().toUpperCase();
+    if(txt==='VER BASE MANUAL') btn.onclick=openManualObsDBV57;
+  });
+}
+
+/* 3) Favoritas al inicio, compactas y a la derecha */
+function renderFavoritesV55(){
+  const box=document.getElementById('favoritasObsV55');
+  if(!box) return;
+  const arr=getFavoritesV55();
+  if(!arr.length){ box.innerHTML=''; return; }
+  box.innerHTML=`<div class="fav-box-v55"><h3>★ Favoritas</h3><div class="fav-list-v55">${arr.slice(0,20).map(f=>`<div class="fav-item-v55 fav-item-v57">
+    <div>
+      <div class="meta"><strong>${escV57(articleNormLabelV57(f.articulo||'Artículo'))}</strong></div>
+      <div class="obs">${escV57(f.observacion||'')}</div>
+    </div>
+    <div class="fav-actions-v57">
+      <button class="secondary" onclick="useFavoriteV55('${esc(f.id)}')">Usar</button>
+      <button class="danger" onclick="removeFavoriteV55('${esc(f.id)}')">Quitar</button>
+    </div>
+  </div>`).join('')}</div></div>`;
+}
+function saveFavoriteV55(id){
+  const o=state.obsSeleccionadas.find(x=>x.id===id);
+  if(!o){msg('No se encontró la observación.');return;}
+  const obs=(o.observacion||'').trim();
+  if(!obs){msg('Escriba primero la Observación Específica antes de marcarla como favorita.');return;}
+  const fav={
+    id:crypto.randomUUID(),
+    articulo:articleNormLabelV57(o.articulo||o.norma||''),
+    texto:formatArticleTextV55(o.texto||''),
+    observacion:fixTextV57(obs),
+    createdAt:new Date().toISOString()
+  };
+  const arr=getFavoritesV55().filter(x=>!(articleNormLabelV57(x.articulo||'')===fav.articulo && String(x.observacion||'').trim()===fav.observacion));
+  arr.unshift(fav);
+  setFavoritesV55(arr);
+  renderFavoritesV55();
+  renderObsSeleccionadas();
+  msg('Observación guardada como favorita.', true);
+}
+
+/* 4) Observaciones: Artículo/Norma siempre con Ordenanza y botones Favorita/Quitar en una columna */
+function requisitoObsRows(){
+ return requisitosPorEstado('No Cumple').map(r=>{
+   return {
+     id:r.id,
+     articulo:'Ordenanza Nro. 016-2023, Artículo 98',
+     norma:'Ordenanza Nro. 016-2023, Artículo 98',
+     observacion:fixTextV57(r.texto),
+     texto:'',
+     source:'req'
+   };
+ });
+}
+function renderCatalogoObs(){
+ ensureOrdenanzaV52();
+ const box=document.getElementById('catalogoObs');
+ if(!box) return;
+ if(!DATA.ordenanzaArticulos.length){ box.innerHTML='<p class="mini">Cargando artículos...</p>'; return; }
+ const q=normSearchV52(document.getElementById('obsBuscar')?.value||'');
+ let rows=DATA.ordenanzaArticulos.filter(a=>{
+   if(!q) return true;
+   return normSearchV52(`${a.Articulo} ${fixTextV57(a.Texto_Articulo)}`).includes(q);
+ });
+ const total=rows.length;
+ rows=rows.slice(0,80);
+ const aviso=total>80?`<div class="catalog-limit-v52">Se muestran 80 de ${total} artículos encontrados.</div>`:`<div class="catalog-limit-v52">${total} artículo(s) encontrado(s).</div>`;
+ box.innerHTML=`${aviso}<table><thead><tr><th>Artículo</th><th>Texto del artículo</th><th>Acción</th></tr></thead><tbody>${rows.map(a=>`<tr>
+   <td>${escV57(articleNormLabelV57(a.Articulo))}</td>
+   <td><div class="article-preview-v55">${escV57(formatArticleTextV55(a.Texto_Articulo))}</div></td>
+   <td><button class="secondary" onclick="agregarArticuloOrdenanzaV52('${esc(a.Codigo)}')">Agregar</button></td>
+ </tr>`).join('') || '<tr><td colspan="3">No hay coincidencias.</td></tr>'}</tbody></table>`;
+}
+function agregarArticuloOrdenanzaV52(code){
+ ensureOrdenanzaV52();
+ const a=DATA.ordenanzaArticulos.find(x=>x.Codigo===code);
+ if(!a){msg('No se encontró el artículo seleccionado.');return;}
+ state.obsSeleccionadas.push({
+   id:crypto.randomUUID(),
+   articulo:articleNormLabelV57(a.Articulo||''),
+   texto:formatArticleTextV55(a.Texto_Articulo||''),
+   observacion:'',
+   norma:articleNormLabelV57(a.Articulo||''),
+   source:'obs',
+   ordenanza:true,
+   imagen:''
+ });
+ renderObsSeleccionadas(); renderReport(); renderPreview();
+ msg('Artículo agregado. Complete Observación Específica e Imagen en la tabla inferior.', true);
+ const target=document.getElementById('obsSeleccionadas');
+ if(target) target.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function renderObsSeleccionadas(){
+ const box=document.getElementById('obsSeleccionadas'); if(!box) return;
+ const rows=combinedObsRows();
+ if(!rows.length){box.innerHTML='<p class="mini">Aún no se han seleccionado observaciones y no existen requisitos marcados como No Cumple.</p>';return;}
+ box.innerHTML=`<div class="obs-selected-note-v54">Complete la Observación Específica y agregue imagen si aplica.</div><table><thead><tr><th>Nro.</th><th>Artículo</th><th>Texto del artículo</th><th>Observación específica</th><th>Imagen</th><th>Acciones</th></tr></thead><tbody>${rows.map((o,idx)=>{
+   const fav=isFavoriteObsV57(o);
+   return `<tr>
+   <td>${idx+1}</td>
+   <td>${escV57(articleNormLabelV57(o.articulo||o.norma||''))}</td>
+   <td><div class="article-preview-v55">${escV57(formatArticleTextV55(o.texto||''))}</div></td>
+   <td><textarea placeholder="Escriba la observación específica" oninput="updObsNota('${o.id}','${o.source}',this.value)">${escV57(obsSpecificV55(o))}</textarea></td>
+   <td class="obs-image-cell-v55">${o.source==='obs'?`<div class="image-tools-v53"><input type="file" accept="image/*" onchange="setObsImageV53('${o.id}',this)"><div class="paste-zone-v53" contenteditable="true" onpaste="pasteObsImageV53('${o.id}',event)">Pegar captura aquí</div>${o.imagen?`<img src="${esc(o.imagen)}"><button type="button" class="secondary mini-btn" onclick="clearObsImageV53('${o.id}')">Quitar imagen</button>`:''}</div>`:'<span class="mini">No aplica</span>'}</td>
+   <td><div class="obs-action-stack-v57">${o.source==='obs'?`<button type="button" class="star-btn-v55 ${fav?'saved-v57':''}" onclick="saveFavoriteV55('${o.id}')">★</button><button class="danger" onclick="quitarObs('${o.id}')">Quitar</button>`:'<span class="mini">Requisito</span>'}</div></td>
+ </tr>`}).join('')}</tbody></table>`;
+}
+function selectedObsTable(){
+ const rows=combinedObsRows();
+ if(!rows.length) return '<p>No se registran observaciones técnicas.</p>';
+ return `<table class="criterio-simple-v55"><thead><tr><th>Nro.</th><th>Artículo / Norma</th><th>Observación específica</th></tr></thead><tbody>${rows.map((o,i)=>`<tr>
+   <td>${i+1}</td>
+   <td>${escV57(articleNormLabelV57(o.articulo||o.norma||''))}</td>
+   <td>${escV57(obsSpecificV55(o))}</td>
+ </tr>`).join('')}</tbody></table>`;
+}
+function textosTecnicosSection(){
+ if(!state.mostrarTextosTecnicos) return '';
+ const rows=combinedObsRows().map((o,i)=>({num:i+1, articulo:articleNormLabelV57(o.articulo||o.norma||''), texto:formatArticleTextV55(o.texto||''), imagen:o.imagen||''})).filter(o=>String(o.texto||'').trim() || o.imagen);
+ if(!rows.length) return '';
+ return `<h2>Sustento técnico de las observaciones</h2><table class="tech-note-table"><thead><tr><th>Nro.</th><th>Texto del artículo</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.num}</td><td><strong>${escV57(r.articulo)}</strong><br><div class="article-text-v55">${escV57(r.texto)}</div></td></tr>${r.imagen?`<tr class="sustento-img-row-v55"><td colspan="2"><img class="sustento-img-v55" src="${esc(r.imagen)}"></td></tr>`:''}`).join('')}</tbody></table>`;
+}
+
+/* 5) Limpiar textos explicativos y botones */
+function compactUIV57(){
+  // Encabezado secundario
+  document.querySelectorAll('header p,.header p,.hero p,.topbar p').forEach(el=>el.style.display='none');
+  // Nota técnicos
+  document.querySelectorAll('.tools-note').forEach(el=>{ if((el.textContent||'').includes('Solo se permitirá')) el.remove(); });
+  // Fechas
+  document.querySelectorAll('#fechaSubsanacionWrap .mini').forEach(el=>{ if((el.textContent||'').includes('Calcula') || (el.textContent||'').includes('calcula')) el.textContent='Calcula automáticamente 10 días laborables'; });
+  const fsLabel=document.querySelector('#fechaSubsanacionWrap label');
+  if(fsLabel) fsLabel.textContent='F. máx. subsanación *';
+  const f5=document.querySelector('.subsanacion-5dias-v55');
+  if(f5){
+    const input=f5.querySelector('input');
+    f5.innerHTML='';
+    if(input) f5.appendChild(input);
+    f5.appendChild(document.createTextNode(' Segunda observación'));
+  }
+  // Acciones del informe: solo Nuevo y Guardar
+  document.querySelectorAll('.side-actions button').forEach(btn=>{
+    const t=(btn.textContent||'').trim().toUpperCase();
+    if(t==='ATRÁS' || t==='ATRAS' || t.includes('GUARDAR Y')) btn.style.display='none';
+  });
+  // Textos explicativos observaciones/aprobatorio/anteproyecto
+  document.querySelectorAll('.note-box,.mini').forEach(el=>{
+    const t=(el.textContent||'').trim();
+    if(
+      t.includes('Si se activa, el informe incluirá') ||
+      t.includes('Busque por número de artículo') ||
+      t.includes('la nota aparecerá antes') ||
+      t.includes('Active esta opción únicamente') ||
+      t.includes('Base IPRUS/PIT cargada') ||
+      t.includes('Fuente: data/iprus') ||
+      t.includes('Cuadro de ubicación del PIT') ||
+      t.includes('Al agrandar puede') ||
+      t.includes('El anteproyecto se activa automáticamente')
+    ){
+      el.style.display='none';
+    }
+  });
+}
+const _renderObservacionesForm_base_V57 = typeof renderObservacionesForm==='function' ? renderObservacionesForm : null;
+renderObservacionesForm = function(){
+  if(_renderObservacionesForm_base_V57) _renderObservacionesForm_base_V57();
+  setTimeout(()=>{renderFavoritesV55(); patchManualButtonsV57(); compactUIV57();},0);
+};
+
+/* 6) Panel PIT Mostrar/Ocultar */
+function patchPitPanelV57(){
+  const card=document.getElementById('pitDetailCardV41');
+  if(!card || card.dataset.v57Ready==='1') return;
+  card.dataset.v57Ready='1';
+  const title=card.querySelector('.section-title') || card.querySelector('h2,h3');
+  if(title){
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='pit-toggle-v57';
+    btn.textContent='Ocultar';
+    btn.onclick=(ev)=>{
+      ev.stopPropagation();
+      card.classList.toggle('collapsed-v57');
+      btn.textContent=card.classList.contains('collapsed-v57')?'Mostrar':'Ocultar';
+    };
+    title.appendChild(btn);
+  }
+}
+const _renderPitDetailV41_base_V57 = typeof renderPitDetailV41==='function' ? renderPitDetailV41 : null;
+renderPitDetailV41 = function(){
+  if(_renderPitDetailV41_base_V57) _renderPitDetailV41_base_V57();
+  setTimeout(()=>{patchPitPanelV57(); compactUIV57();},0);
+};
+
+/* 7) Aprobatorio: quitar texto explicativo de nota y anteproyecto */
+const _renderAprobatorioForm_base_V57 = typeof renderAprobatorioForm==='function' ? renderAprobatorioForm : null;
+renderAprobatorioForm = function(){
+  if(_renderAprobatorioForm_base_V57) _renderAprobatorioForm_base_V57();
+  setTimeout(compactUIV57,0);
+};
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{compactUIV57(); patchSubsanacionV57(); patchManualButtonsV57(); patchPitPanelV57();},500);
+  setTimeout(()=>{compactUIV57(); patchManualButtonsV57();},1500);
 });
 </script>
 
