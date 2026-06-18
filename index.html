@@ -1192,6 +1192,91 @@ input,select,textarea{
   display:none!important;
 }
 
+
+/* ===== V59 sobre v58: botón PIT único + estrellas desmarcables ===== */
+.pit-toggle-v59{
+  width:auto!important;
+  min-width:78px!important;
+  border:0!important;
+  border-radius:9px!important;
+  background:#e8eef6!important;
+  color:#082b4c!important;
+  font-size:11px!important;
+  font-weight:900!important;
+  padding:7px 10px!important;
+  cursor:pointer!important;
+  margin-left:10px!important;
+}
+.pit-header-v59{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+}
+.pit-header-v59 .pit-title-text-v59{
+  flex:1;
+}
+#pitDetailCardV41.collapsed-v59 #pitDetailContentV41{
+  display:none!important;
+}
+.star-btn-v59{
+  border:1px solid #eab308!important;
+  background:#fff8d6!important;
+  color:#92400e!important;
+  border-radius:999px!important;
+  width:auto!important;
+  min-width:34px!important;
+  padding:6px 9px!important;
+  font-weight:900!important;
+  font-size:15px!important;
+  line-height:1!important;
+}
+.star-btn-v59.active{
+  background:#facc15!important;
+  color:#111827!important;
+  border-color:#ca8a04!important;
+}
+.star-btn-v59:disabled{
+  opacity:.55!important;
+  cursor:not-allowed!important;
+}
+.favorite-row-v59 td{
+  background:#fffdf3!important;
+}
+.favorite-badge-v59{
+  display:inline-block;
+  background:#facc15;
+  color:#111827;
+  border-radius:999px;
+  padding:2px 7px;
+  font-size:11px;
+  font-weight:900;
+  margin-bottom:4px;
+}
+.favorite-obs-v59{
+  margin-top:5px;
+  padding:6px 8px;
+  border-left:3px solid #eab308;
+  background:#fff;
+  font-size:12px;
+}
+.obs-action-stack-v59{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+}
+.catalog-ordenanza-v59 th:nth-child(3){
+  width:72px;
+  text-align:center;
+}
+.catalog-ordenanza-v59 th:nth-child(4){
+  width:92px;
+}
+.catalog-ordenanza-v59 td:nth-child(3){
+  text-align:center;
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -7724,6 +7809,220 @@ function selectedObsTable(){
 window.addEventListener('load',()=>{
   setTimeout(()=>{renderPitDetailV41(); renderCatalogoObs();},800);
   setTimeout(()=>{ensurePitPanelVisibleV58();},1500);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V59 SOBRE V58
+   1) Panel PIT con un solo botón OCULTAR/MOSTRAR.
+   2) Favoritos con estrella desmarcable en búsqueda y tabla.
+   ========================================================== */
+
+function normFavV59(v){
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+function favSameArticleV59(f, articulo){
+  return normFavV59(articleNormLabelV57(f?.articulo||'')) === normFavV59(articleNormLabelV57(articulo||''));
+}
+function favSameObsV59(f, articulo, observacion){
+  return favSameArticleV59(f, articulo) && normFavV59(f?.observacion||'') === normFavV59(observacion||'');
+}
+function findFavForObsV59(o){
+  const articulo = articleNormLabelV57(o?.articulo || o?.norma || '');
+  const obs = fixTextV58(o?.observacion || '').trim();
+  if(!articulo || !obs) return null;
+  return (getFavoritesV55()||[]).find(f => favSameObsV59(f, articulo, obs)) || null;
+}
+function hasFavForArticleV59(articulo){
+  return (getFavoritesV55()||[]).some(f => favSameArticleV59(f, articulo));
+}
+function removeFavoriteByIdV59(id){
+  setFavoritesV55((getFavoritesV55()||[]).filter(f => f.id !== id));
+  renderCatalogoObs();
+  renderObsSeleccionadas();
+  renderFavoritesV55();
+  msg('Favorito desmarcado.', true);
+}
+function removeFavoritesByArticleV59(articulo){
+  const before = getFavoritesV55()||[];
+  const after = before.filter(f => !favSameArticleV59(f, articulo));
+  setFavoritesV55(after);
+  renderCatalogoObs();
+  renderObsSeleccionadas();
+  renderFavoritesV55();
+  msg(before.length !== after.length ? 'Favorito desmarcado.' : 'No se encontró favorito para desmarcar.', true);
+}
+function toggleFavoriteSelectedV59(id){
+  const o = state.obsSeleccionadas.find(x => x.id === id);
+  if(!o){ msg('No se encontró la observación.'); return; }
+
+  const existing = findFavForObsV59(o);
+  if(existing){
+    removeFavoriteByIdV59(existing.id);
+    return;
+  }
+
+  const obs = fixTextV58((o.observacion||'').trim());
+  if(!obs){
+    msg('Escriba primero la Observación Específica antes de marcarla como favorita.');
+    return;
+  }
+
+  const fav = {
+    id: crypto.randomUUID(),
+    articulo: articleNormLabelV57(o.articulo || o.norma || ''),
+    texto: formatArticleTextV55(o.texto || ''),
+    observacion: obs,
+    createdAt: new Date().toISOString()
+  };
+
+  const arr = (getFavoritesV55()||[]).filter(f => !favSameObsV59(f, fav.articulo, fav.observacion));
+  arr.unshift(fav);
+  setFavoritesV55(arr);
+  renderCatalogoObs();
+  renderObsSeleccionadas();
+  renderFavoritesV55();
+  msg('Observación guardada como favorita.', true);
+}
+saveFavoriteV55 = toggleFavoriteSelectedV59;
+
+removeFavoriteV55 = function(id){
+  removeFavoriteByIdV59(id);
+};
+
+function starSelectedV59(o){
+  if(o.source !== 'obs') return '';
+  const active = !!findFavForObsV59(o);
+  return `<button type="button" class="star-btn-v59 ${active?'active':''}" title="${active?'Quitar de favoritas':'Guardar como favorita'}" onclick="toggleFavoriteSelectedV59('${esc(o.id)}')">${active?'★':'☆'}</button>`;
+}
+function starSearchV59(articulo){
+  const active = hasFavForArticleV59(articulo);
+  if(active){
+    return `<button type="button" class="star-btn-v59 active" title="Quitar favoritas de este artículo" onclick="removeFavoritesByArticleV59('${esc(articleNormLabelV57(articulo||''))}')">★</button>`;
+  }
+  return `<button type="button" class="star-btn-v59" title="Para guardar como favorita: agregue el artículo, escriba la observación y marque la estrella en la tabla inferior" onclick="msg('Para guardar como favorita, primero agregue el artículo, escriba la Observación Específica y marque ☆ en la Tabla de observaciones del informe.')">☆</button>`;
+}
+
+/* Botón único para Detalle del Código PIT */
+function cleanPitToggleButtonsV59(){
+  const card = document.getElementById('pitDetailCardV41');
+  if(!card) return;
+
+  const title = card.querySelector('h2,.section-title,h3') || card.firstElementChild;
+  if(!title) return;
+
+  const wasCollapsed = card.classList.contains('collapsed-v59') || card.classList.contains('collapsed-v58') || card.classList.contains('collapsed-v57');
+
+  // Elimina botones heredados v57/v58 y cualquier duplicado dentro del título.
+  title.querySelectorAll('button').forEach(btn => btn.remove());
+
+  card.classList.remove('collapsed-v57','collapsed-v58');
+  card.classList.toggle('collapsed-v59', wasCollapsed);
+
+  const rawTitle = (title.textContent || 'Detalle del Código PIT')
+    .replace(/\s*(OCULTAR|MOSTRAR)\s*/gi,'')
+    .trim() || 'Detalle del Código PIT';
+
+  title.classList.add('pit-header-v59');
+  title.innerHTML = `<span class="pit-title-text-v59">${esc(rawTitle)}</span><button type="button" id="pitToggleV59" class="pit-toggle-v59">${wasCollapsed?'MOSTRAR':'OCULTAR'}</button>`;
+
+  const btn = document.getElementById('pitToggleV59');
+  const content = document.getElementById('pitDetailContentV41');
+
+  if(content){
+    content.style.display = wasCollapsed ? 'none' : 'block';
+  }
+
+  btn.onclick = (ev)=>{
+    ev.stopPropagation();
+    const collapsed = card.classList.toggle('collapsed-v59');
+    if(content) content.style.display = collapsed ? 'none' : 'block';
+    btn.textContent = collapsed ? 'MOSTRAR' : 'OCULTAR';
+  };
+}
+
+const __ensurePitPanelVisibleV58_base_V59 = typeof ensurePitPanelVisibleV58 === 'function' ? ensurePitPanelVisibleV58 : null;
+ensurePitPanelVisibleV58 = function(){
+  if(__ensurePitPanelVisibleV58_base_V59) __ensurePitPanelVisibleV58_base_V59();
+  cleanPitToggleButtonsV59();
+};
+
+const __renderPitDetailV41_base_V59 = typeof renderPitDetailV41 === 'function' ? renderPitDetailV41 : null;
+renderPitDetailV41 = function(){
+  if(__renderPitDetailV41_base_V59) __renderPitDetailV41_base_V59();
+  setTimeout(cleanPitToggleButtonsV59,0);
+};
+
+/* Búsqueda de artículos con estrella desmarcable */
+renderCatalogoObs = function(){
+ ensureOrdenanzaV52();
+ const box=document.getElementById('catalogoObs');
+ if(!box) return;
+ if(!DATA.ordenanzaArticulos.length){ box.innerHTML='<p class="mini">Cargando artículos...</p>'; return; }
+
+ const q=normSearchV52(document.getElementById('obsBuscar')?.value||'');
+ const favs=(getFavoritesV55()||[]).filter(f=>favMatchesV58(f,q));
+
+ let rows=DATA.ordenanzaArticulos.filter(a=>{
+   if(!q) return true;
+   return normSearchV52(`${a.Articulo} ${fixTextV58(a.Texto_Articulo)}`).includes(q);
+ });
+
+ const total=rows.length;
+ rows=rows.slice(0,80);
+ const aviso=total>80
+   ? `<div class="catalog-limit-v52">Se muestran 80 de ${total} artículos encontrados.</div>`
+   : `<div class="catalog-limit-v52">${total} artículo(s) encontrado(s).</div>`;
+
+ const favRows=favs.map(f=>`<tr class="favorite-row-v59">
+   <td>${escV57(articleNormLabelV57(f.articulo||''))}</td>
+   <td><span class="favorite-badge-v59">★ Favorita</span><div class="article-preview-v55">${escV57(formatArticleTextV55(f.texto||''))}</div><div class="favorite-obs-v59">${escV57(f.observacion||'')}</div></td>
+   <td><button type="button" class="star-btn-v59 active" title="Quitar de favoritas" onclick="removeFavoriteByIdV59('${esc(f.id)}')">★</button></td>
+   <td><button class="secondary" onclick="useFavoriteV55('${esc(f.id)}')">Usar</button></td>
+ </tr>`).join('');
+
+ const articleRows=rows.map(a=>{
+   const articulo=articleNormLabelV57(a.Articulo);
+   return `<tr>
+     <td>${escV57(articulo)}</td>
+     <td><div class="article-preview-v55">${escV57(formatArticleTextV55(a.Texto_Articulo))}</div></td>
+     <td>${starSearchV59(articulo)}</td>
+     <td><button class="secondary" onclick="agregarArticuloOrdenanzaV52('${esc(a.Codigo)}')">Agregar</button></td>
+   </tr>`;
+ }).join('');
+
+ box.classList.add('catalog-ordenanza-v59');
+ box.innerHTML=`${aviso}<table><thead><tr><th>Artículo</th><th>Texto del artículo</th><th>★</th><th>Acción</th></tr></thead><tbody>${favRows}${articleRows || (!favRows?'<tr><td colspan="4">No hay coincidencias.</td></tr>':'')}</tbody></table>`;
+};
+
+/* Tabla de observaciones con estrella que marca y desmarca */
+renderObsSeleccionadas = function(){
+ const box=document.getElementById('obsSeleccionadas'); 
+ if(!box) return;
+ const rows=combinedObsRows();
+ if(!rows.length){
+   box.innerHTML='<p class="mini">Aún no se han seleccionado observaciones y no existen requisitos marcados como No Cumple.</p>';
+   return;
+ }
+ box.innerHTML=`<div class="obs-selected-note-v54">Complete la Observación Específica y agregue imagen si aplica.</div><table><thead><tr><th>Nro.</th><th>Artículo</th><th>Texto del artículo</th><th>Observación específica</th><th>Imagen</th><th>Acciones</th></tr></thead><tbody>${rows.map((o,idx)=>`<tr>
+   <td>${idx+1}</td>
+   <td>${escV57(articleNormLabelV57(o.articulo||o.norma||''))}</td>
+   <td><div class="article-preview-v55">${escV57(formatArticleTextV55(o.texto||''))}</div></td>
+   <td><textarea placeholder="Escriba la observación específica" oninput="updObsNota('${o.id}','${o.source}',this.value)">${escV57(obsSpecificV55(o))}</textarea></td>
+   <td class="obs-image-cell-v55">${o.source==='obs'?`<div class="image-tools-v53"><input type="file" accept="image/*" onchange="setObsImageV53('${o.id}',this)"><div class="paste-zone-v53" contenteditable="true" onpaste="pasteObsImageV53('${o.id}',event)">Pegar captura aquí</div>${o.imagen?`<img src="${esc(o.imagen)}"><button type="button" class="secondary mini-btn" onclick="clearObsImageV53('${o.id}')">Quitar imagen</button>`:''}</div>`:'<span class="mini">No aplica</span>'}</td>
+   <td><div class="obs-action-stack-v59">${o.source==='obs'?`${starSelectedV59(o)}<button class="danger" onclick="quitarObs('${o.id}')">Quitar</button>`:'<span class="mini">Requisito</span>'}</div></td>
+ </tr>`).join('')}</tbody></table>`;
+};
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{ cleanPitToggleButtonsV59(); renderCatalogoObs(); renderObsSeleccionadas(); },900);
+  setTimeout(()=>{ cleanPitToggleButtonsV59(); },1800);
 });
 </script>
 
