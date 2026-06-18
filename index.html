@@ -927,6 +927,43 @@
   .manual-article-v55{grid-template-columns:1fr}
 }
 
+
+/* ===== V56 correcciones base manual, favoritas, subsanación y aprobatorio ===== */
+.fav-item-v56{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:10px;
+  align-items:center;
+}
+.fav-item-v56 .fav-actions-v56{
+  display:flex;
+  gap:6px;
+  justify-content:flex-end;
+  align-items:center;
+  white-space:nowrap;
+}
+.manual-db-v56 table{
+  table-layout:fixed;
+  width:100%;
+}
+.manual-db-v56 th:nth-child(1){width:50px}
+.manual-db-v56 th:nth-child(2){width:160px}
+.manual-db-v56 th:nth-child(5){width:170px}
+.apr-note-v56{
+  border:1px solid #d5e0ee;
+  background:#f8fbff;
+  border-radius:12px;
+  padding:10px;
+  margin-bottom:12px;
+}
+.apr-note-v56 textarea{
+  min-height:90px;
+}
+@media(max-width:800px){
+  .fav-item-v56{grid-template-columns:1fr}
+  .fav-item-v56 .fav-actions-v56{justify-content:flex-start}
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -6647,6 +6684,217 @@ window.addEventListener('load',()=>{
       try{ renderObservacionesForm(); }catch(e){ console.warn('No se pudo renderizar Observaciones V55', e); }
     }
   });
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V56 - Correcciones solicitadas
+   ========================================================== */
+function ensureV56State(){
+  if(!state.aprobatorio) state.aprobatorio={};
+  if(!state.aprobatorio.notaPreConclusiones) state.aprobatorio.notaPreConclusiones={activo:false,texto:''};
+}
+
+/* 1) Al desmarcar 5 días, vuelve a 10 días laborables */
+function patchSubsanacion5DiasV56(){
+  const cb=document.getElementById('calc5DiasSubsanacionV55');
+  if(!cb || cb.dataset.v56Patched==='1') return;
+  cb.dataset.v56Patched='1';
+  cb.addEventListener('change',()=>{
+    ensureV55State();
+    if(!cb.checked){
+      collectTop();
+      state.fechaSubsanacionCincoDias=false;
+      const val=addBusinessDays(state.fechaRevision||today(),10);
+      const fs=document.getElementById('fechaSubsanacion');
+      if(fs) fs.value=val;
+      state.fechaSubsanacion=val;
+      state.fechaSubsanacionManual=false;
+      updateAll();
+      msg('Fecha máxima de subsanación calculada a 10 días laborables.', true);
+    }
+  });
+}
+const _insertSubsanacion5DiasV55_base_V56 = typeof insertSubsanacion5DiasV55==='function' ? insertSubsanacion5DiasV55 : null;
+insertSubsanacion5DiasV55 = function(){
+  if(_insertSubsanacion5DiasV55_base_V56) _insertSubsanacion5DiasV55_base_V56();
+  patchSubsanacion5DiasV56();
+};
+window.addEventListener('load',()=>setTimeout(patchSubsanacion5DiasV56,500));
+
+/* 2) Base manual visible y con opción de favorita */
+function manualToFavoriteV56(id){
+  if(!db){msg('La base local aún no está lista.');return;}
+  manualObsGet(id).then(o=>{
+    if(!o){msg('No se encontró la observación manual.');return;}
+    const fav={
+      id:crypto.randomUUID(),
+      articulo:o.articulo||o.norma||'',
+      texto:o.texto||'',
+      observacion:o.observacion||'',
+      createdAt:new Date().toISOString()
+    };
+    const arr=getFavoritesV55().filter(x=>!(x.articulo===fav.articulo && x.observacion===fav.observacion));
+    arr.unshift(fav);
+    setFavoritesV55(arr);
+    renderFavoritesV55();
+    msg('Observación manual guardada como favorita.', true);
+  });
+}
+function openManualObsDBV56(){
+  const panel=document.getElementById('manualObsPanel');
+  if(panel) panel.classList.remove('collapsed');
+  renderManualObsDB();
+  setTimeout(()=>{
+    const dbBox=document.getElementById('manualObsDB');
+    if(dbBox) dbBox.scrollIntoView({behavior:'smooth',block:'start'});
+  },80);
+}
+function patchManualButtonsV56(){
+  document.querySelectorAll('button').forEach(btn=>{
+    const txt=(btn.textContent||'').trim().toUpperCase();
+    if(txt==='VER BASE MANUAL'){
+      btn.onclick=openManualObsDBV56;
+    }
+  });
+}
+function renderManualObsDB(){
+ const box=document.getElementById('manualObsDB'); 
+ if(!box) return;
+ if(!db){ box.innerHTML='<p class="mini" style="padding:10px">La base local aún no está lista.</p>'; return; }
+ manualObsAll().then(arr=>{
+   arr=(arr||[]).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+   if(!arr.length){ box.innerHTML='<p class="mini" style="padding:10px">Aún no existen observaciones manuales guardadas.</p>'; return; }
+   const rows=arr.slice(0,100).map((o,i)=>`<tr>
+     <td>${i+1}</td>
+     <td>${esc(o.articulo||o.norma||'')}</td>
+     <td><div class="article-preview-v55">${esc(formatArticleTextV55(o.texto||''))}</div></td>
+     <td>${esc(o.observacion||'')}</td>
+     <td class="small-actions">
+       <button class="secondary" onclick="usarObsManualEnInforme('${esc(o.id)}')">Usar</button>
+       <button class="star-btn-v55" onclick="manualToFavoriteV56('${esc(o.id)}')">★ Favorita</button>
+       <button class="danger" onclick="eliminarObsManual('${esc(o.id)}')">Eliminar</button>
+     </td>
+   </tr>`).join('');
+   box.classList.add('manual-db-v56');
+   box.innerHTML=`<table><thead><tr><th>Nro.</th><th>Artículo</th><th>Texto del artículo</th><th>Observación específica</th><th>Acciones</th></tr></thead><tbody>${rows}</tbody></table>`;
+ });
+}
+async function exportarObsManualesCSV(){
+ const arr=await manualObsAll();
+ if(!arr.length){ msg('No existen observaciones manuales para exportar.'); return; }
+ const headers=['articulo','texto_del_articulo','observacion_especifica'];
+ const lines=['sep=;'];
+ lines.push(headers.map(csvCell).join(';'));
+ arr.forEach(o=>lines.push([o.articulo||o.norma||'', formatArticleTextV55(o.texto||''), o.observacion||''].map(csvCell).join(';')));
+ const blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+ const a=document.createElement('a'); 
+ a.href=URL.createObjectURL(blob); 
+ a.download='OBSERVACIONES_MANUALES_ARTICULOS_'+today()+'.csv'; 
+ a.click(); 
+ URL.revokeObjectURL(a.href);
+}
+
+/* 4) Favoritas con botones a la derecha */
+function renderFavoritesV55(){
+  const box=document.getElementById('favoritasObsV55');
+  if(!box) return;
+  const arr=getFavoritesV55();
+  if(!arr.length){ box.innerHTML=''; return; }
+  box.innerHTML=`<div class="fav-box-v55"><h3>★ Observaciones favoritas</h3><div class="fav-list-v55">${arr.slice(0,20).map(f=>`<div class="fav-item-v55 fav-item-v56">
+    <div>
+      <div class="meta"><strong>${esc(f.articulo||'Artículo')}</strong></div>
+      <div class="obs">${esc(f.observacion||'')}</div>
+    </div>
+    <div class="fav-actions-v56">
+      <button class="secondary" onclick="useFavoriteV55('${esc(f.id)}')">Usar</button>
+      <button class="danger" onclick="removeFavoriteV55('${esc(f.id)}')">Quitar</button>
+    </div>
+  </div>`).join('')}</div></div>`;
+}
+
+/* 5) Requisitos: Artículo/Norma con Ordenanza Nro. 016-2023 */
+function requisitoObsRows(){
+ return requisitosPorEstado('No Cumple').map(r=>{
+   return {
+     id:r.id,
+     articulo:'Ordenanza Nro. 016-2023, Artículo 98',
+     norma:'Ordenanza Nro. 016-2023, Artículo 98',
+     observacion:r.texto,
+     texto:'',
+     source:'req'
+   };
+ });
+}
+
+/* 8) Nota antes de conclusiones en Informe Técnico Aprobatorio */
+function renderAprobatorioNotaV56(){
+  ensureV56State();
+  return `<div class="apr-note-v56">
+    <label class="check-line"><input type="checkbox" id="toggleNotaAprobatorioV56" ${state.aprobatorio.notaPreConclusiones.activo?'checked':''}> Incluir nota antes de conclusiones</label>
+    <div class="mini">Si se activa, la nota aparecerá antes de la sección Conclusión técnica del informe aprobatorio.</div>
+    ${state.aprobatorio.notaPreConclusiones.activo?`<textarea id="notaAprobatorioTextoV56" placeholder="Escriba la nota para el informe aprobatorio">${esc(state.aprobatorio.notaPreConclusiones.texto||'')}</textarea>`:''}
+  </div>`;
+}
+const _renderAprobatorioForm_base_V56 = typeof renderAprobatorioForm==='function' ? renderAprobatorioForm : null;
+renderAprobatorioForm = function(){
+  if(_renderAprobatorioForm_base_V56) _renderAprobatorioForm_base_V56();
+  ensureV56State();
+  const box=document.getElementById('aprobatorioForm');
+  if(!box) return;
+  if(!document.getElementById('notaAprobatorioBoxV56')){
+    const div=document.createElement('div');
+    div.id='notaAprobatorioBoxV56';
+    div.innerHTML=renderAprobatorioNotaV56();
+    box.insertBefore(div, box.firstChild);
+  }else{
+    document.getElementById('notaAprobatorioBoxV56').innerHTML=renderAprobatorioNotaV56();
+  }
+  const tog=document.getElementById('toggleNotaAprobatorioV56');
+  if(tog) tog.addEventListener('change',()=>{
+    ensureV56State();
+    state.aprobatorio.notaPreConclusiones.activo=tog.checked;
+    renderAprobatorioForm();
+    renderReport(); renderPreview();
+  });
+  const txt=document.getElementById('notaAprobatorioTextoV56');
+  if(txt) txt.addEventListener('input',()=>{
+    ensureV56State();
+    state.aprobatorio.notaPreConclusiones.texto=smartInputCase(txt.value);
+    renderReport(); renderPreview();
+  });
+}
+function notaAprobatorioReportV56(){
+  ensureV56State();
+  const n=state.aprobatorio.notaPreConclusiones;
+  if(!n || !n.activo || !String(n.texto||'').trim()) return '';
+  return `<h2>Nota</h2><p>${nl2br(esc(n.texto))}</p>`;
+}
+function renderInformeAprobatorio(){
+ const t=DATA.plantillaAprobatorio; 
+ const title=tmplRow(t,'ENC_002').Texto_Base||tmplRow(t,'ENC_002').Título||'INFORME TÉCNICO APROBATORIO DE OBRA MAYOR'; 
+ const base=tmplRow(t,'BLG_001').Texto_Base||''; 
+ const con2=replaceTemplate(tmplRow(t,'CON_002').Texto_Base||'').replaceAll('{{TABLA_HOJA_CONCLUSION_TECNICA_BASE}}','');
+ let n=1;
+ const incumplidos=requisitosPorEstado('No Cumple');
+ let alertReq=incumplidos.length?`<div class="apr-alert">ALERTA: Existen ${incumplidos.length} requisito(s) marcado(s) como NO CUMPLE. Revise la pestaña Requisitos antes de emitir el informe técnico aprobatorio.</div>`:'';
+ let html=`${reportHeaderAprobatorioV55(title)}${alertReq}<h2>${n++}. Información general</h2>${reportInfoGeneralAprobatorio()}<h2>${n++}. Detalle del proyecto</h2><p>${nl2br(tmplRow(t,'INF_002').Texto_Base||'')}</p>${reqTable(requisitosPorEstado('Cumple'),'apr')}<h2>${n++}. Base técnico - legal</h2>${formatBaseTecnicoLegalAprobatorio(base)}`;
+ syncAnteproyectoAuto(); 
+ if(anteproyectoActivo()) html+=`<h2>${n++}. Resolución de Anteproyecto</h2>${anteproyectoReport()}`;
+ html+=`<h2>${n++}. Consideraciones estructurales</h2>${aprobatorioStructuralTable()}<h2>${n++}. Estudios complementarios</h2>${estudiosReport()}${notaAprobatorioReportV56()}<h2>${n++}. Conclusión técnica</h2><p>En concordancia a lo dispuesto en la Ordenanza No. 016-2023 de Actualización del Código Urbano, <strong>Artículo 92</strong> Componentes del Proyecto Técnico de Edificación de Obras Mayores, se concluye emitir el presente <strong>INFORME TÉCNICO FAVORABLE</strong>, de conformidad al siguiente detalle:</p>${conclusionReport()}<p>${nl2br(con2)}</p>`;
+ return html;
+}
+
+/* Parchear render Observaciones para que el botón Ver Base Manual abra la tabla */
+const _renderObservacionesForm_base_V56 = typeof renderObservacionesForm==='function' ? renderObservacionesForm : null;
+renderObservacionesForm = function(){
+  if(_renderObservacionesForm_base_V56) _renderObservacionesForm_base_V56();
+  setTimeout(patchManualButtonsV56,0);
+};
+window.addEventListener('load',()=>{
+  setTimeout(()=>{patchManualButtonsV56(); patchSubsanacion5DiasV56();},600);
 });
 </script>
 
