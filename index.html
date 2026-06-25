@@ -1371,6 +1371,67 @@ input,select,textarea{
   font-weight:900;
 }
 
+
+/* ===== V63: Uso principal dinámico + base legal por tipo de edificación ===== */
+.uso-principal-v63{
+  border:1px solid #c7d5e6;
+  border-radius:12px;
+  background:#f8fbff;
+  padding:10px;
+  margin-top:4px;
+}
+.uso-principal-v63 .uso-grid-v63{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:8px;
+}
+.uso-principal-v63 select,
+.uso-principal-v63 input{
+  width:100%;
+}
+.uso-subbox-v63{
+  margin-top:8px;
+  padding:9px;
+  border:1px solid #d8e2ef;
+  border-radius:10px;
+  background:#fff;
+}
+.uso-checks-v63{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:6px 12px;
+  margin-top:6px;
+}
+.uso-checks-v63 label{
+  display:flex;
+  gap:6px;
+  align-items:flex-start;
+  font-size:12px;
+  color:#1f2937;
+}
+.uso-summary-v63{
+  margin-top:8px;
+  padding:7px 9px;
+  border-left:3px solid #0b5cab;
+  background:#eef6ff;
+  color:#0b2b4c;
+  font-size:12px;
+}
+.uso-warning-v63{
+  margin-top:6px;
+  color:#b45309;
+  font-size:12px;
+}
+.legal-block .uso-dynamic-v63{
+  background:#f8fafc;
+  border-left:3px solid #0b5cab;
+  padding:6px 10px;
+  margin:6px 0;
+}
+@media(max-width:900px){
+  .uso-checks-v63{grid-template-columns:1fr}
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -8422,6 +8483,302 @@ function renderObsSeleccionadas(){
 
 window.addEventListener('load',()=>{
   setTimeout(()=>{ renderObsSeleccionadas(); renderReport(); renderPreview(); },900);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V63 SOBRE V62
+   Uso Principal desde CSV + Base legal dinámica por tipo de edificación.
+   Fuente CSV: data/usos_principales.csv
+   ========================================================== */
+
+const DEFAULT_USOS_PRINCIPALES_V63 = [{"Orden": 10, "Uso": "EN TODAS", "Grupo": "GLOBAL", "Base_Legal": "SECCIÓN DÉCIMA TERCERA Estacionamientos (Artículos 485 - 510)\nSECCIÓN DÉCIMA NOVENA: De la Propiedad Horizontal (Artículos 568 - 576).\nSECCIÓN VIGÉSIMA SEGUNDA Normativa General (Informe aprobatorio de finalización, tolerancias, salientes y acabados) (Artículos 611 - 615).", "Mostrar_Lista": "NO", "Activo": "SI"}, {"Orden": 20, "Uso": "RESIDENCIAL", "Grupo": "PRINCIPAL", "Base_Legal": "SECCIÓN PRIMERA Edificios para Habitación (Artículos 274 - 286)", "Mostrar_Lista": "SI", "Activo": "SI"}, {"Orden": 30, "Uso": "COMERCIAL", "Grupo": "PRINCIPAL", "Base_Legal": "SECCIÓN SEGUNDA Edificios de Comercios y Oficinas (Artículos 287 - 301).", "Mostrar_Lista": "SI", "Activo": "SI"}, {"Orden": 40, "Uso": "EDUCACIÓN", "Grupo": "PRINCIPAL", "Base_Legal": "SECCIÓN TERCERA Edificios para Educación (Artículos 302 - 331).", "Mostrar_Lista": "SI", "Activo": "SI"}, {"Orden": 50, "Uso": "SALUD", "Grupo": "PRINCIPAL", "Base_Legal": "SECCIÓN CUARTA Edificaciones para Salud (Artículos 332 - 352).", "Mostrar_Lista": "SI", "Activo": "SI"}, {"Orden": 60, "Uso": "RESIDENCIAS UNIVERSITARIAS", "Grupo": "PRINCIPAL", "Base_Legal": "SECCIÓN VIGÉSIMA Residencias Universitarias (Artículos 577 - 588).", "Mostrar_Lista": "SI", "Activo": "SI"}, {"Orden": 70, "Uso": "OTROS", "Grupo": "PADRE_OTROS", "Base_Legal": "OTROS", "Mostrar_Lista": "SI", "Activo": "SI"}, {"Orden": 80, "Uso": "ESPECTÁCULOS DEPORTIVOS", "Grupo": "OTROS", "Base_Legal": "SECCIÓN QUINTA Edificaciones para Espectáculos Deportivos (Artículos 353 - 363).", "Mostrar_Lista": "SI", "Activo": "SI"}, {"Orden": 90, "Uso": "ALOJAMIENTOS", "Grupo": "OTROS", "Base_Legal": "SECCION SEXTA Edificaciones para Alojamiento (Artículos 364 - 382).", "Mostrar_Lista": "SI", "Activo": "SI"}, {"Orden": 100, "Uso": "SALAS DE ESPECTÁCULOS", "Grupo": "OTROS", "Base_Legal": "SECCION SÉPTIMA Salas de Espectáculos (Artículos 383 - 418).", "Mostrar_Lista": "SI", "Activo": "SI"}, {"Orden": 110, "Uso": "GASOLINERAS", "Grupo": "OTROS", "Base_Legal": "SECCIÓN OCTAVA Estaciones de Servicios, Gasolineras y Depósito de Combustibles (Artículos 419 - 439).", "Mostrar_Lista": "SI", "Activo": "SI"}, {"Orden": 120, "Uso": "MECÁNICAS", "Grupo": "OTROS", "Base_Legal": "SECCIÓN NOVENA Mecánicas, Lubricadoras, Vulcanizadoras, Lavadoras y Sitios para Cambios de Aceite (Artículos 440 - 448).", "Mostrar_Lista": "SI", "Activo": "SI"}, {"Orden": 130, "Uso": "FERIAS CON APARÁTOS MECÁNICOS", "Grupo": "OTROS", "Base_Legal": "SECCIÓN DÉCIMA Ferias con Aparatos Mecánicos (Artículos 449 - 452).", "Mostrar_Lista": "SI", "Activo": "SI"}, {"Orden": 140, "Uso": "CULTO", "Grupo": "OTROS", "Base_Legal": "SECCIÓN DÉCIMA PRIMERA Edificios Destinados al Culto (Artículos 453 - 458).", "Mostrar_Lista": "SI", "Activo": "SI"}, {"Orden": 150, "Uso": "PISCINAS", "Grupo": "OTROS", "Base_Legal": "SECCIÓN DÉCIMA SEGUNDA Piscinas (Artículos 459 - 484).", "Mostrar_Lista": "SI", "Activo": "SI"}, {"Orden": 160, "Uso": "IMPLANTACIÓN INDUSTRIAL", "Grupo": "OTROS", "Base_Legal": "SECCIÓN DÉCIMA CUARTA Implantación Industrial (Artículos 511 - 523).", "Mostrar_Lista": "SI", "Activo": "SI"}, {"Orden": 170, "Uso": "PIEZAS SANITARIAS EN LOCALES INDUSTRIALES", "Grupo": "OTROS", "Base_Legal": "SECCIÓN DÉCIMA QUINTA Piezas Sanitarias en Locales Industriales (Artículos 524 - 527).", "Mostrar_Lista": "SI", "Activo": "SI"}, {"Orden": 180, "Uso": "CEMENTERIOS, FUNERARIAS", "Grupo": "OTROS", "Base_Legal": "SECCIÓN DÉCIMA SEXTA Cementerios, Criptas, Salas de Velación y Funerarias (Artículos 528 - 551).", "Mostrar_Lista": "SI", "Activo": "SI"}, {"Orden": 190, "Uso": "TRANSPORTE", "Grupo": "OTROS", "Base_Legal": "SECCIÓN DÉCIMA SÉPTIMA Edificaciones de Transporte (Artículos 552 - 554).", "Mostrar_Lista": "SI", "Activo": "SI"}, {"Orden": 200, "Uso": "CENTROS DE TOLERANCIA", "Grupo": "OTROS", "Base_Legal": "SECCIÓN VIGÉSIMA PRIMERA Centros de Tolerancia (Artículos 589 - 610).", "Mostrar_Lista": "SI", "Activo": "SI"}, {"Orden": 210, "Uso": "MIXTO", "Grupo": "ESPECIAL", "Base_Legal": "MIXTO", "Mostrar_Lista": "SI", "Activo": "SI"}];
+window.__USOS_PRINCIPALES_V63_LOADED__ = false;
+
+function ensureUsosV63(){
+  if(!DATA.usosPrincipalesV63) DATA.usosPrincipalesV63 = DEFAULT_USOS_PRINCIPALES_V63;
+  if(!state.usoPrincipalV63) state.usoPrincipalV63 = {modo:'', seleccionados:[], otro:''};
+}
+
+function activeUsoV63(r){
+  const v=String(r.Activo||r.activo||'SI').trim().toLowerCase();
+  return !['no','false','0','inactivo'].includes(v);
+}
+
+function normUsoV63(v){
+  return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toUpperCase();
+}
+
+function cleanUsoLegalV63(v){
+  return String(v||'')
+    .replace(/\r/g,'\n')
+    .split(/\n+/)
+    .map(x=>x.trim().replace(/^[·•●\-*]\s*/, '').replace(/\s+/g,' '))
+    .filter(Boolean)
+    .join('\n');
+}
+
+async function loadUsosPrincipalesV63(){
+  ensureUsosV63();
+  if(window.__USOS_PRINCIPALES_V63_LOADED__) return DATA.usosPrincipalesV63;
+  try{
+    const txt = await fetchCSVTextV32('data/usos_principales.csv');
+    const rows = parseCSVV32(txt).filter(activeUsoV63).map(r=>({
+      Orden: Number(r.Orden||r.orden||0) || 0,
+      Uso: String(r.Uso||r.uso||'').trim().toUpperCase(),
+      Grupo: String(r.Grupo||r.grupo||'').trim().toUpperCase(),
+      Base_Legal: cleanUsoLegalV63(r.Base_Legal||r['Base Legal']||r.base_legal||''),
+      Mostrar_Lista: String(r.Mostrar_Lista||r.mostrar_lista||'SI').trim().toUpperCase(),
+      Activo: String(r.Activo||r.activo||'SI').trim().toUpperCase()
+    })).filter(r=>r.Uso);
+    if(rows.length) DATA.usosPrincipalesV63 = rows;
+    window.__USOS_PRINCIPALES_V63_LOADED__ = true;
+    console.log('Usos principales V63 cargados:', DATA.usosPrincipalesV63.length);
+  }catch(e){
+    console.warn('No se pudo cargar data/usos_principales.csv; usando base interna V63.', e);
+    DATA.usosPrincipalesV63 = DEFAULT_USOS_PRINCIPALES_V63;
+    window.__USOS_PRINCIPALES_V63_LOADED__ = true;
+  }
+  return DATA.usosPrincipalesV63;
+}
+
+const _loadExternalCSVsV32_base_V63 = typeof loadExternalCSVsV32 === 'function' ? loadExternalCSVsV32 : async()=>{};
+loadExternalCSVsV32 = async function(){
+  await _loadExternalCSVsV32_base_V63();
+  await loadUsosPrincipalesV63();
+};
+
+function usosRowsV63(){
+  ensureUsosV63();
+  return (DATA.usosPrincipalesV63||[]).slice().sort((a,b)=>(Number(a.Orden||0)-Number(b.Orden||0)) || String(a.Uso).localeCompare(String(b.Uso)));
+}
+
+function usosPrincipalesComunesV63(){
+  return usosRowsV63().filter(r=>r.Grupo==='PRINCIPAL');
+}
+function usosOtrosV63(){
+  return usosRowsV63().filter(r=>r.Grupo==='OTROS');
+}
+function usosSeleccionablesV63(){
+  return usosRowsV63().filter(r=>!['GLOBAL','PADRE_OTROS','ESPECIAL'].includes(r.Grupo));
+}
+function usoGlobalV63(){
+  return usosRowsV63().find(r=>r.Grupo==='GLOBAL' || r.Uso==='EN TODAS') || null;
+}
+function usoRowByNameV63(name){
+  const n=normUsoV63(name);
+  return usosRowsV63().find(r=>normUsoV63(r.Uso)===n) || null;
+}
+
+function usoFieldV63(){
+  return DATA.infoFields.find(f=>normUsoV63(f.label||'').includes('USO PRINCIPAL')) || null;
+}
+
+function parseUsoValueV63(){
+  ensureUsosV63();
+  const f=usoFieldV63();
+  const raw=String(f ? (state.info[f.key]||'') : '').trim();
+  if(state.usoPrincipalV63 && (state.usoPrincipalV63.modo || state.usoPrincipalV63.seleccionados?.length || state.usoPrincipalV63.otro)) return;
+  if(raw.toUpperCase().startsWith('MIXTO')){
+    const vals=raw.replace(/^MIXTO\s*:?\s*/i,'').split(',').map(x=>x.trim()).filter(Boolean);
+    state.usoPrincipalV63={modo:'MIXTO', seleccionados:vals, otro:''};
+  }else if(raw.toUpperCase().startsWith('OTROS')){
+    const val=raw.replace(/^OTROS\s*:?\s*/i,'').trim();
+    state.usoPrincipalV63={modo:'OTROS', seleccionados:[], otro:val};
+  }else if(raw){
+    state.usoPrincipalV63={modo:raw.toUpperCase(), seleccionados:[], otro:''};
+  }
+}
+
+function displayUsoValueV63(){
+  ensureUsosV63();
+  const u=state.usoPrincipalV63||{};
+  if(u.modo==='MIXTO'){
+    const vals=(u.seleccionados||[]).filter(Boolean);
+    return vals.length ? 'MIXTO: '+vals.join(', ') : 'MIXTO';
+  }
+  if(u.modo==='OTROS'){
+    return u.otro ? 'OTROS: '+u.otro : 'OTROS';
+  }
+  return u.modo||'';
+}
+
+function syncUsoToInfoV63(){
+  const f=usoFieldV63();
+  if(!f) return;
+  const val=displayUsoValueV63();
+  state.info[f.key]=val;
+  const hidden=document.getElementById('info_'+f.key);
+  if(hidden) hidden.value=val;
+  const sum=document.getElementById('usoSummaryV63');
+  if(sum) sum.textContent = val ? 'Uso principal seleccionado: '+val : 'Sin uso principal seleccionado.';
+}
+
+function usoOptionsHtmlV63(selected){
+  const comunes=usosPrincipalesComunesV63();
+  let html='<option value="">Seleccione...</option>';
+  html += comunes.map(r=>`<option value="${esc(r.Uso)}" ${selected===r.Uso?'selected':''}>${esc(r.Uso)}</option>`).join('');
+  html += `<option value="MIXTO" ${selected==='MIXTO'?'selected':''}>MIXTO</option>`;
+  html += `<option value="OTROS" ${selected==='OTROS'?'selected':''}>OTROS</option>`;
+  return html;
+}
+
+function renderUsoPrincipalFieldV63(){
+  ensureUsosV63();
+  parseUsoValueV63();
+  const f=usoFieldV63();
+  if(!f) return;
+  const input=document.getElementById('info_'+f.key);
+  const field=input?.closest('.field');
+  if(!field || field.dataset.usoV63==='1') return;
+  field.dataset.usoV63='1';
+
+  const u=state.usoPrincipalV63 || {modo:'',seleccionados:[],otro:''};
+  const selected=u.modo||'';
+  const comunes=usosPrincipalesComunesV63();
+  const otros=usosOtrosV63();
+  const todos=usosSeleccionablesV63();
+
+  const mixtoChecks=todos.map(r=>{
+    const checked=(u.seleccionados||[]).map(normUsoV63).includes(normUsoV63(r.Uso));
+    return `<label><input type="checkbox" class="usoMixCheckV63" value="${esc(r.Uso)}" ${checked?'checked':''}> ${esc(r.Uso)}</label>`;
+  }).join('');
+
+  const otrosOptions=otros.map(r=>`<option value="${esc(r.Uso)}" ${u.otro===r.Uso?'selected':''}>${esc(r.Uso)}</option>`).join('');
+
+  field.innerHTML=`<label>USO PRINCIPAL: *</label>
+    <input id="info_${f.key}" type="hidden" value="${esc(state.info[f.key]||'')}">
+    <div class="uso-principal-v63">
+      <div class="uso-grid-v63">
+        <select id="usoModoV63">${usoOptionsHtmlV63(selected)}</select>
+      </div>
+      <div id="usoMixtoBoxV63" class="uso-subbox-v63" style="display:${selected==='MIXTO'?'block':'none'}">
+        <strong>Usos para MIXTO</strong>
+        <div class="mini">Seleccione dos o más tipos. La base legal se combinará en el Informe Aprobatorio.</div>
+        <div class="uso-checks-v63">${mixtoChecks}</div>
+        <div id="usoMixtoWarnV63" class="uso-warning-v63"></div>
+      </div>
+      <div id="usoOtrosBoxV63" class="uso-subbox-v63" style="display:${selected==='OTROS'?'block':'none'}">
+        <strong>Subtipo de OTROS</strong>
+        <select id="usoOtroSelectV63"><option value="">Seleccione...</option>${otrosOptions}</select>
+      </div>
+      <div id="usoSummaryV63" class="uso-summary-v63"></div>
+    </div>
+    <div class="error-text" id="err_${f.key}"></div>`;
+
+  const modo=document.getElementById('usoModoV63');
+  const otro=document.getElementById('usoOtroSelectV63');
+  const warn=document.getElementById('usoMixtoWarnV63');
+
+  function updateBoxes(){
+    const val=modo.value;
+    state.usoPrincipalV63.modo=val;
+    if(val!=='MIXTO') state.usoPrincipalV63.seleccionados=[];
+    if(val!=='OTROS') state.usoPrincipalV63.otro='';
+    const mb=document.getElementById('usoMixtoBoxV63');
+    const ob=document.getElementById('usoOtrosBoxV63');
+    if(mb) mb.style.display=val==='MIXTO'?'block':'none';
+    if(ob) ob.style.display=val==='OTROS'?'block':'none';
+    syncUsoToInfoV63();
+    updateAll();
+  }
+
+  modo.addEventListener('change',updateBoxes);
+  if(otro) otro.addEventListener('change',()=>{
+    state.usoPrincipalV63.otro=otro.value;
+    syncUsoToInfoV63();
+    updateAll();
+  });
+  field.querySelectorAll('.usoMixCheckV63').forEach(cb=>{
+    cb.addEventListener('change',()=>{
+      const vals=[...field.querySelectorAll('.usoMixCheckV63:checked')].map(x=>x.value);
+      state.usoPrincipalV63.seleccionados=vals;
+      if(warn) warn.textContent = vals.length && vals.length<2 ? 'Para MIXTO se recomienda seleccionar dos o más usos.' : '';
+      syncUsoToInfoV63();
+      updateAll();
+    });
+  });
+  syncUsoToInfoV63();
+}
+
+const _renderInfoForm_base_V63 = typeof renderInfoForm === 'function' ? renderInfoForm : null;
+renderInfoForm = function(){
+  if(_renderInfoForm_base_V63) _renderInfoForm_base_V63();
+  setTimeout(renderUsoPrincipalFieldV63,0);
+};
+
+function selectedUsoNamesV63(){
+  ensureUsosV63();
+  parseUsoValueV63();
+  const u=state.usoPrincipalV63||{};
+  if(u.modo==='MIXTO') return (u.seleccionados||[]).filter(Boolean);
+  if(u.modo==='OTROS') return u.otro ? [u.otro] : [];
+  if(u.modo && !['MIXTO','OTROS'].includes(u.modo)) return [u.modo];
+  const f=usoFieldV63();
+  const raw=f ? String(state.info[f.key]||'').trim() : '';
+  return raw ? [raw] : [];
+}
+
+function usoLegalDynamicLinesV63(){
+  const lines=[];
+  const seen=new Set();
+  function add(txt){
+    String(txt||'').split(/\n+/).map(x=>x.trim()).filter(Boolean).forEach(line=>{
+      const key=normUsoV63(line);
+      if(!seen.has(key)){ seen.add(key); lines.push(line); }
+    });
+  }
+  const global=usoGlobalV63();
+  if(global) add(global.Base_Legal);
+  selectedUsoNamesV63().forEach(name=>{
+    const row=usoRowByNameV63(name);
+    if(row) add(row.Base_Legal);
+  });
+  return lines;
+}
+
+function baseLegalAprobatorioConUsoV63(base){
+  const baseLines=String(base||'').split(/\n+/).map(x=>x.trim()).filter(Boolean);
+  const out=[];
+  let inserted=false;
+  for(const line of baseLines){
+    const u=normUsoV63(line);
+    if(u.includes('CAPITULO IV NORMAS POR TIPO DE EDIFICACION')){
+      out.push('CAPITULO IV NORMAS POR TIPO DE EDIFICACIÓN');
+      usoLegalDynamicLinesV63().forEach(x=>out.push(x));
+      inserted=true;
+      break; // Reemplaza toda la información fija que estaba después de este capítulo.
+    }
+    out.push(line);
+  }
+  if(!inserted){
+    out.push('CAPITULO IV NORMAS POR TIPO DE EDIFICACIÓN');
+    usoLegalDynamicLinesV63().forEach(x=>out.push(x));
+  }
+  return out.join('\n');
+}
+
+function usosAprobatorioResumenV63(){
+  const vals=selectedUsoNamesV63();
+  return vals.length ? `<p class="uso-dynamic-v63"><strong>Uso principal considerado para normas por tipo de edificación:</strong> ${esc(vals.join(', '))}</p>` : '';
+}
+
+const _formatBaseTecnicoLegalAprobatorio_base_V63 = typeof formatBaseTecnicoLegalAprobatorio === 'function' ? formatBaseTecnicoLegalAprobatorio : null;
+formatBaseTecnicoLegalAprobatorio = function(text){
+  const dyn=baseLegalAprobatorioConUsoV63(text);
+  const html=_formatBaseTecnicoLegalAprobatorio_base_V63 ? _formatBaseTecnicoLegalAprobatorio_base_V63(dyn) : `<div class="legal-block">${esc(dyn)}</div>`;
+  return html.replace('</div>', usosAprobatorioResumenV63()+'</div>');
+};
+
+window.addEventListener('load',()=>{
+  ensureUsosV63();
+  loadUsosPrincipalesV63().then(()=>{
+    renderUsoPrincipalFieldV63();
+    renderReport();
+    renderPreview();
+  });
 });
 </script>
 
