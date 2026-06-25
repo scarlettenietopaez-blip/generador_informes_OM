@@ -1535,6 +1535,72 @@ input,select,textarea{
   }
 }
 
+
+/* ===== V65: MIXTO compacto para no alargar la página ===== */
+.uso-subbox-v63{
+  padding:10px!important;
+}
+.uso-subbox-v63 > strong{
+  font-size:13px!important;
+}
+.uso-subbox-v63 .mini{
+  font-size:11px!important;
+  margin-bottom:7px!important;
+}
+.uso-checks-v63{
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(118px,1fr))!important;
+  gap:5px!important;
+  max-height:245px!important;
+  overflow-y:auto!important;
+  padding-right:4px!important;
+  margin-top:6px!important;
+}
+.uso-checks-v63 label{
+  min-height:32px!important;
+  padding:6px 7px!important;
+  border-radius:8px!important;
+  grid-template-columns:15px 1fr!important;
+  gap:6px!important;
+  font-size:10px!important;
+  line-height:1.05!important;
+  letter-spacing:0!important;
+}
+.uso-checks-v63 input[type="checkbox"]{
+  width:13px!important;
+  height:13px!important;
+}
+.uso-checks-v63::-webkit-scrollbar{
+  width:8px;
+}
+.uso-checks-v63::-webkit-scrollbar-thumb{
+  background:#b8c7d9;
+  border-radius:999px;
+}
+.uso-checks-v63::-webkit-scrollbar-track{
+  background:#eef3f8;
+  border-radius:999px;
+}
+.uso-summary-v63{
+  font-size:11px!important;
+  padding:7px 9px!important;
+}
+.uso-warning-v63{
+  font-size:11px!important;
+  padding:6px 8px!important;
+}
+@media(max-width:760px){
+  .uso-checks-v63{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    max-height:260px!important;
+  }
+}
+@media(max-width:420px){
+  .uso-checks-v63{
+    grid-template-columns:1fr!important;
+  }
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
