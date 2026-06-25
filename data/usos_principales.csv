@@ -1,7 +1,24 @@
-﻿Uso Principal;Activo
-RESIDENCIAL;Sí
-COMERCIAL;Sí
-SERVICIOS;Sí
-EQUIPAMIENTO;Sí
-INDUSTRIAL;Sí
-MIXTO;Sí
+﻿Orden;Uso;Grupo;Base_Legal;Mostrar_Lista;Activo
+10;EN TODAS;GLOBAL;"SECCIÓN DÉCIMA TERCERA Estacionamientos (Artículos 485 - 510)
+SECCIÓN DÉCIMA NOVENA: De la Propiedad Horizontal (Artículos 568 - 576).
+SECCIÓN VIGÉSIMA SEGUNDA Normativa General (Informe aprobatorio de finalización, tolerancias, salientes y acabados) (Artículos 611 - 615).";NO;SI
+20;RESIDENCIAL;PRINCIPAL;SECCIÓN PRIMERA Edificios para Habitación (Artículos 274 - 286);SI;SI
+30;COMERCIAL;PRINCIPAL;SECCIÓN SEGUNDA Edificios de Comercios y Oficinas (Artículos 287 - 301).;SI;SI
+40;EDUCACIÓN;PRINCIPAL;SECCIÓN TERCERA Edificios para Educación (Artículos 302 - 331).;SI;SI
+50;SALUD;PRINCIPAL;SECCIÓN CUARTA Edificaciones para Salud (Artículos 332 - 352).;SI;SI
+60;RESIDENCIAS UNIVERSITARIAS;PRINCIPAL;SECCIÓN VIGÉSIMA Residencias Universitarias (Artículos 577 - 588).;SI;SI
+70;OTROS;PADRE_OTROS;OTROS;SI;SI
+80;ESPECTÁCULOS DEPORTIVOS;OTROS;SECCIÓN QUINTA Edificaciones para Espectáculos Deportivos (Artículos 353 - 363).;SI;SI
+90;ALOJAMIENTOS;OTROS;SECCION SEXTA Edificaciones para Alojamiento (Artículos 364 - 382).;SI;SI
+100;SALAS DE ESPECTÁCULOS;OTROS;SECCION SÉPTIMA Salas de Espectáculos (Artículos 383 - 418).;SI;SI
+110;GASOLINERAS;OTROS;SECCIÓN OCTAVA Estaciones de Servicios, Gasolineras y Depósito de Combustibles (Artículos 419 - 439).;SI;SI
+120;MECÁNICAS;OTROS;SECCIÓN NOVENA Mecánicas, Lubricadoras, Vulcanizadoras, Lavadoras y Sitios para Cambios de Aceite (Artículos 440 - 448).;SI;SI
+130;FERIAS CON APARÁTOS MECÁNICOS;OTROS;SECCIÓN DÉCIMA Ferias con Aparatos Mecánicos (Artículos 449 - 452).;SI;SI
+140;CULTO;OTROS;SECCIÓN DÉCIMA PRIMERA Edificios Destinados al Culto (Artículos 453 - 458).;SI;SI
+150;PISCINAS;OTROS;SECCIÓN DÉCIMA SEGUNDA Piscinas (Artículos 459 - 484).;SI;SI
+160;IMPLANTACIÓN INDUSTRIAL;OTROS;SECCIÓN DÉCIMA CUARTA Implantación Industrial (Artículos 511 - 523).;SI;SI
+170;PIEZAS SANITARIAS EN LOCALES INDUSTRIALES;OTROS;SECCIÓN DÉCIMA QUINTA Piezas Sanitarias en Locales Industriales (Artículos 524 - 527).;SI;SI
+180;CEMENTERIOS, FUNERARIAS;OTROS;SECCIÓN DÉCIMA SEXTA Cementerios, Criptas, Salas de Velación y Funerarias (Artículos 528 - 551).;SI;SI
+190;TRANSPORTE;OTROS;SECCIÓN DÉCIMA SÉPTIMA Edificaciones de Transporte (Artículos 552 - 554).;SI;SI
+200;CENTROS DE TOLERANCIA;OTROS;SECCIÓN VIGÉSIMA PRIMERA Centros de Tolerancia (Artículos 589 - 610).;SI;SI
+210;MIXTO;ESPECIAL;MIXTO;SI;SI
