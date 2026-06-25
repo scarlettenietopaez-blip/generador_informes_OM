@@ -1432,6 +1432,109 @@ input,select,textarea{
   .uso-checks-v63{grid-template-columns:1fr}
 }
 
+
+/* ===== V64: diseño profesional para selección MIXTO / OTROS ===== */
+.uso-principal-v63{
+  border:1px solid #d3deec!important;
+  border-radius:14px!important;
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%)!important;
+  padding:12px!important;
+  box-shadow:0 6px 18px rgba(8,43,76,.06)!important;
+}
+.uso-principal-v63 select{
+  height:42px!important;
+  border-radius:10px!important;
+  font-weight:700!important;
+}
+.uso-subbox-v63{
+  margin-top:10px!important;
+  padding:12px!important;
+  border:1px solid #d9e4f2!important;
+  border-radius:14px!important;
+  background:#ffffff!important;
+}
+.uso-subbox-v63 > strong{
+  display:block!important;
+  font-size:14px!important;
+  color:#0b2b4c!important;
+  margin-bottom:2px!important;
+}
+.uso-subbox-v63 .mini{
+  margin-bottom:10px!important;
+  color:#64748b!important;
+  font-size:12px!important;
+  line-height:1.25!important;
+}
+.uso-checks-v63{
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(185px,1fr))!important;
+  gap:8px!important;
+  margin-top:8px!important;
+}
+.uso-checks-v63 label{
+  display:grid!important;
+  grid-template-columns:18px 1fr!important;
+  align-items:center!important;
+  gap:8px!important;
+  min-height:46px!important;
+  margin:0!important;
+  padding:9px 10px!important;
+  border:1px solid #d8e2ef!important;
+  border-radius:11px!important;
+  background:#f9fbfe!important;
+  color:#0b2b4c!important;
+  font-size:11.5px!important;
+  font-weight:800!important;
+  line-height:1.15!important;
+  text-align:left!important;
+  letter-spacing:.01em!important;
+  cursor:pointer!important;
+  transition:background .15s ease,border-color .15s ease,box-shadow .15s ease,transform .12s ease!important;
+}
+.uso-checks-v63 label:hover{
+  background:#f1f7ff!important;
+  border-color:#9ec3ef!important;
+  box-shadow:0 3px 10px rgba(11,92,171,.10)!important;
+}
+.uso-checks-v63 label:has(input:checked){
+  background:#eaf5ff!important;
+  border-color:#0b5cab!important;
+  box-shadow:0 0 0 2px rgba(11,92,171,.10)!important;
+}
+.uso-checks-v63 input[type="checkbox"]{
+  width:15px!important;
+  height:15px!important;
+  margin:0!important;
+  accent-color:#0b5cab!important;
+}
+.uso-summary-v63{
+  margin-top:10px!important;
+  padding:9px 11px!important;
+  border-left:4px solid #0b5cab!important;
+  border-radius:8px!important;
+  background:#eef6ff!important;
+  color:#0b2b4c!important;
+  font-size:12px!important;
+  line-height:1.3!important;
+}
+.uso-warning-v63{
+  margin-top:8px!important;
+  padding:7px 9px!important;
+  border-radius:8px!important;
+  background:#fff7ed!important;
+  border:1px solid #fed7aa!important;
+  color:#b45309!important;
+  font-size:12px!important;
+}
+.uso-otros-select-v64{
+  margin-top:8px!important;
+}
+@media(max-width:760px){
+  .uso-checks-v63{
+    grid-template-columns:1fr!important;
+  }
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -8780,6 +8883,30 @@ window.addEventListener('load',()=>{
     renderPreview();
   });
 });
+</script>
+
+
+<script>
+/* V64 - Ajuste visual no invasivo para Uso Principal */
+function polishUsoPrincipalV64(){
+  const otro=document.getElementById('usoOtroSelectV63');
+  if(otro) otro.classList.add('uso-otros-select-v64');
+  const checks=document.querySelectorAll('.usoMixCheckV63');
+  checks.forEach(cb=>{
+    const label=cb.closest('label');
+    if(label && !label.dataset.v64){
+      label.dataset.v64='1';
+      cb.addEventListener('change',()=>label.classList.toggle('selected-v64', cb.checked));
+      label.classList.toggle('selected-v64', cb.checked);
+    }
+  });
+}
+const _renderUsoPrincipalFieldV63_base_V64 = typeof renderUsoPrincipalFieldV63 === 'function' ? renderUsoPrincipalFieldV63 : null;
+renderUsoPrincipalFieldV63 = function(){
+  if(_renderUsoPrincipalFieldV63_base_V64) _renderUsoPrincipalFieldV63_base_V64();
+  setTimeout(polishUsoPrincipalV64,0);
+};
+window.addEventListener('load',()=>setTimeout(polishUsoPrincipalV64,700));
 </script>
 
 </body>
