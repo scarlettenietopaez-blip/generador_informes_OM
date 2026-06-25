@@ -1695,6 +1695,84 @@ input,select,textarea{
   margin-right:4px;
 }
 
+
+/* ===== V71: mensajes de error visibles para PDF/Copiar ===== */
+#errorModalV71{
+  position:fixed;
+  inset:0;
+  z-index:999999;
+  background:rgba(15,23,42,.45);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+}
+#errorModalV71.show{
+  display:flex;
+}
+#errorModalV71 .error-box-v71{
+  width:min(620px,96vw);
+  max-height:82vh;
+  overflow:auto;
+  background:#ffffff;
+  border:1px solid #fecaca;
+  border-radius:18px;
+  box-shadow:0 24px 80px rgba(15,23,42,.28);
+  padding:18px;
+  color:#111827;
+}
+#errorModalV71 .error-head-v71{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+#errorModalV71 h3{
+  margin:0;
+  color:#9f1239;
+  font-size:18px;
+  line-height:1.2;
+}
+#errorModalV71 .close-error-v71{
+  border:0;
+  border-radius:10px;
+  background:#f1f5f9;
+  color:#0b2b4c;
+  padding:7px 10px;
+  font-weight:900;
+  cursor:pointer;
+}
+#errorModalV71 .error-body-v71{
+  white-space:pre-line;
+  line-height:1.45;
+  font-size:13px;
+}
+#errorModalV71 ul{
+  padding-left:20px;
+  margin:8px 0 0;
+}
+#errorInlineV71{
+  display:none;
+  margin:10px 0;
+  padding:11px 12px;
+  border:1px solid #fecaca;
+  border-left:5px solid #e11d48;
+  border-radius:12px;
+  background:#fff1f2;
+  color:#7f1d1d;
+  font-size:12.5px;
+  line-height:1.35;
+  white-space:pre-line;
+}
+#errorInlineV71.show{
+  display:block;
+}
+.copy-egob-panel #errorInlineV71{
+  width:100%;
+  flex-basis:100%;
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -10019,6 +10097,140 @@ window.addEventListener('load',()=>{
     if(btnCopy) btnCopy.onclick=copiarInformeActualV70;
     updateCopyPanelV70();
   },900);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V71 SOBRE V70
+   Muestra los errores de PDF/Copiar en una ventana visible,
+   no solo en el mensaje pequeño del panel lateral.
+   ========================================================== */
+
+function ensureErrorUIV71(){
+  if(!document.getElementById('errorModalV71')){
+    const modal=document.createElement('div');
+    modal.id='errorModalV71';
+    modal.innerHTML=`<div class="error-box-v71" role="alertdialog" aria-modal="true" aria-labelledby="errorTitleV71">
+      <div class="error-head-v71">
+        <h3 id="errorTitleV71">No se pudo completar la acción</h3>
+        <button type="button" class="close-error-v71" onclick="closeErrorModalV71()">Cerrar</button>
+      </div>
+      <div id="errorBodyV71" class="error-body-v71"></div>
+    </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click',e=>{ if(e.target===modal) closeErrorModalV71(); });
+  }
+
+  const panel=document.getElementById('copyPanelAprobatorio');
+  if(panel && !document.getElementById('errorInlineV71')){
+    const inline=document.createElement('div');
+    inline.id='errorInlineV71';
+    panel.appendChild(inline);
+  }
+}
+function closeErrorModalV71(){
+  const modal=document.getElementById('errorModalV71');
+  if(modal) modal.classList.remove('show');
+}
+function clearVisibleErrorV71(){
+  const inline=document.getElementById('errorInlineV71');
+  if(inline){
+    inline.classList.remove('show');
+    inline.innerHTML='';
+  }
+}
+function formatErrorsHtmlV71(title, errors){
+  const arr=(errors||[]).filter(Boolean);
+  if(!arr.length) return `<strong>${esc(title||'No se pudo completar la acción.')}</strong>`;
+  return `<strong>${esc(title||'No se pudo completar la acción.')}</strong><br><br><strong>Motivo:</strong><ul>${arr.map(e=>`<li>${esc(e)}</li>`).join('')}</ul>`;
+}
+function showVisibleErrorV71(title, errors){
+  ensureErrorUIV71();
+  const html=formatErrorsHtmlV71(title, errors);
+  const modal=document.getElementById('errorModalV71');
+  const body=document.getElementById('errorBodyV71');
+  const inline=document.getElementById('errorInlineV71');
+
+  if(body) body.innerHTML=html;
+  if(modal) modal.classList.add('show');
+
+  if(inline){
+    inline.innerHTML=html.replace(/<ul>/g,'<ul style="margin-top:6px">');
+    inline.classList.add('show');
+  }
+
+  // También deja el texto en el mensaje lateral cuando exista.
+  try{
+    const text=(errors&&errors.length)?`${title}\n\nMotivo:\n- ${errors.join('\n- ')}`:title;
+    msg(text);
+  }catch(e){}
+
+  console.warn(title, errors||[]);
+}
+
+/* Sobrescribe el manejador de V70 para que sea visible */
+function showDetailedErrorV70(title, errors){
+  showVisibleErrorV71(title, errors || []);
+}
+
+/* Limpia errores visibles al cambiar de pestaña o al generar bien */
+const _showTab_base_V71 = typeof showTab === 'function' ? showTab : null;
+if(_showTab_base_V71){
+  showTab = function(id){
+    clearVisibleErrorV71();
+    _showTab_base_V71(id);
+  };
+}
+
+/* Reforzar copia con error visible incluso cuando una función anterior falle silenciosamente */
+const _copiarInformeActualV70_base_V71 = typeof copiarInformeActualV70 === 'function' ? copiarInformeActualV70 : null;
+copiarInformeActualV70 = async function(){
+  clearVisibleErrorV71();
+  try{
+    if(_copiarInformeActualV70_base_V71) return await _copiarInformeActualV70_base_V71();
+    throw new Error('No existe la función copiarInformeActualV70.');
+  }catch(err){
+    showVisibleErrorV71('No se pudo copiar automáticamente.', [
+      err?.message || String(err),
+      'Revise que esté en la Vista del informe, que el informe no esté vacío y que el navegador permita usar el portapapeles.'
+    ]);
+  }
+};
+copiarInformeAprobatorio = copiarInformeActualV70;
+
+/* Reforzar PDF con error visible */
+const _imprimirInforme_base_V71 = typeof imprimirInforme === 'function' ? imprimirInforme : null;
+imprimirInforme = function(){
+  clearVisibleErrorV71();
+  try{
+    if(_imprimirInforme_base_V71) return _imprimirInforme_base_V71();
+    throw new Error('No existe la función imprimirInforme.');
+  }catch(err){
+    showVisibleErrorV71('No se pudo generar el PDF.', [
+      err?.message || String(err),
+      'Revise que el navegador permita abrir la ventana de impresión y seleccione “Guardar como PDF”.'
+    ]);
+  }
+};
+
+/* Asegurar que los botones usen las funciones reforzadas */
+function bindErrorAwareButtonsV71(){
+  ensureErrorUIV71();
+  const btnCopy=document.getElementById('btnCopiarAprobatorioVista');
+  if(btnCopy) btnCopy.onclick=copiarInformeActualV70;
+  const panel=document.getElementById('copyPanelAprobatorio');
+  if(panel){
+    [...panel.querySelectorAll('button')].forEach(btn=>{
+      const txt=String(btn.textContent||'').trim().toUpperCase();
+      if(txt==='PDF') btn.onclick=imprimirInforme;
+    });
+  }
+}
+window.addEventListener('load',()=>{
+  setTimeout(bindErrorAwareButtonsV71,600);
+  setTimeout(bindErrorAwareButtonsV71,1500);
 });
 </script>
 
