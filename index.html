@@ -8975,5 +8975,67 @@ renderUsoPrincipalFieldV63 = function(){
 window.addEventListener('load',()=>setTimeout(polishUsoPrincipalV64,700));
 </script>
 
+
+<script>
+/* ==========================================================
+   V66 SOBRE V65
+   1) Quita del Informe Aprobatorio el párrafo:
+      "Uso principal considerado para normas por tipo de edificación..."
+   2) Mueve la nota del Informe Aprobatorio para que salga después
+      de la Conclusión técnica, no antes.
+   ========================================================== */
+
+/* Quitar resumen de uso principal. La base legal dinámica se mantiene. */
+function usosAprobatorioResumenV63(){
+  return '';
+}
+
+/* Ajustar texto del check en el formulario aprobatorio */
+function renderAprobatorioNotaV56(){
+  ensureV56State();
+  return `<div class="apr-note-v56">
+    <label class="check-line"><input type="checkbox" id="toggleNotaAprobatorioV56" ${state.aprobatorio.notaPreConclusiones.activo?'checked':''}> Incluir nota después de conclusiones</label>
+    <div class="mini">Si se activa, la nota aparecerá después de la sección Conclusión técnica del informe aprobatorio.</div>
+    ${state.aprobatorio.notaPreConclusiones.activo?`<textarea id="notaAprobatorioTextoV56" placeholder="Escriba la nota para el informe aprobatorio">${esc(state.aprobatorio.notaPreConclusiones.texto||'')}</textarea>`:''}
+  </div>`;
+}
+
+/* Mantiene la misma función de nota, pero la usaremos después de Conclusión técnica */
+function notaAprobatorioReportV66(){
+  ensureV56State();
+  const n=state.aprobatorio?.notaPreConclusiones;
+  if(!n || !n.activo || !String(n.texto||'').trim()) return '';
+  return `<h2>Nota</h2><p>${nl2br(esc(n.texto))}</p>`;
+}
+
+/* Última versión de renderInformeAprobatorio: nota después de Conclusión técnica */
+function renderInformeAprobatorio(){
+  const t=DATA.plantillaAprobatorio;
+  const title=tmplRow(t,'ENC_002').Texto_Base||tmplRow(t,'ENC_002').Título||'INFORME TÉCNICO APROBATORIO DE OBRA MAYOR';
+  const base=tmplRow(t,'BLG_001').Texto_Base||'';
+  const con2=replaceTemplate(tmplRow(t,'CON_002').Texto_Base||'').replaceAll('{{TABLA_HOJA_CONCLUSION_TECNICA_BASE}}','');
+  let n=1;
+  const incumplidos=requisitosPorEstado('No Cumple');
+  let alertReq=incumplidos.length?`<div class="apr-alert">ALERTA: Existen ${incumplidos.length} requisito(s) marcado(s) como NO CUMPLE. Revise la pestaña Requisitos antes de emitir el informe técnico aprobatorio.</div>`:'';
+
+  let html=`${reportHeaderAprobatorioV55(title)}${alertReq}<h2>${n++}. Información general</h2>${reportInfoGeneralAprobatorio()}<h2>${n++}. Detalle del proyecto</h2><p>${nl2br(tmplRow(t,'INF_002').Texto_Base||'')}</p>${reqTable(requisitosPorEstado('Cumple'),'apr')}<h2>${n++}. Base técnico - legal</h2>${formatBaseTecnicoLegalAprobatorio(base)}`;
+
+  syncAnteproyectoAuto();
+  if(anteproyectoActivo()) html+=`<h2>${n++}. Resolución de Anteproyecto</h2>${anteproyectoReport()}`;
+
+  html+=`<h2>${n++}. Consideraciones estructurales</h2>${aprobatorioStructuralTable()}<h2>${n++}. Estudios complementarios</h2>${estudiosReport()}<h2>${n++}. Conclusión técnica</h2><p>En concordancia a lo dispuesto en la Ordenanza No. 016-2023 de Actualización del Código Urbano, <strong>Artículo 92</strong> Componentes del Proyecto Técnico de Edificación de Obras Mayores, se concluye emitir el presente <strong>INFORME TÉCNICO FAVORABLE</strong>, de conformidad al siguiente detalle:</p>${conclusionReport()}<p>${nl2br(con2)}</p>${notaAprobatorioReportV66()}`;
+
+  return html;
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    if(typeof renderAprobatorioForm==='function') renderAprobatorioForm();
+    if(typeof renderReport==='function') renderReport();
+    if(typeof renderPreview==='function') renderPreview();
+  },700);
+});
+</script>
+
 </body>
 </html>
