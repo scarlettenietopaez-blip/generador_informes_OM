@@ -1683,6 +1683,18 @@ input,select,textarea{
   text-align:justify;
 }
 
+
+/* ===== V70: Copiar desistimiento + mensajes de error PDF/Copiar ===== */
+.copy-error-detail-v70{
+  white-space:pre-line;
+}
+.copy-egob-panel .copy-label-v70{
+  font-size:11px;
+  font-weight:900;
+  color:#0b2b4c;
+  margin-right:4px;
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -9752,6 +9764,260 @@ window.addEventListener('load',()=>{
     updateTabsForType();
     renderReport();
     renderPreview();
+  },900);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V70 SOBRE V69
+   1) Botón COPIAR también para Informe de Desistimiento.
+   2) Mensajes de error detallados para copiar y PDF.
+   ========================================================== */
+
+function isCopyEnabledReportV70(){
+  return state.tipoInforme==='Informe Técnico Aprobatorio' || state.tipoInforme==='Informe de Desistimiento';
+}
+function reportTypeNameV70(){
+  return state.tipoInforme || 'Informe';
+}
+function isDesistimientoTipoV70(){
+  return state.tipoInforme === 'Informe de Desistimiento';
+}
+
+/* Validación superior corregida: Desistimiento no requiere fecha máxima de subsanación */
+function validateTop(){
+  collectTop();
+  if(!state.egob){msg('No se puede continuar: debe colocar el Nro. eGOB principal.'); return false;}
+  const match=tecnicoCoincidente(state.tecnico);
+  if(!match){msg('No se puede continuar: el técnico debe coincidir con una opción de la hoja Técnicos.'); return false;}
+  state.tecnico=match;
+  const tec=document.getElementById('tecnico'); if(tec) tec.value=match;
+  if(!state.tipoInforme){msg('No se puede continuar: debe seleccionar el tipo de informe.'); return false;}
+  if(!state.fechaRevision){msg(state.tipoInforme==='Informe Técnico Aprobatorio'||state.tipoInforme==='Informe de Desistimiento'?'No se puede continuar: debe colocar la fecha de emisión.':'No se puede continuar: debe colocar la fecha de revisión.'); return false;}
+  if(state.tipoInforme!=='Informe Técnico Aprobatorio' && state.tipoInforme!=='Informe de Desistimiento' && !state.fechaSubsanacion){
+    msg('No se puede continuar: debe colocar la fecha máxima de subsanación.');
+    return false;
+  }
+  return true;
+}
+
+function validationErrorsV70(context='generar el PDF'){
+  const errors=[];
+  collectTop();
+
+  if(!state.egob) errors.push('Falta el Nro. eGOB principal.');
+  const match=tecnicoCoincidente(state.tecnico);
+  if(!match) errors.push('El técnico revisor no coincide con la lista de la hoja Técnicos.');
+  if(!state.tipoInforme) errors.push('Falta seleccionar el tipo de informe.');
+  if(!state.fechaRevision) errors.push((state.tipoInforme==='Informe Técnico Aprobatorio'||state.tipoInforme==='Informe de Desistimiento')?'Falta la fecha de emisión.':'Falta la fecha de revisión.');
+  if(state.tipoInforme!=='Informe Técnico Aprobatorio' && state.tipoInforme!=='Informe de Desistimiento' && !state.fechaSubsanacion) errors.push('Falta la fecha máxima de subsanación.');
+
+  if(state.tipoInforme==='Informe de Desistimiento'){
+    ensureDesistimientoV69();
+    if(!state.desistimiento?.motivo) errors.push('Falta seleccionar el motivo de desistimiento.');
+  }
+
+  // Validación visual de campos obligatorios de Información General.
+  try{
+    const okInfo=validateAllVisibleInfo(true);
+    if(!okInfo){
+      const visibleErrors=[...document.querySelectorAll('.error-text')]
+        .map(e=>String(e.textContent||'').trim())
+        .filter(Boolean);
+      const unique=[...new Set(visibleErrors)];
+      if(unique.length) unique.forEach(e=>errors.push(e));
+      else errors.push('Hay campos obligatorios o con formato incorrecto en Información General.');
+    }
+  }catch(e){
+    errors.push('No se pudo validar la Información General: '+(e.message||e));
+  }
+
+  return [...new Set(errors)];
+}
+
+function showDetailedErrorV70(title, errors){
+  const text = errors && errors.length ? `${title}\n\nMotivo:\n- ${errors.join('\n- ')}` : title;
+  msg(text);
+  console.warn(title, errors||[]);
+}
+
+function validateForPrint(){
+  const errors=validationErrorsV70('generar el PDF');
+  if(errors.length){
+    showDetailedErrorV70('No se puede generar el PDF todavía.', errors);
+    if(errors.some(e=>e.includes('Información General') || e.includes('obligatorios') || e.includes('formato') || e.includes('eGOB') || e.includes('técnico') || e.includes('fecha'))) showTab('tab-info');
+    return false;
+  }
+  return true;
+}
+
+function currentReportHTMLForCopyV70(){
+  collectTop();
+  if(state.tipoInforme==='Informe Técnico Aprobatorio') return renderInformeAprobatorio();
+  if(state.tipoInforme==='Informe de Desistimiento') return renderInformeDesistimientoV69();
+  throw new Error('El botón Copiar está disponible para Informe Técnico Aprobatorio e Informe de Desistimiento.');
+}
+
+async function copyHtmlToClipboardV70(fullHtml, plain){
+  const reasons=[];
+  if(!navigator.clipboard) reasons.push('El navegador no expone navigator.clipboard.');
+  if(!window.ClipboardItem) reasons.push('El navegador no soporta ClipboardItem para copiar con formato.');
+  if(!window.isSecureContext) reasons.push('La página no está en un contexto seguro HTTPS o localhost.');
+  if(reasons.length) throw new Error(reasons.join(' '));
+
+  await navigator.clipboard.write([new ClipboardItem({
+    'text/html': new Blob([fullHtml],{type:'text/html'}),
+    'text/plain': new Blob([plain],{type:'text/plain'})
+  })]);
+}
+
+function fallbackCopyPlainTextV70(plain){
+  const ta=document.createElement('textarea');
+  ta.value=plain;
+  ta.setAttribute('readonly','');
+  ta.style.position='fixed';
+  ta.style.left='-9999px';
+  ta.style.top='0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  let ok=false;
+  try{
+    ok=document.execCommand('copy');
+  }catch(err){
+    document.body.removeChild(ta);
+    throw err;
+  }
+  document.body.removeChild(ta);
+  if(!ok) throw new Error('document.execCommand("copy") devolvió false.');
+}
+
+async function copiarInformeActualV70(){
+  collectTop();
+
+  if(!isCopyEnabledReportV70()){
+    showDetailedErrorV70('No se puede copiar este informe.', ['El botón Copiar está habilitado únicamente para Informe Técnico Aprobatorio e Informe de Desistimiento.']);
+    return;
+  }
+
+  const errors=validationErrorsV70('copiar el informe');
+  if(errors.length){
+    showDetailedErrorV70('No se pudo copiar el informe.', errors);
+    return;
+  }
+
+  let htmlReport='';
+  try{
+    htmlReport=currentReportHTMLForCopyV70();
+  }catch(e){
+    showDetailedErrorV70('No se pudo preparar el informe para copiar.', [e.message||String(e)]);
+    return;
+  }
+
+  const temp=document.createElement('div');
+  temp.className='report '+(state.tipoInforme==='Informe Técnico Aprobatorio'?'report-aprobatorio':'report-desistimiento report-observaciones');
+  temp.innerHTML=htmlReport;
+  const plain=(temp.innerText || temp.textContent || '').trim();
+  const fullHtml=`<div style="font-family:Arial, sans-serif; font-size:12px; color:#111; line-height:1.35">${temp.innerHTML}</div>`;
+
+  if(!plain){
+    showDetailedErrorV70('No se pudo copiar el informe.', ['La vista del informe está vacía. Revise que el tipo de informe esté seleccionado y que la información requerida esté completa.']);
+    return;
+  }
+
+  try{
+    await copyHtmlToClipboardV70(fullHtml, plain);
+    msg(`${reportTypeNameV70()} copiado con formato. Puede pegarlo en el recuadro del eGOB.`, true);
+  }catch(e1){
+    try{
+      fallbackCopyPlainTextV70(plain);
+      msg(`${reportTypeNameV70()} copiado como texto sin formato. Puede pegarlo en el recuadro del eGOB.`, true);
+    }catch(e2){
+      const reasons=[
+        e1?.message || String(e1),
+        e2?.message || String(e2),
+        'Puede ocurrir si el navegador bloqueó permisos del portapapeles, si la página no está en HTTPS, o si no se ejecutó desde un clic directo del usuario.'
+      ];
+      showDetailedErrorV70('No se pudo copiar automáticamente.', reasons);
+    }
+  }
+}
+
+/* Mantener compatibilidad con el botón anterior */
+async function copiarInformeAprobatorio(){
+  return copiarInformeActualV70();
+}
+
+function imprimirInforme(){
+  try{
+    const errors=validationErrorsV70('generar el PDF');
+    if(errors.length){
+      showDetailedErrorV70('No se puede generar el PDF todavía.', errors);
+      return;
+    }
+
+    const html=renderReport();
+    if(!html || !String(html).trim()){
+      showDetailedErrorV70('No se puede generar el PDF.', ['La vista del informe está vacía.']);
+      return;
+    }
+
+    showTab('tab-vista');
+
+    if(typeof window.print !== 'function'){
+      showDetailedErrorV70('No se puede generar el PDF.', ['El navegador no tiene disponible la función de impresión window.print().']);
+      return;
+    }
+
+    setTimeout(()=>{
+      try{
+        window.print();
+        msg('Se abrió el diálogo de impresión. Si no se genera el PDF, revise que el navegador permita imprimir y seleccione “Guardar como PDF”.', true);
+      }catch(err){
+        showDetailedErrorV70('No se pudo abrir el diálogo para generar PDF.', [err?.message || String(err)]);
+      }
+    },120);
+  }catch(err){
+    showDetailedErrorV70('No se pudo generar el PDF.', [err?.message || String(err)]);
+  }
+}
+
+function updateCopyPanelV70(){
+  const onVista=(document.querySelector('.tab.active')?.id==='tab-vista');
+  const panel=document.getElementById('copyPanelAprobatorio');
+  const btnCopy=document.getElementById('btnCopiarAprobatorioVista');
+  if(panel) panel.classList.toggle('hidden', !onVista);
+  if(btnCopy){
+    const show=isCopyEnabledReportV70();
+    btnCopy.classList.toggle('hidden', !show);
+    btnCopy.onclick=copiarInformeActualV70;
+    btnCopy.title=state.tipoInforme==='Informe de Desistimiento'?'Copiar informe de desistimiento para pegar en eGOB':'Copiar informe aprobatorio para pegar en eGOB';
+    btnCopy.setAttribute('aria-label', btnCopy.title);
+  }
+}
+
+/* Reforzar updateSideActions sin alterar la lógica existente */
+const _updateSideActions_base_V70 = typeof updateSideActions === 'function' ? updateSideActions : null;
+updateSideActions = function(){
+  if(_updateSideActions_base_V70) _updateSideActions_base_V70();
+  updateCopyPanelV70();
+};
+
+const _showTab_base_V70 = typeof showTab === 'function' ? showTab : null;
+if(_showTab_base_V70){
+  showTab = function(id){
+    _showTab_base_V70(id);
+    updateCopyPanelV70();
+  };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    const btnCopy=document.getElementById('btnCopiarAprobatorioVista');
+    if(btnCopy) btnCopy.onclick=copiarInformeActualV70;
+    updateCopyPanelV70();
   },900);
 });
 </script>
