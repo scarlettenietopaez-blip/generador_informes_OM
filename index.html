@@ -1644,6 +1644,45 @@ input,select,textarea{
   font-size:10.5px;
 }
 
+
+/* ===== V69: Informe de Desistimiento ===== */
+.desistimiento-panel-v69{
+  border:1px solid #d3deec;
+  border-radius:14px;
+  background:#f8fbff;
+  padding:12px;
+}
+.desistimiento-panel-v69 .row{
+  align-items:start;
+}
+.desistimiento-panel-v69 textarea{
+  min-height:120px;
+}
+.desistimiento-note-v69{
+  margin-top:8px;
+  padding:8px 10px;
+  border-left:4px solid #0b5cab;
+  background:#eef6ff;
+  border-radius:8px;
+  color:#0b2b4c;
+  font-size:12px;
+  line-height:1.35;
+}
+.desistimiento-fixed-v69{
+  background:#fff;
+  border:1px solid #d8e2ef;
+  border-radius:10px;
+  padding:10px;
+  margin-top:8px;
+  font-size:12px;
+}
+.report-desistimiento .head h1{
+  font-size:18px;
+}
+.report-desistimiento .legal-text{
+  text-align:justify;
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -9438,6 +9477,282 @@ window.addEventListener('load',()=>{
     renderReport();
     renderPreview();
   },1000);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V69 SOBRE V68
+   Informe de Desistimiento
+   ========================================================== */
+
+const DEFAULT_PLANTILLA_DESISTIMIENTO_V69 = [
+  {ID_Bloque:'DES_TIT_001',Motivo:'Observaciones no Subsanadas',Titulo:'Título',Texto_Base:'INFORME TÉCNICO NO FAVORABLE DE DESISTIMIENTO',Mostrar:'Sí'},
+  {ID_Bloque:'DES_CON_001',Motivo:'Observaciones no Subsanadas',Titulo:'Conclusión base',Texto_Base:'Por las conclusiones antes expuestas se emite criterio técnico NO FAVORABLE,',Mostrar:'Sí'},
+  {ID_Bloque:'DES_TIT_002',Motivo:'Observaciones Parcialmente Subsanadas',Titulo:'Título',Texto_Base:'INFORME TÉCNICO NO FAVORABLE DE DESISTIMIENTO',Mostrar:'Sí'},
+  {ID_Bloque:'DES_CON_002',Motivo:'Observaciones Parcialmente Subsanadas',Titulo:'Conclusión base',Texto_Base:'Por las conclusiones antes expuestas se emite criterio técnico NO FAVORABLE,',Mostrar:'Sí'},
+  {ID_Bloque:'DES_TIT_003',Motivo:'Por Petición del Administrado',Titulo:'Título',Texto_Base:'INFORME TÉCNICO DE DESISTIMIENTO',Mostrar:'Sí'},
+  {ID_Bloque:'DES_BLG_003',Motivo:'Por Petición del Administrado',Titulo:'Base legal petición administrado',Texto_Base:'CODIGO ORGANICO ADMINISTRATIVO\nArt. 211.- Desistimiento. La persona interesada puede desistir del procedimiento cuando no esté prohibido por la ley. Debe indicarse expresamente si se trata de un desistimiento total o parcial. Si no se precisa, se considera que se trata de un desistimiento total. En los casos de desistimiento, la persona interesada no puede volver a plantear, igual pretensión, en otro procedimiento con el mismo objeto y causa. El desistimiento puede realizarse por cualquier medio que permita su constancia en cualquier momento antes de que se notifique el acto administrativo. Solo afecta a aquellos que lo soliciten. En el supuesto de realizarse de forma verbal, se formaliza con la comparecencia de la persona interesada ante el servidor público encargado de la instrucción del asunto, quien, conjuntamente con aquella, suscribirá la respectiva diligencia. En los procedimientos iniciados de oficio, la administración pública podrá ordenar el archivo en los supuestos y con los requisitos previstos en la ley.',Mostrar:'Sí'},
+  {ID_Bloque:'DES_CON_003',Motivo:'Por Petición del Administrado',Titulo:'Conclusión',Texto_Base:'En base al Artículo 211 del COA, por Petición del Administrado se procede con el Desistimiento del Trámite.',Mostrar:'Sí'},
+  {ID_Bloque:'DES_REC_003',Motivo:'Por Petición del Administrado',Titulo:'Recomendación',Texto_Base:'Se recomienda remitir el presente trámite para la emisión de la Resolución Administrativa correspondiente.',Mostrar:'Sí'}
+];
+
+function ensureDesistimientoV69(){
+  if(!DATA.plantillaDesistimiento) DATA.plantillaDesistimiento = DEFAULT_PLANTILLA_DESISTIMIENTO_V69;
+  if(!state.desistimiento) state.desistimiento = {motivo:'', conclusiones:''};
+}
+
+async function loadPlantillaDesistimientoV69(){
+  ensureDesistimientoV69();
+  try{
+    const txt = await fetchCSVTextV32('data/plantilla_desistimiento.csv');
+    const rows = parseCSVV32(txt).map(r=>({
+      ID_Bloque:String(r.ID_Bloque||'').trim(),
+      Motivo:String(r.Motivo||'').trim(),
+      Titulo:String(r.Titulo||r.Título||'').trim(),
+      Texto_Base:String(r.Texto_Base||'').trim(),
+      Mostrar:String(r.Mostrar||'Sí').trim()
+    })).filter(r=>r.ID_Bloque);
+    if(rows.length) DATA.plantillaDesistimiento = rows;
+    console.log('Plantilla desistimiento cargada:', DATA.plantillaDesistimiento.length);
+  }catch(e){
+    console.warn('No se pudo cargar data/plantilla_desistimiento.csv; usando plantilla interna.', e);
+    DATA.plantillaDesistimiento = DEFAULT_PLANTILLA_DESISTIMIENTO_V69;
+  }
+}
+
+const _loadExternalCSVsV32_base_V69 = typeof loadExternalCSVsV32 === 'function' ? loadExternalCSVsV32 : async()=>{};
+loadExternalCSVsV32 = async function(){
+  await _loadExternalCSVsV32_base_V69();
+  await loadPlantillaDesistimientoV69();
+};
+
+function desRowV69(id){
+  ensureDesistimientoV69();
+  return (DATA.plantillaDesistimiento||[]).find(r=>String(r.ID_Bloque||'').trim()===id) || {};
+}
+function desRowsByMotivoV69(motivo){
+  ensureDesistimientoV69();
+  return (DATA.plantillaDesistimiento||[]).filter(r=>String(r.Motivo||'').trim()===motivo);
+}
+function isDesistimientoV69(){
+  return state.tipoInforme === 'Informe de Desistimiento';
+}
+function isDesPeticionV69(){
+  ensureDesistimientoV69();
+  return state.desistimiento?.motivo === 'Por Petición del Administrado';
+}
+function desTituloV69(){
+  ensureDesistimientoV69();
+  const m = state.desistimiento?.motivo || '';
+  if(m==='Por Petición del Administrado') return desRowV69('DES_TIT_003').Texto_Base || 'INFORME TÉCNICO DE DESISTIMIENTO';
+  if(m==='Observaciones Parcialmente Subsanadas') return desRowV69('DES_TIT_002').Texto_Base || 'INFORME TÉCNICO NO FAVORABLE DE DESISTIMIENTO';
+  return desRowV69('DES_TIT_001').Texto_Base || 'INFORME TÉCNICO NO FAVORABLE DE DESISTIMIENTO';
+}
+
+/* Insertar opción de tipo y pestaña */
+function setupDesistimientoUIV69(){
+  ensureDesistimientoV69();
+
+  const tipo=document.getElementById('tipoInforme');
+  if(tipo && ![...tipo.options].some(o=>o.value==='Informe de Desistimiento' || o.textContent==='Informe de Desistimiento')){
+    tipo.insertAdjacentHTML('beforeend','<option>Informe de Desistimiento</option>');
+  }
+
+  const tabs=document.querySelector('.tabs');
+  if(tabs && !document.querySelector('[data-tab="tab-des"]')){
+    const btn=document.createElement('button');
+    btn.className='tab-btn hidden-tab';
+    btn.dataset.tab='tab-des';
+    btn.textContent='Desistimiento';
+    btn.onclick=()=>showTab('tab-des');
+    const vista=tabs.querySelector('[data-tab="tab-vista"]');
+    tabs.insertBefore(btn, vista || null);
+  }
+
+  const section=document.querySelector('section');
+  if(section && !document.getElementById('tab-des')){
+    const div=document.createElement('div');
+    div.id='tab-des';
+    div.className='tab card no-print';
+    div.innerHTML='<h2>Desistimiento</h2><div id="desistimientoForm"></div><div class="buttons"><button class="secondary" onclick="tabAnterior()">Atrás</button><button onclick="guardarYSeguir()" class="success">Guardar y siguiente</button></div>';
+    const vista=document.getElementById('tab-vista');
+    section.insertBefore(div, vista || null);
+  }
+  renderDesistimientoFormV69();
+}
+
+function renderDesistimientoFormV69(){
+  ensureDesistimientoV69();
+  const box=document.getElementById('desistimientoForm');
+  if(!box) return;
+  const m=state.desistimiento.motivo || '';
+  const needsObs = m==='Observaciones no Subsanadas' || m==='Observaciones Parcialmente Subsanadas';
+  box.innerHTML=`<div class="desistimiento-panel-v69">
+    <div class="field">
+      <label>Motivo *</label>
+      <select id="desMotivoV69">
+        <option value="">Seleccione...</option>
+        <option ${m==='Observaciones no Subsanadas'?'selected':''}>Observaciones no Subsanadas</option>
+        <option ${m==='Observaciones Parcialmente Subsanadas'?'selected':''}>Observaciones Parcialmente Subsanadas</option>
+        <option ${m==='Por Petición del Administrado'?'selected':''}>Por Petición del Administrado</option>
+      </select>
+    </div>
+    ${needsObs?`<div class="field">
+      <label>Conclusiones complementarias</label>
+      <textarea id="desConclusionesV69" placeholder="Complete aquí el texto que continuará después de: Por las conclusiones antes expuestas se emite criterio técnico NO FAVORABLE,">${esc(state.desistimiento.conclusiones||'')}</textarea>
+      <div class="desistimiento-note-v69">Para este motivo se mantiene la pestaña Observaciones. El informe tomará la misma tabla de Criterio Técnico del Informe de Observaciones.</div>
+    </div>`:''}
+    ${m==='Por Petición del Administrado'?`<div class="desistimiento-fixed-v69"><strong>Conclusión automática:</strong><br>${esc(desRowV69('DES_CON_003').Texto_Base||'En base al Artículo 211 del COA, por Petición del Administrado se procede con el Desistimiento del Trámite.')}<br><br><strong>Recomendación automática:</strong><br>${esc(desRowV69('DES_REC_003').Texto_Base||'Se recomienda remitir el presente trámite para la emisión de la Resolución Administrativa correspondiente.')}</div>`:''}
+  </div>`;
+  const sel=document.getElementById('desMotivoV69');
+  if(sel) sel.addEventListener('change',()=>{
+    state.desistimiento.motivo=sel.value;
+    if(sel.value==='Por Petición del Administrado') state.desistimiento.conclusiones='';
+    renderDesistimientoFormV69();
+    updateTabsForType();
+    renderReport(); renderPreview();
+  });
+  const con=document.getElementById('desConclusionesV69');
+  if(con) con.addEventListener('input',()=>{
+    if(shouldForceUpper()) normalizeUpperInput(con);
+    state.desistimiento.conclusiones=con.value;
+    renderReport(); renderPreview();
+  });
+}
+
+const _init_base_V69 = typeof init === 'function' ? init : null;
+if(_init_base_V69){
+  init = async function(){
+    await _init_base_V69();
+    setupDesistimientoUIV69();
+  };
+}
+
+/* Tabs */
+tabsForCurrentReport = function(){
+  const base=['tab-info'];
+  if(state.tipoInforme==='Informe con Observaciones'){
+    base.push('tab-req','tab-obs');
+  }else if(state.tipoInforme==='Informe Técnico Aprobatorio'){
+    base.push('tab-req','tab-apr');
+  }else if(state.tipoInforme==='Informe de Desistimiento'){
+    base.push('tab-des');
+    if(!isDesPeticionV69()) base.push('tab-obs');
+  }else{
+    base.push('tab-req');
+  }
+  return [...base,'tab-vista'];
+};
+
+const _updateTabsForType_base_V69 = typeof updateTabsForType === 'function' ? updateTabsForType : null;
+updateTabsForType = function(){
+  setupDesistimientoUIV69();
+  const allowed=tabsForCurrentReport();
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('hidden-tab',!allowed.includes(b.dataset.tab)));
+  const current=document.querySelector('.tab.active')?.id;
+  if(!allowed.includes(current)) showTab('tab-info');
+  updateSideActions();
+};
+
+/* Fechas y mayúsculas */
+const _shouldForceUpper_base_V69 = typeof shouldForceUpper === 'function' ? shouldForceUpper : null;
+shouldForceUpper = function(){
+  return state.tipoInforme !== 'Informe Técnico Aprobatorio';
+};
+
+const _updateSideActions_base_V69 = typeof updateSideActions === 'function' ? updateSideActions : null;
+updateSideActions = function(){
+  if(_updateSideActions_base_V69) _updateSideActions_base_V69();
+  const tipo=document.getElementById('tipoInforme')?.value || state.tipoInforme;
+  const isApr=tipo==='Informe Técnico Aprobatorio';
+  const isDes=tipo==='Informe de Desistimiento';
+  document.querySelectorAll('[data-tab="tab-apr"]').forEach(b=>b.classList.toggle('hidden-tab', !isApr));
+  document.querySelectorAll('[data-tab="tab-des"]').forEach(b=>b.classList.toggle('hidden-tab', !isDes));
+  const lab=document.getElementById('fechaRevisionLabel');
+  const note=document.getElementById('fechaRevisionNote');
+  const sub=document.getElementById('fechaSubsanacionWrap');
+  if(lab) lab.textContent=(isApr||isDes)?'Fecha de emisión *':'Fecha de revisión *';
+  if(note) note.textContent=isDes?'Fecha de emisión para registro del informe de desistimiento.':(isApr?'Fecha de emisión para registro del informe aprobatorio.':'');
+  if(sub) sub.classList.toggle('hidden', isApr||isDes);
+};
+
+/* Tipo de informe change */
+const _collectTop_base_V69 = typeof collectTop === 'function' ? collectTop : null;
+collectTop = function(){
+  if(_collectTop_base_V69) _collectTop_base_V69();
+  ensureDesistimientoV69();
+};
+
+/* Base legal del informe de observaciones */
+function baseLegalObservacionesV69(){
+  const base=(DATA.plantillaObservaciones||[]).filter(r=>String(r.ID_Bloque||'').startsWith('BLG_') && cleanMostrar(r.Mostrar)==='sí');
+  return base.map(b=>`<h3>${esc(b.Título)}</h3><p class="legal-text">${formatLegalText(b.Texto_Base)}</p>`).join('');
+}
+
+/* Informes */
+function renderInformeDesistimientoV69(){
+  ensureDesistimientoV69();
+  const motivo=state.desistimiento?.motivo || '';
+  const title=desTituloV69();
+
+  if(!motivo){
+    return `${reportHeader(title)}<div class="apr-alert">Seleccione el motivo de desistimiento en la pestaña Desistimiento.</div>`;
+  }
+
+  if(motivo==='Por Petición del Administrado'){
+    const base=desRowV69('DES_BLG_003').Texto_Base || '';
+    const con=desRowV69('DES_CON_003').Texto_Base || 'En base al Artículo 211 del COA, por Petición del Administrado se procede con el Desistimiento del Trámite.';
+    const rec=desRowV69('DES_REC_003').Texto_Base || 'Se recomienda remitir el presente trámite para la emisión de la Resolución Administrativa correspondiente.';
+    return `${reportHeader(title)}
+      <h2>Antecedentes</h2>${reportInfoGeneralAprobatorio()}
+      <h2>Base legal</h2><p class="legal-text">${formatLegalText(base)}</p>
+      <h2>Conclusiones</h2><p>${nl2br(con)}</p>
+      <h2>Recomendaciones</h2><p>${nl2br(rec)}</p>
+      ${firmaTecnicoSection()}`;
+  }
+
+  const conId=motivo==='Observaciones Parcialmente Subsanadas'?'DES_CON_002':'DES_CON_001';
+  const baseConclusion=desRowV69(conId).Texto_Base || 'Por las conclusiones antes expuestas se emite criterio técnico NO FAVORABLE,';
+  const extra=(state.desistimiento?.conclusiones||'').trim();
+  const conclusionText=extra ? `${baseConclusion} ${extra}` : baseConclusion;
+  return `${reportHeader(title)}
+    <h2>Antecedentes</h2>${reportInfoGeneralAprobatorio()}
+    <h2>Criterio técnico</h2>${selectedObsTable()}
+    <h2>Base legal</h2>${baseLegalObservacionesV69()}${textosTecnicosSection()}
+    <h2>Conclusiones</h2><p>${nl2br(conclusionText)}</p>
+    ${firmaTecnicoSection()}`;
+}
+
+renderReport = function(){
+  collectTop();
+  updateSideActions();
+  const reportEl=document.getElementById('report');
+  const isObs=state.tipoInforme==='Informe con Observaciones';
+  const isApr=state.tipoInforme==='Informe Técnico Aprobatorio';
+  const isDes=state.tipoInforme==='Informe de Desistimiento';
+
+  let html='Seleccione el tipo de informe para generar la vista previa.';
+  if(isObs) html=renderInformeObservaciones();
+  else if(isApr) html=renderInformeAprobatorio();
+  else if(isDes) html=renderInformeDesistimientoV69();
+
+  reportEl.className='report '+(isApr?'report-aprobatorio':(isDes?'report-desistimiento report-observaciones':'report-observaciones'));
+  document.body.classList.toggle('printing-observaciones', isObs||isDes);
+  document.body.classList.toggle('printing-aprobatorio', isApr);
+  reportEl.innerHTML=html;
+  return html;
+};
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    setupDesistimientoUIV69();
+    renderDesistimientoFormV69();
+    updateTabsForType();
+    renderReport();
+    renderPreview();
+  },900);
 });
 </script>
 
