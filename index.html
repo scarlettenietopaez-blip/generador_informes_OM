@@ -1622,6 +1622,28 @@ input,select,textarea{
   font-size:10.5px;
 }
 
+
+/* ===== V68: título del artículo visible y forzado ===== */
+.article-label-v68{
+  display:block;
+  line-height:1.25;
+  color:#0b2b4c;
+}
+.article-label-v68 .num{
+  display:block;
+  font-weight:900;
+}
+.article-label-v68 .title{
+  display:block;
+  margin-top:3px;
+  font-size:11.5px;
+  font-weight:650;
+  color:#334155;
+}
+.criterio-simple-v55 .article-label-v68 .title{
+  font-size:10.5px;
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -9201,6 +9223,221 @@ window.addEventListener('load',()=>{
     renderReport();
     renderPreview();
   },900);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V68 SOBRE V67
+   Corrección robusta: fuerza el título del artículo en:
+   - Catálogo
+   - Tabla de observaciones
+   - Informe / Criterio Técnico / Artículo-Norma
+   ========================================================== */
+
+function artNumV68(v){
+  const s=String(v||'');
+  const m=s.match(/Artículo\s*([0-9]+)/i) || s.match(/\b([0-9]{1,3})\b/);
+  return m ? String(m[1]).replace(/^0+/,'') : '';
+}
+function normV68(v){
+  return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toUpperCase();
+}
+function cleanTitleV68(v){
+  return String(v||'')
+    .replace(/\s+/g,' ')
+    .replace(/\s*[-–]\s*$/,'')
+    .replace(/\.\s*$/,'')
+    .trim();
+}
+function articleRowV68(ref){
+  ensureOrdenanzaV52();
+  const n=artNumV68(ref);
+  if(!n) return null;
+  return (DATA.ordenanzaArticulos||[]).find(a=>artNumV68(a.Articulo||a.Codigo||'')===n) || null;
+}
+function articlePlainV68(ref){
+  const row=articleRowV68(ref);
+  const num=row ? String(row.Articulo||ref||'').trim() : String(ref||'').trim();
+  const titulo=cleanTitleV68(row?.Tema||'');
+  return titulo ? `${num}. ${titulo}` : num;
+}
+function articleHtmlV68(ref){
+  const row=articleRowV68(ref);
+  const num=row ? String(row.Articulo||ref||'').trim() : String(ref||'').trim();
+  const titulo=cleanTitleV68(row?.Tema||'');
+  if(!titulo) return `<span class="article-label-v68"><span class="num">${escV57(num)}</span></span>`;
+  return `<span class="article-label-v68"><span class="num">${escV57(num)}</span><span class="title">${escV57(titulo)}</span></span>`;
+}
+function articleDisplayFromRowV68(a){
+  const num=String(a?.Articulo||'').trim();
+  const titulo=cleanTitleV68(a?.Tema||'');
+  if(!titulo) return `<span class="article-label-v68"><span class="num">${escV57(num)}</span></span>`;
+  return `<span class="article-label-v68"><span class="num">${escV57(num)}</span><span class="title">${escV57(titulo)}</span></span>`;
+}
+
+/* Agregar artículo guardando el título dentro del objeto */
+function agregarArticuloOrdenanzaV52(code){
+  ensureOrdenanzaV52();
+  const a=DATA.ordenanzaArticulos.find(x=>x.Codigo===code);
+  if(!a){msg('No se encontró el artículo seleccionado.');return;}
+  const articuloTxt=String(a.Articulo||'').trim();
+  const tituloTxt=cleanTitleV68(a.Tema||'');
+  state.obsSeleccionadas.push({
+    id:crypto.randomUUID(),
+    articulo:articuloTxt,
+    articuloTitulo:tituloTxt,
+    articuloDisplay:tituloTxt ? `${articuloTxt}. ${tituloTxt}` : articuloTxt,
+    texto:formatArticleTextV55(a.Texto_Articulo||''),
+    observacion:'',
+    norma:articuloTxt,
+    source:'obs',
+    ordenanza:true,
+    imagen:''
+  });
+  renderObsSeleccionadas(); renderReport(); renderPreview();
+  msg('Artículo agregado. Complete Observación Específica e Imagen en la tabla inferior.', true);
+  const target=document.getElementById('obsSeleccionadas');
+  if(target) target.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* Usar favorita guardando título del artículo */
+function useFavoriteV55(id){
+  const f=(getFavoritesV55()||[]).find(x=>x.id===id);
+  if(!f) return;
+  const art=articleRowV68(f.articulo);
+  const articuloTxt=String(art?.Articulo||f.articulo||'').trim();
+  const tituloTxt=cleanTitleV68(art?.Tema||'');
+  state.obsSeleccionadas.push({
+    id:crypto.randomUUID(),
+    articulo:articuloTxt,
+    articuloTitulo:tituloTxt,
+    articuloDisplay:tituloTxt ? `${articuloTxt}. ${tituloTxt}` : articuloTxt,
+    texto:formatArticleTextV55(art?.Texto_Articulo||f.texto||''),
+    observacion:fixTextV58(f.observacion||''),
+    norma:articuloTxt,
+    source:'obs',
+    ordenanza:!!art,
+    imagen:''
+  });
+  renderObsSeleccionadas(); 
+  renderReport(); 
+  renderPreview();
+  msg('Favorita agregada a la Tabla de observaciones.', true);
+}
+function useFirstFavoriteByArticleV61(articulo){
+  const favs = favoritesForArticleV61(articulo);
+  if(!favs.length){
+    msg('Este artículo todavía no tiene observaciones favoritas guardadas.');
+    return;
+  }
+  useFavoriteV55(favs[0].id);
+  const target=document.getElementById('obsSeleccionadas');
+  if(target) target.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* Catálogo: título desde la fila, no por búsqueda indirecta */
+renderCatalogoObs = function(){
+ ensureOrdenanzaV52();
+ const box=document.getElementById('catalogoObs');
+ if(!box) return;
+ if(!DATA.ordenanzaArticulos.length){
+   box.innerHTML='<p class="mini">Cargando artículos...</p>';
+   return;
+ }
+
+ const q=normSearchV52(document.getElementById('obsBuscar')?.value||'');
+ const favs=(getFavoritesV55()||[]).filter(f=>favMatchesV58(f,q));
+
+ let rows=DATA.ordenanzaArticulos.filter(a=>{
+   if(!q) return true;
+   return normSearchV52(`${a.Articulo} ${a.Tema||''} ${fixTextV58(a.Texto_Articulo)}`).includes(q);
+ });
+
+ const total=rows.length;
+ rows=rows.slice(0,80);
+ const aviso=total>80
+   ? `<div class="catalog-limit-v52">Se muestran 80 de ${total} artículos encontrados.</div>`
+   : `<div class="catalog-limit-v52">${total} artículo(s) encontrado(s).</div>`;
+
+ const favRows=favs.map(f=>`<tr class="favorite-row-v59">
+   <td>${articleHtmlV68(f.articulo||'')}</td>
+   <td><span class="favorite-badge-v59">★ Favorita</span><div class="article-preview-v55">${escV57(formatArticleTextV55(f.texto||''))}</div><div class="favorite-obs-v59">${escV57(f.observacion||'')}</div></td>
+   <td><div class="catalog-actions-v61"><button type="button" class="use-fav-btn-v61" onclick="useFavoriteV55('${esc(f.id)}')">Usar</button><button type="button" class="remove-fav-btn-v61" onclick="removeFavoriteByIdV59('${esc(f.id)}')">Quitar ★</button></div></td>
+ </tr>`).join('');
+
+ const articleRows=rows.map(a=>`<tr>
+     <td>${articleDisplayFromRowV68(a)}</td>
+     <td><div class="article-preview-v55">${escV57(formatArticleTextV55(a.Texto_Articulo))}</div></td>
+     <td>${actionSearchV60(a)}</td>
+   </tr>`).join('');
+
+ box.classList.add('catalog-ordenanza-v60');
+ box.innerHTML=`${aviso}<table><thead><tr><th>Artículo</th><th>Texto del artículo</th><th>Acción</th></tr></thead><tbody>${favRows}${articleRows || (!favRows?'<tr><td colspan="3">No hay coincidencias.</td></tr>':'')}</tbody></table>`;
+};
+
+function articleCellForObsV68(o){
+  if(o.source==='req') return escV57(o.articulo||o.norma||'');
+  if(o.articuloTitulo || o.articuloDisplay){
+    const num=String(o.articulo||o.norma||'').trim();
+    const title=cleanTitleV68(o.articuloTitulo || String(o.articuloDisplay||'').replace(num,''));
+    if(title) return `<span class="article-label-v68"><span class="num">${escV57(num)}</span><span class="title">${escV57(title)}</span></span>`;
+  }
+  return articleHtmlV68(o.articulo||o.norma||'');
+}
+
+/* Tabla de observaciones seleccionadas */
+renderObsSeleccionadas = function(){
+ const box=document.getElementById('obsSeleccionadas'); 
+ if(!box) return;
+ const rows=combinedObsRows();
+ if(!rows.length){
+   box.innerHTML='<p class="mini">Aún no se han seleccionado observaciones y no existen requisitos marcados como No Cumple.</p>';
+   return;
+ }
+ box.innerHTML=`<div class="obs-selected-note-v54">Complete la Observación Específica y agregue imagen si aplica.</div><table><thead><tr><th>Nro.</th><th>Artículo</th><th>Texto del artículo</th><th>Observación específica</th><th>Imagen</th><th>Acciones</th></tr></thead><tbody>${rows.map((o,idx)=>{
+   const obs=obsSpecificV55(o);
+   return `<tr>
+   <td>${idx+1}</td>
+   <td>${articleCellForObsV68(o)}</td>
+   <td><div class="article-preview-v55">${escV57(formatArticleTextV55(o.texto||''))}</div></td>
+   <td>${o.source==='req' ? `<div class="article-preview-v55">${reqObservationHtmlV62(obs)}</div>` : `<textarea placeholder="Escriba la observación específica" oninput="updObsNota('${o.id}','${o.source}',this.value)">${escV57(obs)}</textarea>`}</td>
+   <td class="obs-image-cell-v55">${o.source==='obs'?`<div class="image-tools-v53"><input type="file" accept="image/*" onchange="setObsImageV53('${o.id}',this)"><div class="paste-zone-v53" contenteditable="true" onpaste="pasteObsImageV53('${o.id}',event)">Pegar captura aquí</div>${o.imagen?`<img src="${esc(o.imagen)}"><button type="button" class="secondary mini-btn" onclick="clearObsImageV53('${o.id}')">Quitar imagen</button>`:''}</div>`:'<span class="mini">No aplica</span>'}</td>
+   <td><div class="obs-action-stack-v59">${o.source==='obs'?`${starSelectedV59(o)}<button class="danger" onclick="quitarObs('${o.id}')">Quitar</button>`:'<span class="mini">Requisito</span>'}</div></td>
+ </tr>`;
+ }).join('')}</tbody></table>`;
+};
+
+/* Informe: Criterio Técnico / Artículo-Norma con título */
+function selectedObsTable(){
+ const rows=combinedObsRows();
+ if(!rows.length) return '<p>No se registran observaciones técnicas.</p>';
+ return `<table class="criterio-simple-v55"><thead><tr><th>Nro.</th><th>Artículo / Norma</th><th>Observación específica</th></tr></thead><tbody>${rows.map((o,i)=>{
+   const obs = obsSpecificV55(o);
+   return `<tr>
+     <td>${i+1}</td>
+     <td>${articleCellForObsV68(o)}</td>
+     <td>${o.source==='req' ? reqObservationHtmlV62(obs) : escV57(obs)}</td>
+   </tr>`;
+ }).join('')}</tbody></table>`;
+}
+
+/* Sustento técnico */
+function textosTecnicosSection(){
+ if(!state.mostrarTextosTecnicos) return '';
+ const rows=combinedObsRows().map((o,i)=>({num:i+1, obs:o, articulo:o.articulo||o.norma||'', texto:formatArticleTextV55(o.texto||''), imagen:o.imagen||'', source:o.source})).filter(o=>String(o.texto||'').trim() || o.imagen);
+ if(!rows.length) return '';
+ return `<h2>Sustento técnico de las observaciones</h2><table class="tech-note-table"><thead><tr><th>Nro.</th><th>Texto del artículo</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.num}</td><td><strong>${articleCellForObsV68(r.obs)}</strong><br><div class="article-text-v55">${esc(r.texto)}</div></td></tr>${r.imagen?`<tr class="sustento-img-row-v55"><td colspan="2"><img class="sustento-img-v55" src="${esc(r.imagen)}"></td></tr>`:''}`).join('')}</tbody></table>`;
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    renderCatalogoObs();
+    renderObsSeleccionadas();
+    renderReport();
+    renderPreview();
+  },1000);
 });
 </script>
 
