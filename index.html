@@ -11912,5 +11912,39 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V83 SOBRE V82
+   Cambio de encabezado en el Informe de Observaciones y
+   Desistimiento:
+   "Observación específica" -> "Aclaración"
+   Solo aplica a la tabla Criterio Técnico del informe.
+   ========================================================== */
+
+function selectedObsTable(){
+ const rows=combinedObsRows();
+ if(!rows.length) return '<p>No se registran observaciones técnicas.</p>';
+ return `<table class="criterio-simple-v55"><thead><tr><th>Nro.</th><th>Artículo / Norma</th><th>Aclaración</th></tr></thead><tbody>${rows.map((o,i)=>{
+   const obs = obsSpecificV55(o);
+   const articuloCell = (typeof articleCellForObsV68 === 'function')
+     ? articleCellForObsV68(o)
+     : escV57(o.articulo||o.norma||'');
+   return `<tr>
+     <td>${i+1}</td>
+     <td>${articuloCell}</td>
+     <td>${o.source==='req' ? reqObservationHtmlV62(obs) : escV57(obs)}</td>
+   </tr>`;
+ }).join('')}</tbody></table>`;
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    if(typeof renderReport === 'function') renderReport();
+    if(typeof renderPreview === 'function') renderPreview();
+  },600);
+});
+</script>
+
 </body>
 </html>
