@@ -10731,5 +10731,244 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V77 SOBRE V76
+   Corrección reforzada:
+   La tabla Conclusión Técnica se carga directamente desde
+   data/conclusion_tecnica_base.csv, incluso si el estado anterior
+   del navegador está incompleto.
+   ========================================================== */
+
+window.__CONCLUSION_CSV_V77__ = {
+  loaded:false,
+  loading:false,
+  rows:[],
+  error:''
+};
+
+function normDescConclusionV77(v){
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function activeConclusionRowV77(row){
+  const v = String(row.Activo || row.activo || '').trim().toLowerCase();
+  return !v || v === 'sí' || v === 'si' || v === 'true' || v === '1';
+}
+
+function mapConclusionRowV77(r){
+  return {
+    descripcion: String(r["Descripción"] || r.Descripcion || r.descripcion || '').trim(),
+    levels: String(r.Niveles || r.niveles || '').split('|').map(x=>x.trim()).filter(Boolean),
+    cantidad: String(r.Cantidad || r.cantidad || '').trim(),
+    unidad: String(r.Unidad || r.unidad || 'm2').trim() || 'm2',
+    allowLevels: false
+  };
+}
+
+async function cargarConclusionCSVDirectoV77(force=false){
+  if(window.__CONCLUSION_CSV_V77__.loading) return window.__CONCLUSION_CSV_V77__.rows;
+  if(window.__CONCLUSION_CSV_V77__.loaded && !force) return window.__CONCLUSION_CSV_V77__.rows;
+
+  window.__CONCLUSION_CSV_V77__.loading = true;
+  window.__CONCLUSION_CSV_V77__.error = '';
+
+  try{
+    const url = 'data/conclusion_tecnica_base.csv?v=' + Date.now();
+    const txt = await fetchCSVTextV32(url);
+    const rows = parseCSVV32(txt)
+      .filter(activeConclusionRowV77)
+      .map(mapConclusionRowV77)
+      .filter(r=>r.descripcion);
+
+    if(rows.length < 3){
+      throw new Error('El CSV fue leído, pero solo se encontraron ' + rows.length + ' filas activas.');
+    }
+
+    DATA.conclusionBase = rows.map(r=>({
+      "Descripción": r.descripcion,
+      "Niveles": (r.levels||[]).join('|'),
+      "Cantidad": r.cantidad,
+      "Unidad": r.unidad,
+      "Activo": "Sí"
+    }));
+
+    window.__CONCLUSION_CSV_V77__.rows = rows;
+    window.__CONCLUSION_CSV_V77__.loaded = true;
+    console.log('V77 conclusion_tecnica_base.csv cargado directamente:', rows.length, rows.map(r=>r.descripcion));
+    return rows;
+  }catch(e){
+    window.__CONCLUSION_CSV_V77__.error = e.message || String(e);
+    console.error('V77 no pudo cargar conclusion_tecnica_base.csv:', e);
+    return [];
+  }finally{
+    window.__CONCLUSION_CSV_V77__.loading = false;
+  }
+}
+
+function conclusionRowsFromDataV77(){
+  const direct = window.__CONCLUSION_CSV_V77__.rows || [];
+  if(direct.length) return direct;
+
+  const rows = (DATA.conclusionBase || [])
+    .filter(activeConclusionRowV77)
+    .map(mapConclusionRowV77)
+    .filter(r=>r.descripcion);
+
+  return rows;
+}
+
+function conclusionIncompleteV77(){
+  const rows = conclusionRowsFromDataV77();
+  const arr = state.aprobatorio?.conclusion || [];
+
+  if(rows.length >= 3 && arr.length < rows.length) return true;
+  if(!arr.length && rows.length) return true;
+
+  const have = new Set(arr.map(raw=>{
+    const r = typeof normalizeConclusionRowSafeV73 === 'function' ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+    return normDescConclusionV77(r.descripcion);
+  }));
+
+  const missing = rows.filter(r=>!have.has(normDescConclusionV77(r.descripcion)));
+  return rows.length >= 3 && missing.length >= 2;
+}
+
+function rebuildConclusionFromRowsV77(force=false){
+  ensureAprobatorioData();
+
+  const rows = conclusionRowsFromDataV77();
+  if(rows.length < 3) return false;
+  if(!force && !conclusionIncompleteV77()) return false;
+
+  const old = state.aprobatorio.conclusion || [];
+  const oldByDesc = new Map();
+
+  old.forEach(raw=>{
+    const r = typeof normalizeConclusionRowSafeV73 === 'function' ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+    const key = normDescConclusionV77(r.descripcion);
+    if(key && !oldByDesc.has(key)) oldByDesc.set(key,r);
+  });
+
+  const baseKeys = new Set(rows.map(r=>normDescConclusionV77(r.descripcion)));
+
+  const merged = rows.map(base=>{
+    const prev = oldByDesc.get(normDescConclusionV77(base.descripcion));
+    return {
+      descripcion: base.descripcion,
+      levels: prev?.levels?.length ? prev.levels : base.levels,
+      cantidad: String(prev?.cantidad || base.cantidad || ''),
+      unidad: String(prev?.unidad || base.unidad || 'm2'),
+      allowLevels: false
+    };
+  });
+
+  // Conserva filas personalizadas de áreas brutas entre planta baja y total.
+  const oldExtras = old.map(raw => typeof normalizeConclusionRowSafeV73 === 'function' ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw))
+    .filter(r=>{
+      const d = normDescConclusionV77(r.descripcion);
+      return d && !baseKeys.has(d) && d.includes('BRUTA') && !d.includes('TOTAL');
+    })
+    .map(r=>({...r, allowLevels:true}));
+
+  const totalIdx = merged.findIndex(r=>normDescConclusionV77(r.descripcion).includes('AREA BRUTA TOTAL'));
+  if(totalIdx >= 0 && oldExtras.length) merged.splice(totalIdx,0,...oldExtras);
+
+  state.aprobatorio.conclusion = merged;
+
+  if(typeof ensureConclusionOrderV73 === 'function') ensureConclusionOrderV73();
+  if(typeof recalcAreasCOSV36 === 'function') recalcAreasCOSV36();
+
+  console.log('V77 Conclusión Técnica reconstruida:', merged.length, merged.map(r=>r.descripcion));
+  return true;
+}
+
+function showConclusionCSVStatusV77(){
+  const box = document.getElementById('conclusionTabla');
+  if(!box) return;
+
+  let msg = '';
+  const rows = conclusionRowsFromDataV77();
+
+  if(window.__CONCLUSION_CSV_V77__.error){
+    msg = 'No se pudo leer data/conclusion_tecnica_base.csv: ' + window.__CONCLUSION_CSV_V77__.error;
+  }else if(rows.length < 3){
+    msg = 'No se encontró una estructura completa en data/conclusion_tecnica_base.csv. Verifique que el archivo esté en la carpeta data y tenga filas activas.';
+  }
+
+  if(msg && !document.getElementById('conclusionCsvWarnV77')){
+    box.insertAdjacentHTML('afterbegin', `<div id="conclusionCsvWarnV77" class="apr-alert">${esc(msg)}</div>`);
+  }
+}
+
+/* Render principal reforzado: si solo hay una fila, fuerza reconstrucción. */
+const _renderConclusionTabla_base_V77 = typeof renderConclusionTabla === 'function' ? renderConclusionTabla : null;
+renderConclusionTabla = function(){
+  if(conclusionIncompleteV77()) rebuildConclusionFromRowsV77(false);
+
+  if(_renderConclusionTabla_base_V77) _renderConclusionTabla_base_V77();
+
+  showConclusionCSVStatusV77();
+
+  const arr = state.aprobatorio?.conclusion || [];
+  if(arr.length <= 1 && !window.__CONCLUSION_CSV_V77__.loading){
+    cargarConclusionCSVDirectoV77(true).then(()=>{
+      rebuildConclusionFromRowsV77(true);
+      if(_renderConclusionTabla_base_V77) _renderConclusionTabla_base_V77();
+      showConclusionCSVStatusV77();
+      if(typeof renderReport === 'function') renderReport();
+      if(typeof renderPreview === 'function') renderPreview();
+    });
+  }
+};
+
+async function forceConclusionFromCSVV77(force=false){
+  await cargarConclusionCSVDirectoV77(force);
+  rebuildConclusionFromRowsV77(force || conclusionIncompleteV77());
+  if(typeof _renderConclusionTabla_base_V77 === 'function') _renderConclusionTabla_base_V77();
+  showConclusionCSVStatusV77();
+  if(typeof renderReport === 'function') renderReport();
+  if(typeof renderPreview === 'function') renderPreview();
+}
+
+/* Refuerza formularios y carga inicial */
+const _renderAprobatorioForm_base_V77 = typeof renderAprobatorioForm === 'function' ? renderAprobatorioForm : null;
+renderAprobatorioForm = function(){
+  if(_renderAprobatorioForm_base_V77) _renderAprobatorioForm_base_V77();
+
+  setTimeout(()=>{
+    forceConclusionFromCSVV77(false);
+  },80);
+};
+
+/* Botón Nuevo: fuerza la estructura del CSV */
+const _nuevoFormulario_base_V77 = typeof nuevoFormulario === 'function' ? nuevoFormulario : null;
+if(_nuevoFormulario_base_V77){
+  nuevoFormulario = function(){
+    _nuevoFormulario_base_V77();
+    setTimeout(()=>forceConclusionFromCSVV77(true),120);
+  };
+}
+
+/* Al cambiar a pestaña aprobatorio, vuelve a verificar */
+const _showTab_base_V77 = typeof showTab === 'function' ? showTab : null;
+if(_showTab_base_V77){
+  showTab = function(id){
+    _showTab_base_V77(id);
+    if(id === 'tab-apr') setTimeout(()=>forceConclusionFromCSVV77(false),100);
+  };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>forceConclusionFromCSVV77(false),700);
+  setTimeout(()=>forceConclusionFromCSVV77(false),1600);
+});
+</script>
+
 </body>
 </html>
