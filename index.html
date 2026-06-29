@@ -10455,5 +10455,102 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V75 SOBRE V73
+   La tabla de Conclusión Técnica debe respetar la estructura
+   de data/conclusion_tecnica_base.csv.
+   - Ya NO se agrega automáticamente "Área útil total" desde código.
+   - Si esa fila existe, debe venir desde el CSV.
+   - Los cálculos siguen buscando la fila por descripción.
+   ========================================================== */
+
+function csvHasAreaUtilTotalV75(){
+  const rows = DATA.conclusionBase || [];
+  return rows.some(r => {
+    const desc = String(r["Descripción"] || r.Descripcion || r.descripcion || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toUpperCase();
+    return desc.includes('AREA UTIL TOTAL');
+  });
+}
+
+/* Se reemplaza la función anterior que insertaba la fila automáticamente. */
+ensureAreaUtilTotalRowV37 = function(){
+  return;
+};
+
+/* Validación informativa para que TICS sepa si el CSV está incompleto. */
+function warnConclusionCSVV75(){
+  if(!csvHasAreaUtilTotalV75()){
+    console.warn('data/conclusion_tecnica_base.csv no contiene la fila "Área útil total". COS Total quedará vacío hasta que esa fila exista en el CSV.');
+  }
+}
+
+/* Recalcula tomando Área útil total únicamente si existe en la tabla cargada. */
+recalcAreasCOSV36 = function(){
+  const arr=state.aprobatorio?.conclusion||[];
+  let areaLote=0, aupb=0, areaUtilTotal=0, brutaTotal=0;
+
+  arr.forEach(raw=>{
+    const r=normalizeConclusionRowSafeV73 ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+    const d=normV36(r.descripcion);
+    const q=parseQtyV36(r.cantidad);
+
+    if((d.includes('AREA DEL PREDIO')||d.includes('AREA TOTAL DE LOTE')) && q) areaLote=q;
+    if(d.includes('AREA UTIL PLANTA BAJA')) aupb=q;
+    if(d.includes('AREA UTIL TOTAL')) areaUtilTotal=q;
+    if(d.includes('BRUTA') && !d.includes('TOTAL')) brutaTotal+=q;
+  });
+
+  arr.forEach((raw,i)=>{
+    const r=normalizeConclusionRowSafeV73 ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+    const d=normV36(r.descripcion);
+
+    if(d.includes('AREA BRUTA TOTAL')){
+      r.cantidad=brutaTotal?fmtNumV36(brutaTotal):'';
+      syncConclusionObj(i,r);
+    }
+    if(d.includes('COS PB')){
+      r.cantidad=(areaLote&&aupb)?fmtNumV36((aupb/areaLote)*100):'';
+      syncConclusionObj(i,r);
+    }
+    if(d.includes('COS TOTAL')){
+      r.cantidad=(areaLote&&areaUtilTotal)?fmtNumV36((areaUtilTotal/areaLote)*100):'';
+      syncConclusionObj(i,r);
+    }
+  });
+};
+
+/* Si el usuario crea un informe nuevo y el CSV ya trae Área útil total, se usa sin insertar nada extra. */
+const _renderAprobatorioForm_base_V75 = typeof renderAprobatorioForm === 'function' ? renderAprobatorioForm : null;
+renderAprobatorioForm = function(){
+  warnConclusionCSVV75();
+  if(_renderAprobatorioForm_base_V75) _renderAprobatorioForm_base_V75();
+
+  // No inserta filas. Solo re-renderiza para aplicar cálculo y reglas de botones.
+  setTimeout(()=>{
+    try{
+      recalcAreasCOSV36();
+      if(typeof ensureConclusionOrderV73 === 'function') ensureConclusionOrderV73();
+      if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
+    }catch(e){
+      console.warn('V75 conclusión técnica desde CSV:', e);
+    }
+  },0);
+};
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    warnConclusionCSVV75();
+    try{
+      recalcAreasCOSV36();
+      if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
+    }catch(e){
+      console.warn('V75 conclusión técnica desde CSV:', e);
+    }
+  },900);
+});
+</script>
+
 </body>
 </html>
