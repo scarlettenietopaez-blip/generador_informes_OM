@@ -11332,5 +11332,307 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V80 SOBRE V79
+   Corrección de criterio:
+   - La tabla editable de Conclusión Técnica muestra TODAS las filas del CSV,
+     incluso las que estén Activo = No.
+   - La columna Activo solo controla si la fila aparece o no en el INFORME.
+   - Las filas inactivas pueden seguir usándose para cálculos, por ejemplo
+     Área útil total para calcular COS Total.
+   ========================================================== */
+
+window.__CONCLUSION_CSV_V80__ = window.__CONCLUSION_CSV_V80__ || {
+  loaded:false,
+  loading:false,
+  allRows:[],
+  activeMap:new Map(),
+  allMap:new Map(),
+  error:''
+};
+
+function normDescConclusionV80(v){
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function rowActivoCSVV80(row){
+  const v = String(row.Activo || row.activo || '').trim().toLowerCase();
+  return !v || v === 'sí' || v === 'si' || v === 'true' || v === '1';
+}
+
+function mapConclusionCSVRowV80(r){
+  const descripcion = String(r["Descripción"] || r.Descripcion || r.descripcion || '').trim();
+  return {
+    descripcion,
+    levels: String(r.Niveles || r.niveles || '').split('|').map(x=>x.trim()).filter(Boolean),
+    cantidad: String(r.Cantidad || r.cantidad || '').trim(),
+    unidad: String(r.Unidad || r.unidad || 'm2').trim() || 'm2',
+    allowLevels: false,
+    activo: rowActivoCSVV80(r)
+  };
+}
+
+async function cargarConclusionCSVV80(force=false){
+  if(window.__CONCLUSION_CSV_V80__.loading) return window.__CONCLUSION_CSV_V80__.allRows;
+  if(window.__CONCLUSION_CSV_V80__.loaded && !force) return window.__CONCLUSION_CSV_V80__.allRows;
+
+  window.__CONCLUSION_CSV_V80__.loading = true;
+  window.__CONCLUSION_CSV_V80__.error = '';
+
+  try{
+    const txt = await fetchCSVTextV32('data/conclusion_tecnica_base.csv?v=' + Date.now());
+    const rows = parseCSVV32(txt).map(mapConclusionCSVRowV80).filter(r=>r.descripcion);
+
+    if(rows.length < 3){
+      throw new Error('El CSV fue leído, pero solo se encontraron ' + rows.length + ' filas.');
+    }
+
+    const allMap = new Map();
+    const activeMap = new Map();
+
+    rows.forEach(r=>{
+      const key = normDescConclusionV80(r.descripcion);
+      allMap.set(key, r);
+      if(r.activo) activeMap.set(key, r);
+    });
+
+    window.__CONCLUSION_CSV_V80__.allRows = rows;
+    window.__CONCLUSION_CSV_V80__.allMap = allMap;
+    window.__CONCLUSION_CSV_V80__.activeMap = activeMap;
+    window.__CONCLUSION_CSV_V80__.loaded = true;
+
+    // DATA.conclusionBase conserva todas las filas para la tabla editable.
+    DATA.conclusionBase = rows.map(r=>({
+      "Descripción": r.descripcion,
+      "Niveles": (r.levels||[]).join('|'),
+      "Cantidad": r.cantidad,
+      "Unidad": r.unidad,
+      "Activo": r.activo ? "Sí" : "No"
+    }));
+
+    console.log('V80 CSV Conclusión Técnica cargado:', {
+      total: rows.length,
+      activas: activeMap.size,
+      inactivas: rows.length - activeMap.size,
+      filas: rows.map(r=>`${r.descripcion} [${r.activo?'Sí':'No'}]`)
+    });
+
+    return rows;
+  }catch(e){
+    window.__CONCLUSION_CSV_V80__.error = e.message || String(e);
+    console.error('V80 no pudo cargar conclusion_tecnica_base.csv:', e);
+    return [];
+  }finally{
+    window.__CONCLUSION_CSV_V80__.loading = false;
+  }
+}
+
+function conclusionAllRowsV80(){
+  if(window.__CONCLUSION_CSV_V80__.allRows?.length) return window.__CONCLUSION_CSV_V80__.allRows;
+  return (DATA.conclusionBase || []).map(mapConclusionCSVRowV80).filter(r=>r.descripcion);
+}
+
+function conclusionActiveKeysV80(){
+  if(window.__CONCLUSION_CSV_V80__.activeMap instanceof Map && window.__CONCLUSION_CSV_V80__.activeMap.size){
+    return new Set(window.__CONCLUSION_CSV_V80__.activeMap.keys());
+  }
+  return new Set(conclusionAllRowsV80().filter(r=>r.activo).map(r=>normDescConclusionV80(r.descripcion)));
+}
+
+function conclusionAllBaseKeysV80(){
+  return new Set(conclusionAllRowsV80().map(r=>normDescConclusionV80(r.descripcion)));
+}
+
+/* La tabla editable debe seguir la estructura completa del CSV, no solo las activas. */
+function rebuildConclusionEditableFromCSVV80(force=false){
+  ensureAprobatorioData();
+
+  const rows = conclusionAllRowsV80();
+  if(rows.length < 3) return false;
+
+  const current = state.aprobatorio.conclusion || [];
+  const currentByDesc = new Map();
+
+  current.forEach(raw=>{
+    const r = typeof normalizeConclusionRowSafeV73 === 'function' ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+    const key = normDescConclusionV80(r.descripcion);
+    if(key && !currentByDesc.has(key)) currentByDesc.set(key, r);
+  });
+
+  const currentKeys = current.map(raw=>{
+    const r = typeof normalizeConclusionRowSafeV73 === 'function' ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+    return normDescConclusionV80(r.descripcion);
+  }).filter(Boolean).join('|');
+
+  const csvKeys = rows.map(r=>normDescConclusionV80(r.descripcion)).filter(Boolean).join('|');
+
+  const incomplete = !current.length || current.length < rows.length || currentKeys !== csvKeys;
+
+  if(!force && !incomplete) return false;
+
+  const baseKeys = conclusionAllBaseKeysV80();
+
+  const merged = rows.map(base=>{
+    const prev = currentByDesc.get(normDescConclusionV80(base.descripcion));
+    return {
+      descripcion: base.descripcion,
+      levels: prev?.levels?.length ? prev.levels : base.levels,
+      cantidad: String(prev?.cantidad || base.cantidad || ''),
+      unidad: String(prev?.unidad || base.unidad || 'm2'),
+      allowLevels: false
+    };
+  });
+
+  // Conserva filas personalizadas de áreas brutas que no son parte del CSV.
+  const extras = current.map(raw => typeof normalizeConclusionRowSafeV73 === 'function' ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw))
+    .filter(r=>{
+      const d = normDescConclusionV80(r.descripcion);
+      return d && !baseKeys.has(d) && d.includes('BRUTA') && !d.includes('TOTAL');
+    })
+    .map(r=>({...r, allowLevels:true}));
+
+  const totalIdx = merged.findIndex(r=>normDescConclusionV80(r.descripcion).includes('AREA BRUTA TOTAL'));
+  if(totalIdx >= 0 && extras.length) merged.splice(totalIdx,0,...extras);
+
+  state.aprobatorio.conclusion = merged;
+
+  if(typeof ensureConclusionOrderV73 === 'function') ensureConclusionOrderV73();
+  if(typeof recalcAreasCOSV36 === 'function') recalcAreasCOSV36();
+
+  console.log('V80 tabla editable sincronizada con TODAS las filas del CSV:', merged.map(r=>r.descripcion));
+  return true;
+}
+
+/* Recalcula usando todas las filas editables, incluso si Activo = No. */
+recalcAreasCOSV36 = function(){
+  const arr = state.aprobatorio?.conclusion || [];
+  let areaLote=0, aupb=0, areaUtilTotal=0, brutaTotal=0;
+
+  arr.forEach(raw=>{
+    const r = typeof normalizeConclusionRowSafeV73 === 'function' ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+    const d = normV36(r.descripcion);
+    const q = parseQtyV36(r.cantidad);
+
+    if((d.includes('AREA DEL PREDIO') || d.includes('AREA TOTAL DE LOTE')) && q) areaLote=q;
+    if(d.includes('AREA UTIL PLANTA BAJA')) aupb=q;
+    if(d.includes('AREA UTIL TOTAL')) areaUtilTotal=q;
+    if(d.includes('BRUTA') && !d.includes('TOTAL')) brutaTotal += q;
+  });
+
+  arr.forEach((raw,i)=>{
+    const r = typeof normalizeConclusionRowSafeV73 === 'function' ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+    const d = normV36(r.descripcion);
+
+    if(d.includes('AREA BRUTA TOTAL')){
+      r.cantidad = brutaTotal ? fmtNumV36(brutaTotal) : '';
+      syncConclusionObj(i,r);
+    }
+    if(d.includes('COS PB')){
+      r.cantidad = (areaLote && aupb) ? fmtNumV36((aupb/areaLote)*100) : '';
+      syncConclusionObj(i,r);
+    }
+    if(d.includes('COS TOTAL')){
+      r.cantidad = (areaLote && areaUtilTotal) ? fmtNumV36((areaUtilTotal/areaLote)*100) : '';
+      syncConclusionObj(i,r);
+    }
+  });
+};
+
+/* En el informe se imprimen solo filas activas del CSV + filas personalizadas. */
+function conclusionRowsForReportV80(){
+  const arr = state.aprobatorio?.conclusion || [];
+  const activeKeys = conclusionActiveKeysV80();
+  const baseKeys = conclusionAllBaseKeysV80();
+
+  // Si todavía no se leyó el CSV, no filtra para no dejar el informe vacío por error.
+  if(baseKeys.size < 3 || activeKeys.size < 1) return arr;
+
+  return arr.filter(raw=>{
+    const r = typeof normalizeConclusionRowSafeV73 === 'function' ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+    const key = normDescConclusionV80(r.descripcion);
+    if(!key) return false;
+
+    // Fila base del CSV: aparece solo si Activo = Sí.
+    if(baseKeys.has(key)) return activeKeys.has(key);
+
+    // Fila personalizada del usuario: aparece si pertenece al bloque de brutas.
+    return key.includes('BRUTA') && !key.includes('TOTAL');
+  });
+}
+
+function conclusionReport(){
+  const arr = conclusionRowsForReportV80();
+  if(!arr.length) return '<p>No se registran datos de conclusión técnica.</p>';
+
+  return `<table class="informe-table conclusion-report"><thead><tr><th colspan="2">DESCRIPCIÓN</th><th>CANTIDAD</th><th>UNIDAD</th></tr></thead><tbody>${arr.map(raw=>{
+    const r = typeof normalizeConclusionRowSafeV73 === 'function' ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+    const niveles=(r.levels||[]).filter(Boolean).map(esc).join('<br>');
+    const descClass=/TOTAL|NÚMERO DE PISOS|UNIDADES|COS/.test(upper(r.descripcion||''))?'desc-bold':'';
+    if(niveles){
+      return `<tr><td class="${descClass}">${esc(r.descripcion)}</td><td class="level-cell">${niveles}</td><td class="right">${esc(r.cantidad)}</td><td>${esc(r.unidad)}</td></tr>`;
+    }
+    return `<tr><td colspan="2" class="${descClass}">${esc(r.descripcion)}</td><td class="right">${esc(r.cantidad)}</td><td>${esc(r.unidad)}</td></tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+/* Render editable: sincroniza con todas las filas, pero NO oculta por Activo. */
+const _renderConclusionTabla_base_V80 = typeof renderConclusionTabla === 'function' ? renderConclusionTabla : null;
+renderConclusionTabla = function(){
+  rebuildConclusionEditableFromCSVV80(false);
+  if(_renderConclusionTabla_base_V80) _renderConclusionTabla_base_V80();
+};
+
+async function aplicarConclusionCSVV80(force=false){
+  await cargarConclusionCSVV80(force);
+  rebuildConclusionEditableFromCSVV80(force);
+  if(_renderConclusionTabla_base_V80 && document.getElementById('conclusionTabla')) _renderConclusionTabla_base_V80();
+  if(typeof renderReport === 'function') renderReport();
+  if(typeof renderPreview === 'function') renderPreview();
+}
+
+/* Sobrescribe funciones anteriores de V77/V78/V79 para que no filtren la tabla editable. */
+if(typeof forceConclusionFromCSVV77 === 'function'){
+  forceConclusionFromCSVV77 = aplicarConclusionCSVV80;
+}
+if(typeof aplicarActivoConclusionV79 === 'function'){
+  aplicarActivoConclusionV79 = aplicarConclusionCSVV80;
+}
+
+const _renderAprobatorioForm_base_V80 = typeof renderAprobatorioForm === 'function' ? renderAprobatorioForm : null;
+renderAprobatorioForm = function(){
+  if(_renderAprobatorioForm_base_V80) _renderAprobatorioForm_base_V80();
+  setTimeout(()=>aplicarConclusionCSVV80(false),100);
+};
+
+const _nuevoFormulario_base_V80 = typeof nuevoFormulario === 'function' ? nuevoFormulario : null;
+if(_nuevoFormulario_base_V80){
+  nuevoFormulario = function(){
+    _nuevoFormulario_base_V80();
+    setTimeout(()=>aplicarConclusionCSVV80(true),150);
+  };
+}
+
+const _showTab_base_V80 = typeof showTab === 'function' ? showTab : null;
+if(_showTab_base_V80){
+  showTab = function(id){
+    _showTab_base_V80(id);
+    if(id === 'tab-apr' || id === 'tab-vista'){
+      setTimeout(()=>aplicarConclusionCSVV80(false),100);
+    }
+  };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>aplicarConclusionCSVV80(false),900);
+  setTimeout(()=>aplicarConclusionCSVV80(false),1800);
+});
+</script>
+
 </body>
 </html>
