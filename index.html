@@ -3542,7 +3542,6 @@ function ensureV36State(){
   if(!Array.isArray(DATA.profesionales)) DATA.profesionales=[];
   if(!Array.isArray(DATA.usosPrincipales)) DATA.usosPrincipales=[];
   if(!Array.isArray(DATA.clavesCatastrales)) DATA.clavesCatastrales=[];
-  if(!Array.isArray(DATA.normativaArticulos)) DATA.normativaArticulos=[];
 }
 
 const _loadExternalCSVsV32_base_V36 = typeof loadExternalCSVsV32 === 'function' ? loadExternalCSVsV32 : async()=>{};
@@ -3551,8 +3550,7 @@ loadExternalCSVsV32 = async function(){
   const extras={
     profesionales:'data/profesionales.csv',
     usosPrincipales:'data/usos_principales.csv',
-    clavesCatastrales:'data/claves_catastrales.csv',
-    normativaArticulos:'data/normativa_articulos.csv'
+    clavesCatastrales:'data/claves_catastrales.csv'
   };
   const loaded={};
   for(const [k,u] of Object.entries(extras)){
@@ -3577,15 +3575,7 @@ loadExternalCSVsV32 = async function(){
       zona:String(r.Zona||'').trim(), sect:String(r.Sect||'').trim(), polg:String(r.Polg||'').trim(), pred:String(r.Pred||'').trim()
     }));
   }
-  if(loaded.normativaArticulos.length){
-    DATA.normativaArticulos=loaded.normativaArticulos.filter(activeV32).map(r=>({
-      articulo:String(r.Articulo||r["Artículo"]||r.Art||'').trim(),
-      norma:String(r.Norma||'Ordenanza 016-2023').trim(),
-      titulo:String(r.Titulo||r["Título"]||'').trim(),
-      texto:String(r.Texto||r.Contenido||r.Descripcion||r["Descripción"]||'').trim()
-    })).filter(r=>r.articulo||r.texto);
-  }
-  ensureV36State();
+    ensureV36State();
 };
 
 const _fieldMetaV35_V36 = fieldMeta;
@@ -3758,15 +3748,29 @@ handleInfoInput = function(f,el,meta){
   if(meta.isProyectista) autoFillProfesionalV36(el.value);
 };
 
+
 function articuloKeyV36(v){
   return normV36(v).replace(/^ART(ICULO)?\s*/,'').replace(/^ART\s*/,'').trim();
 }
 function findNormativaArticuloV36(art){
+  /* Función legada mantenida por compatibilidad.
+     Ahora busca en data/ordenanza_016_2023_articulos.csv,
+     no en normativa_articulos.csv. */
   const a=articuloKeyV36(art);
   if(!a) return null;
-  return (DATA.normativaArticulos||[]).find(r=>articuloKeyV36(r.articulo)===a || articuloKeyV36(r.articulo).includes(a) || a.includes(articuloKeyV36(r.articulo))) || null;
+  if(typeof ensureOrdenanzaV52==='function') ensureOrdenanzaV52();
+  const row=(DATA.ordenanzaArticulos||[]).find(r=>{
+    const n=articuloKeyV36(r.Articulo||r.articulo||'');
+    return n===a || n.includes(a) || a.includes(n);
+  });
+  if(!row) return null;
+  return {
+    articulo:String(row.Articulo||row.articulo||'').replace(/Artículo\s*/i,'').trim(),
+    norma:'Ordenanza 016-2023',
+    titulo:String(row.Tema||row.titulo||'').trim(),
+    texto:String(row.Texto_Articulo||row.texto||'').trim()
+  };
 }
-
 renderObservacionesForm = function(){
  ensureV36State();
  const box=document.getElementById('observacionesForm');
@@ -3788,7 +3792,7 @@ renderObservacionesForm = function(){
      <button class="success" onclick="agregarObsManual()">Guardar y agregar al informe</button>
      <button class="secondary" onclick="toggleManualObsPanel()">Cerrar</button>
    </div>
-   <div class="mini">El texto técnico se carga automáticamente desde data/normativa_articulos.csv usando el artículo ingresado.</div>
+   <div class="mini">El texto técnico se carga automáticamente desde data/ordenanza_016_2023_articulos.csv usando el artículo ingresado.</div>
    <div id="manualObsDB" class="manual-db"></div>
  </div>
  <div class="section-title">Tabla de observaciones del informe</div><div id="obsSeleccionadas"></div>`;
@@ -4086,7 +4090,7 @@ renderObservacionesForm = function(){
    <div class="field"><label>Artículo *</label><input id="manualNorma" oninput="normalizeUpperInput(this)" placeholder="Ej.: ART. 98"></div>
    <div class="field"><label>Observación puntual opcional</label><textarea id="manualObservacion" oninput="normalizeUpperInput(this)" placeholder="Si se deja vacío, se usará el texto del artículo encontrado en la base normativa"></textarea></div>
    <div class="buttons small-actions"><button class="success" onclick="agregarObsManual()">Guardar y agregar al informe</button><button class="secondary" onclick="toggleManualObsPanel()">Cerrar</button></div>
-   <div class="mini">El texto técnico se carga automáticamente desde data/normativa_articulos.csv usando el artículo ingresado.</div>
+   <div class="mini">El texto técnico se carga automáticamente desde data/ordenanza_016_2023_articulos.csv usando el artículo ingresado.</div>
    <div id="manualObsDB" class="manual-db"></div>
  </div>
  <div class="section-title">Tabla de observaciones del informe</div><div id="obsSeleccionadas"></div>`;
