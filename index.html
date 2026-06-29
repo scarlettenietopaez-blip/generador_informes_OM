@@ -10552,5 +10552,184 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V76 SOBRE V75
+   Corrige cuando la tabla Conclusión Técnica se queda con una sola fila.
+   La estructura se reconstruye desde data/conclusion_tecnica_base.csv
+   y conserva valores existentes cuando coinciden por descripción.
+   ========================================================== */
+
+function normDescConclusionV76(v){
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function conclusionCSVRowsV76(){
+  const rows = DATA.conclusionBase || [];
+  return rows
+    .filter(r => typeof activeV32 === 'function' ? activeV32(r) : true)
+    .map(r => {
+      const descripcion = String(r["Descripción"] || r.Descripcion || r.descripcion || '').trim();
+      return {
+        descripcion,
+        levels: String(r.Niveles || r.niveles || '').split('|').map(x=>x.trim()).filter(Boolean),
+        cantidad: String(r.Cantidad || r.cantidad || '').trim(),
+        unidad: String(r.Unidad || r.unidad || 'm2').trim() || 'm2',
+        allowLevels: false
+      };
+    })
+    .filter(r => r.descripcion);
+}
+
+function isBaseCSVDescV76(desc){
+  const key = normDescConclusionV76(desc);
+  return conclusionCSVRowsV76().some(r => normDescConclusionV76(r.descripcion) === key);
+}
+
+function currentConclusionHasValuesV76(){
+  const arr = state.aprobatorio?.conclusion || [];
+  return arr.some(raw => {
+    const r = normalizeConclusionRowSafeV73 ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+    return String(r.cantidad||'').trim() || (Array.isArray(r.levels) && r.levels.some(x=>String(x||'').trim()));
+  });
+}
+
+function conclusionLooksIncompleteV76(){
+  const csvRows = conclusionCSVRowsV76();
+  const arr = state.aprobatorio?.conclusion || [];
+  if(!csvRows.length) return false;
+  if(!arr.length) return true;
+  if(arr.length < Math.max(3, csvRows.length - 2)) return true;
+
+  const have = new Set(arr.map(raw => {
+    const r = normalizeConclusionRowSafeV73 ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+    return normDescConclusionV76(r.descripcion);
+  }));
+  const missingImportant = csvRows
+    .map(r=>normDescConclusionV76(r.descripcion))
+    .filter(k => k && !have.has(k));
+
+  return missingImportant.length >= Math.max(2, Math.floor(csvRows.length/3));
+}
+
+function mergeConclusionFromCSVV76(force=false){
+  ensureAprobatorioData();
+  const csvRows = conclusionCSVRowsV76();
+  if(!csvRows.length) return false;
+
+  const arr = state.aprobatorio.conclusion || [];
+  if(!force && !conclusionLooksIncompleteV76()) return false;
+
+  // Si hay valores ingresados, no destruye todo. Fusiona por descripción.
+  const existingByDesc = new Map();
+  arr.forEach(raw => {
+    const r = normalizeConclusionRowSafeV73 ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+    const key = normDescConclusionV76(r.descripcion);
+    if(key && !existingByDesc.has(key)) existingByDesc.set(key, r);
+  });
+
+  const baseKeys = new Set(csvRows.map(r=>normDescConclusionV76(r.descripcion)));
+  const extras = arr.map(raw => normalizeConclusionRowSafeV73 ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw))
+    .filter(r => {
+      const key = normDescConclusionV76(r.descripcion);
+      return key && !baseKeys.has(key);
+    });
+
+  const merged = csvRows.map(base => {
+    const prev = existingByDesc.get(normDescConclusionV76(base.descripcion));
+    return {
+      descripcion: base.descripcion,
+      levels: prev?.levels?.length ? prev.levels : base.levels,
+      cantidad: String(prev?.cantidad || base.cantidad || ''),
+      unidad: String(prev?.unidad || base.unidad || 'm2'),
+      allowLevels: false
+    };
+  });
+
+  // Conserva filas personalizadas solo si estaban en el bloque de áreas brutas.
+  const totalIndex = merged.findIndex(r => normDescConclusionV76(r.descripcion).includes('AREA BRUTA TOTAL'));
+  const validExtras = extras.filter(r => {
+    const d = normDescConclusionV76(r.descripcion);
+    return d && d.includes('BRUTA') && !d.includes('TOTAL');
+  });
+  if(totalIndex >= 0 && validExtras.length){
+    merged.splice(totalIndex, 0, ...validExtras.map(r=>({...r, allowLevels:true})));
+  }
+
+  state.aprobatorio.conclusion = merged;
+
+  if(typeof ensureConclusionOrderV73 === 'function') ensureConclusionOrderV73();
+  if(typeof recalcAreasCOSV36 === 'function') recalcAreasCOSV36();
+
+  console.log('Conclusión técnica reconstruida desde CSV:', merged.length, merged.map(r=>r.descripcion));
+  return true;
+}
+
+/* Refuerza renderAprobatorioForm para reconstruir desde CSV antes de dibujar. */
+const _renderAprobatorioForm_base_V76 = typeof renderAprobatorioForm === 'function' ? renderAprobatorioForm : null;
+renderAprobatorioForm = function(){
+  ensureAprobatorioData();
+  mergeConclusionFromCSVV76(false);
+
+  if(_renderAprobatorioForm_base_V76) _renderAprobatorioForm_base_V76();
+
+  setTimeout(()=>{
+    try{
+      mergeConclusionFromCSVV76(false);
+      if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
+      if(typeof renderReport === 'function') renderReport();
+      if(typeof renderPreview === 'function') renderPreview();
+    }catch(e){
+      console.warn('V76 conclusión técnica desde CSV:', e);
+    }
+  },0);
+};
+
+/* Refuerza el botón Nuevo para que la estructura del CSV se cargue limpia. */
+const _nuevoFormulario_base_V76 = typeof nuevoFormulario === 'function' ? nuevoFormulario : null;
+if(_nuevoFormulario_base_V76){
+  nuevoFormulario = function(){
+    _nuevoFormulario_base_V76();
+    setTimeout(()=>{
+      try{
+        mergeConclusionFromCSVV76(true);
+        if(typeof renderAprobatorioForm === 'function') renderAprobatorioForm();
+        if(typeof renderReport === 'function') renderReport();
+        if(typeof renderPreview === 'function') renderPreview();
+      }catch(e){
+        console.warn('V76 nuevo formulario conclusión:', e);
+      }
+    },80);
+  };
+}
+
+/* Al terminar de cargar CSV externos, revisa si la conclusión está incompleta. */
+const _loadExternalCSVsV32_base_V76 = typeof loadExternalCSVsV32 === 'function' ? loadExternalCSVsV32 : async()=>{};
+loadExternalCSVsV32 = async function(){
+  await _loadExternalCSVsV32_base_V76();
+  try{
+    mergeConclusionFromCSVV76(false);
+  }catch(e){
+    console.warn('V76 post CSV conclusión:', e);
+  }
+};
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    try{
+      mergeConclusionFromCSVV76(false);
+      if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
+    }catch(e){
+      console.warn('V76 load conclusión:', e);
+    }
+  },1200);
+});
+</script>
+
 </body>
 </html>
