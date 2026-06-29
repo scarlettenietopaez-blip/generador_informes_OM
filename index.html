@@ -11139,5 +11139,198 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V79 SOBRE V78
+   Corrección final: el filtro Activo también se aplica
+   directamente al render del Informe Aprobatorio.
+   ========================================================== */
+
+window.__CONCLUSION_ALL_CSV_V79__ = window.__CONCLUSION_ALL_CSV_V79__ || {loaded:false, allRows:[], activeRows:[], inactiveKeys:new Set(), error:''};
+
+function normDescConclusionV79(v){
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+function isActiveConclusionRowV79(row){
+  const v = String(row.Activo || row.activo || '').trim().toLowerCase();
+  return !v || v === 'sí' || v === 'si' || v === 'true' || v === '1';
+}
+function mapConclusionCSVRowV79(r){
+  return {
+    descripcion: String(r["Descripción"] || r.Descripcion || r.descripcion || '').trim(),
+    levels: String(r.Niveles || r.niveles || '').split('|').map(x=>x.trim()).filter(Boolean),
+    cantidad: String(r.Cantidad || r.cantidad || '').trim(),
+    unidad: String(r.Unidad || r.unidad || 'm2').trim() || 'm2',
+    allowLevels: false,
+    activo: isActiveConclusionRowV79(r)
+  };
+}
+
+/* Relee el CSV y guarda filas activas e inactivas. */
+async function cargarConclusionCSVDirectoV77(force=false){
+  if(window.__CONCLUSION_CSV_V77__?.loading) return window.__CONCLUSION_CSV_V77__.rows;
+  if(window.__CONCLUSION_CSV_V77__?.loaded && window.__CONCLUSION_ALL_CSV_V79__.loaded && !force) return window.__CONCLUSION_CSV_V77__.rows;
+
+  if(!window.__CONCLUSION_CSV_V77__) window.__CONCLUSION_CSV_V77__ = {loaded:false,loading:false,rows:[],error:''};
+
+  window.__CONCLUSION_CSV_V77__.loading = true;
+  window.__CONCLUSION_CSV_V77__.error = '';
+  window.__CONCLUSION_ALL_CSV_V79__.error = '';
+
+  try{
+    const txt = await fetchCSVTextV32('data/conclusion_tecnica_base.csv?v=' + Date.now());
+    const allRows = parseCSVV32(txt).map(mapConclusionCSVRowV79).filter(r=>r.descripcion);
+    const activeRows = allRows.filter(r=>r.activo);
+
+    if(activeRows.length < 3){
+      throw new Error('El CSV fue leído, pero solo se encontraron ' + activeRows.length + ' filas activas.');
+    }
+
+    window.__CONCLUSION_ALL_CSV_V79__.allRows = allRows;
+    window.__CONCLUSION_ALL_CSV_V79__.activeRows = activeRows;
+    window.__CONCLUSION_ALL_CSV_V79__.inactiveKeys = new Set(allRows.filter(r=>!r.activo).map(r=>normDescConclusionV79(r.descripcion)));
+    window.__CONCLUSION_ALL_CSV_V79__.loaded = true;
+
+    window.__CONCLUSION_CSV_V77__.rows = activeRows;
+    window.__CONCLUSION_CSV_V77__.loaded = true;
+
+    DATA.conclusionBase = activeRows.map(r=>({
+      "Descripción": r.descripcion,
+      "Niveles": (r.levels||[]).join('|'),
+      "Cantidad": r.cantidad,
+      "Unidad": r.unidad,
+      "Activo": "Sí"
+    }));
+
+    console.log('V79 conclusion_tecnica_base.csv activo:', activeRows.map(r=>r.descripcion), 'inactivo:', [...window.__CONCLUSION_ALL_CSV_V79__.inactiveKeys]);
+    return activeRows;
+  }catch(e){
+    window.__CONCLUSION_CSV_V77__.error = e.message || String(e);
+    window.__CONCLUSION_ALL_CSV_V79__.error = e.message || String(e);
+    console.error('V79 no pudo cargar conclusion_tecnica_base.csv:', e);
+    return [];
+  }finally{
+    window.__CONCLUSION_CSV_V77__.loading = false;
+  }
+}
+
+function activeConclusionKeysV79(){
+  const rows = window.__CONCLUSION_ALL_CSV_V79__?.activeRows?.length
+    ? window.__CONCLUSION_ALL_CSV_V79__.activeRows
+    : (window.__CONCLUSION_CSV_V77__?.rows || []);
+  return new Set(rows.map(r=>normDescConclusionV79(r.descripcion)).filter(Boolean));
+}
+function allConclusionBaseKeysV79(){
+  const rows = window.__CONCLUSION_ALL_CSV_V79__?.allRows?.length
+    ? window.__CONCLUSION_ALL_CSV_V79__.allRows
+    : (DATA.conclusionBase || []).map(mapConclusionCSVRowV79).filter(r=>r.descripcion);
+  return new Set(rows.map(r=>normDescConclusionV79(r.descripcion)).filter(Boolean));
+}
+
+function cleanConclusionRowsByActivoV79(rows){
+  const activeKeys = activeConclusionKeysV79();
+  const allBaseKeys = allConclusionBaseKeysV79();
+
+  if(activeKeys.size < 3){
+    return rows || [];
+  }
+
+  return (rows || []).filter(raw=>{
+    const r = typeof normalizeConclusionRowSafeV73 === 'function' ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+    const key = normDescConclusionV79(r.descripcion);
+
+    if(!key) return false;
+
+    // Si es una fila base del CSV, solo se permite si está activa.
+    if(allBaseKeys.has(key)) return activeKeys.has(key);
+
+    // Si es personalizada, solo se conserva si es una fila bruta agregada por el usuario.
+    return key.includes('BRUTA') && !key.includes('TOTAL');
+  });
+}
+
+function syncConclusionActivoV79(){
+  ensureAprobatorioData();
+  const current = state.aprobatorio?.conclusion || [];
+  const filtered = cleanConclusionRowsByActivoV79(current);
+
+  if(filtered.length !== current.length){
+    state.aprobatorio.conclusion = filtered;
+    if(typeof ensureConclusionOrderV73 === 'function') ensureConclusionOrderV73();
+    if(typeof recalcAreasCOSV36 === 'function') recalcAreasCOSV36();
+    console.log('V79 filas inactivas retiradas de conclusión técnica:', current.length, '->', filtered.length);
+    return true;
+  }
+  return false;
+}
+
+/* Sobrescribe el reporte para no mostrar filas inactivas aunque sigan en memoria. */
+function conclusionReport(){
+  syncConclusionActivoV79();
+
+  let arr = cleanConclusionRowsByActivoV79(state.aprobatorio.conclusion || []);
+  if(!arr.length) return '<p>No se registran datos de conclusión técnica.</p>';
+
+  return `<table class="informe-table conclusion-report"><thead><tr><th colspan="2">DESCRIPCIÓN</th><th>CANTIDAD</th><th>UNIDAD</th></tr></thead><tbody>${arr.map(raw=>{
+    const r = typeof normalizeConclusionRowSafeV73 === 'function' ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+    const niveles=(r.levels||[]).filter(Boolean).map(esc).join('<br>');
+    const descClass=/TOTAL|NÚMERO DE PISOS|UNIDADES|COS/.test(upper(r.descripcion||''))?'desc-bold':'';
+    if(niveles){
+      return `<tr><td class="${descClass}">${esc(r.descripcion)}</td><td class="level-cell">${niveles}</td><td class="right">${esc(r.cantidad)}</td><td>${esc(r.unidad)}</td></tr>`;
+    }
+    return `<tr><td colspan="2" class="${descClass}">${esc(r.descripcion)}</td><td class="right">${esc(r.cantidad)}</td><td>${esc(r.unidad)}</td></tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+/* También filtra la tabla editable antes de dibujar. */
+const _renderConclusionTabla_base_V79 = typeof renderConclusionTabla === 'function' ? renderConclusionTabla : null;
+renderConclusionTabla = function(){
+  syncConclusionActivoV79();
+  if(_renderConclusionTabla_base_V79) _renderConclusionTabla_base_V79();
+};
+
+/* Fuerza lectura y re-render cuando se entra a Aprobatorio o Vista. */
+async function aplicarActivoConclusionV79(force=false){
+  await cargarConclusionCSVDirectoV77(force);
+  if(typeof rebuildConclusionFromRowsV77 === 'function') rebuildConclusionFromRowsV77(force || syncConclusionActivoV79());
+  syncConclusionActivoV79();
+  if(_renderConclusionTabla_base_V79 && document.getElementById('conclusionTabla')) _renderConclusionTabla_base_V79();
+  if(typeof renderReport === 'function') renderReport();
+  if(typeof renderPreview === 'function') renderPreview();
+}
+
+const _showTab_base_V79 = typeof showTab === 'function' ? showTab : null;
+if(_showTab_base_V79){
+  showTab = function(id){
+    _showTab_base_V79(id);
+    if(id === 'tab-apr' || id === 'tab-vista') setTimeout(()=>aplicarActivoConclusionV79(false),80);
+  };
+}
+
+const _renderAprobatorioForm_base_V79 = typeof renderAprobatorioForm === 'function' ? renderAprobatorioForm : null;
+renderAprobatorioForm = function(){
+  if(_renderAprobatorioForm_base_V79) _renderAprobatorioForm_base_V79();
+  setTimeout(()=>aplicarActivoConclusionV79(false),80);
+};
+
+const _nuevoFormulario_base_V79 = typeof nuevoFormulario === 'function' ? nuevoFormulario : null;
+if(_nuevoFormulario_base_V79){
+  nuevoFormulario = function(){
+    _nuevoFormulario_base_V79();
+    setTimeout(()=>aplicarActivoConclusionV79(true),150);
+  };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>aplicarActivoConclusionV79(false),800);
+  setTimeout(()=>aplicarActivoConclusionV79(false),1800);
+});
+</script>
+
 </body>
 </html>
