@@ -1,7 +1,6 @@
-﻿ID_Bloque,Orden,Sección,Título,Texto_Base,Tipo_Bloque,Mostrar,Observación_Interna
-ENC_001,1,Encabezado,GADMR,GOBIERNO AUTÓNOMO DESCENTRALIZADO MUNICIPAL RIOBAMBA,Fijo,Sí,Título principal
-ENC_002,2,Subtítulo,Informe,INFORME TÉCNICO APROBATORIO DE OBRA MAYOR,Fijo,Sí,Título Secundario
-INF_001,3,INFORMACIÓN,INFORMACIÓN GENERAL,"TRÁMITE EGOB NRO.: 
+﻿ID_Bloque;Orden;Sección;Título;Texto_Base;Tipo_Bloque;Mostrar;Observación_Interna
+ENC_002;1;Subtítulo;Informe;INFORME TÉCNICO APROBATORIO DE OBRA MAYOR ;Fijo;Sí;Título principal del Informe Técnico Aprobatorio.
+INF_001;2;INFORMACIÓN;INFORMACIÓN GENERAL;"TRÁMITE EGOB NRO.: 
 NOMBRE DEL PROPIETARIO:   |  CI/RUC:
 PROYECTO DEFINITIVO:
 NOMBRE DEL PROYECTO:
@@ -11,9 +10,9 @@ CLAVE CATASTRAL:
 BARRIO/SECTOR:  |  CÓDIGO PIT:
 DIRECCIÓN:
 PROYECTISTA:
-REGISTRO SENESCYT: | REGISTRO MUNICIPAL:",Variable,Sí,"Buscar la información registrada al inicio, y donde diga {{Texto Usuario}}, permitir completar los campos faltantes"
-INF_002,4,INFORMACIÓN,DETALLE DEL PROYECTO,"Por haber cumplido la revisión técnica mediante el Formato de Revisión, se procede emitir el informe técnico, en función de los documentos anexos:",Dinámico,Sí,"Generar tabla con los requisitos que ""Cumple"""
-BLG_001,5,LEGAL,BASE TÉCNICO - LEGAL,"ORDENANZA 016-2023 de Actualización del Código Urbano, publicado en registro oficial No. 885 Edición
+REGISTRO SENESCYT: | REGISTRO MUNICIPAL:";Variable;Sí;Estructura base para la tabla de Información General. También la usa el Informe de Desistimiento en Antecedentes.
+INF_002;3;INFORMACIÓN;DETALLE DEL PROYECTO;Por haber cumplido la revisión técnica mediante el Formato de Revisión, se procede emitir el informe técnico, en función de los documentos anexos: ;Dinámico;Sí;Texto introductorio de Detalle del Proyecto. La tabla de requisitos cumplidos se genera desde requisitos.csv.
+BLG_001;4;LEGAL;BASE TÉCNICO - LEGAL;"ORDENANZA 016-2023 de Actualización del Código Urbano, publicado en registro oficial No. 885 Edición
 Especial del 23 de Mayo del 2023.
 Del Procedimiento Administrativo para el Otorgamiento de la Licencia Urbanística de Edificación de Obras Mayores
 SECCIÓN QUINTA Licencia Urbanística de Edificación de Obas Mayores (Artículos 92 - 95)
@@ -27,17 +26,5 @@ CAPITULO IV NORMAS POR TIPO DE EDIFICACIÓN
 SECCIÓN PRIMERA Edificios para Habitación (Artículos 274 - 286)
 SECCIÓN SEGUNDA Edificios de Comercios y Oficinas (Artículos 287-301)
 SECCIÓN DÉCIMA TERCERA Estacionamientos (Artículos 485 - 510)
-SECCIÓN VIGÉSIMA SEGUNDA Salientes y voladizos (Artículo 613)",FIJO,SI,Artículos
-EST_001,6,REVISIÓN EST,CONSIDERACIONES ESTRUCTURALES,"TABLA
-DOCUMENTO: | EGOB:
-TÉCNICO REVISOR:
-CRITERIO TÉCNICO: {{FAVORABLE/NO FAVORABLE}}
-ING. CALCULISTA: 
-REGISTRO SENESCYT:",Variable,SI,Llenar manualmente por el usuario
-EST_002,7,EP-EMAPAR,ESTUDIOS COMPLEMENTARIOS,{{TABLA_HOJA_ESTUDIOS_COMPLEMENTARIOS}},Variable,SI,Llenar manualmente por el usuario
-CON_001,8,CONCLUSIONES,CONCLUSIÓN TÉCNICA,"En concordancia a lo dispuesto en la Ordenanza No. 016-2023 de Actualización del Código Urbano, Artículo
-92 Componentes del Proyecto Técnico de Edificación de Obras Mayores, se concluye emitir el presente
-INFORME TÉCNICO FAVORABLE, de conformidad al siguiente detalle:
-{{TABLA_HOJA_CONCLUSION_TECNICA_BASE}}
-",Variable,SI,Llenar manualmente por el usuario
-CON_002,9,CONCLUSIONES,CONCLUSIÓN TÉCNICA,"El PROYECTO DEFINITIVO, tiene un área a construir de {{Área Bruta}}, valor a tomar en cuenta para efecto del cálculo para el pago de la tasa administrativa. Nota. - La información y datos que están en el proyecto son de exclusiva responsabilidad del proyectista y propietario, en el caso de existir datos erróneos, ocultos, la aprobación quedará automáticamente insubsistente.",Variable,si,{{Área Bruta}} se toma de la información anterior
+SECCIÓN VIGÉSIMA SEGUNDA Salientes y voladizos (Artículo 613)";FIJO;Sí;Base técnico-legal general del Informe Aprobatorio. La base legal por Uso Principal se complementa desde usos_principales.csv.
+CON_002;5;CONCLUSIONES;CONCLUSIÓN TÉCNICA;El PROYECTO DEFINITIVO, tiene un área a construir de {{Área Bruta}}, valor a tomar en cuenta para efecto del cálculo para el pago de la tasa administrativa. Nota. - La información y datos que están en el proyecto son de exclusiva responsabilidad del proyectista y propietario, en el caso de existir datos erróneos, ocultos, la aprobación quedará automáticamente insubsistente.;Variable;Sí;Texto final posterior a la tabla de Conclusión Técnica. La tabla se alimenta desde conclusion_tecnica_base.csv.
