@@ -11634,5 +11634,279 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V81 SOBRE V80
+   Corrección definitiva:
+   La tabla editable de Conclusión Técnica se renderiza con TODAS
+   las filas del CSV, sin depender de funciones anteriores que
+   podían filtrar por Activo.
+   Activo solo afecta el Informe Aprobatorio.
+   ========================================================== */
+
+function normDescConclusionV81(v){
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function allConclusionCSVRowsV81(){
+  if(window.__CONCLUSION_CSV_V80__?.allRows?.length) return window.__CONCLUSION_CSV_V80__.allRows;
+  if(window.__CONCLUSION_ALL_CSV_V79__?.allRows?.length) return window.__CONCLUSION_ALL_CSV_V79__.allRows;
+  if(window.__CONCLUSION_CSV_V77__?.rows?.length) return window.__CONCLUSION_CSV_V77__.rows;
+  return (DATA.conclusionBase || [])
+    .map(r=>({
+      descripcion:String(r["Descripción"] || r.Descripcion || r.descripcion || '').trim(),
+      levels:String(r.Niveles || r.niveles || '').split('|').map(x=>x.trim()).filter(Boolean),
+      cantidad:String(r.Cantidad || r.cantidad || '').trim(),
+      unidad:String(r.Unidad || r.unidad || 'm2').trim() || 'm2',
+      allowLevels:false,
+      activo:(String(r.Activo || r.activo || '').trim().toLowerCase() !== 'no')
+    }))
+    .filter(r=>r.descripcion);
+}
+
+function activeConclusionKeysV81(){
+  const rows = allConclusionCSVRowsV81();
+  return new Set(rows
+    .filter(r=>{
+      const v = String(r.activo ?? '').trim().toLowerCase();
+      return r.activo === true || v === 'true' || v === 'sí' || v === 'si' || v === '1';
+    })
+    .map(r=>normDescConclusionV81(r.descripcion))
+    .filter(Boolean));
+}
+
+function allConclusionKeysV81(){
+  return new Set(allConclusionCSVRowsV81().map(r=>normDescConclusionV81(r.descripcion)).filter(Boolean));
+}
+
+function rowByDescV81(desc){
+  const key=normDescConclusionV81(desc);
+  return allConclusionCSVRowsV81().find(r=>normDescConclusionV81(r.descripcion)===key) || null;
+}
+
+function isBrutaPBV81(desc){
+  const d=normDescConclusionV81(desc);
+  return d.includes('AREA BRUTA') && d.includes('PLANTA BAJA');
+}
+function isBrutaTotalV81(desc){
+  const d=normDescConclusionV81(desc);
+  return d.includes('AREA BRUTA') && d.includes('TOTAL') && d.includes('CONSTRUCCION');
+}
+function isComputedConclusionV81(row){
+  const d=normDescConclusionV81(row?.descripcion || '');
+  return d.includes('AREA BRUTA TOTAL') || d === 'COS PB' || d === 'COS TOTAL';
+}
+
+/* Reconstruye la tabla editable con TODAS las filas del CSV. */
+function rebuildEditableConclusionAllRowsV81(force=false){
+  ensureAprobatorioData();
+  const rows = allConclusionCSVRowsV81();
+  if(rows.length < 3) return false;
+
+  const current = state.aprobatorio.conclusion || [];
+  const currentByDesc = new Map();
+  current.forEach(raw=>{
+    const r = typeof normalizeConclusionRowSafeV73 === 'function' ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+    const key = normDescConclusionV81(r.descripcion);
+    if(key && !currentByDesc.has(key)) currentByDesc.set(key,r);
+  });
+
+  const baseKeys = new Set(rows.map(r=>normDescConclusionV81(r.descripcion)).filter(Boolean));
+  const existingKeys = current.map(raw=>{
+    const r = typeof normalizeConclusionRowSafeV73 === 'function' ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+    return normDescConclusionV81(r.descripcion);
+  }).filter(Boolean);
+
+  const csvKeys = rows.map(r=>normDescConclusionV81(r.descripcion)).filter(Boolean);
+  const hasAllCsvRows = csvKeys.every(k=>existingKeys.includes(k));
+
+  if(!force && hasAllCsvRows && current.length >= rows.length) return false;
+
+  const merged = rows.map(base=>{
+    const prev = currentByDesc.get(normDescConclusionV81(base.descripcion));
+    return {
+      descripcion:base.descripcion,
+      levels:prev?.levels?.length ? prev.levels : (base.levels || []),
+      cantidad:String(prev?.cantidad || base.cantidad || ''),
+      unidad:String(prev?.unidad || base.unidad || 'm2'),
+      allowLevels:false
+    };
+  });
+
+  // Conserva filas personalizadas de áreas brutas creadas por el usuario.
+  const extras = current.map(raw => typeof normalizeConclusionRowSafeV73 === 'function' ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw))
+    .filter(r=>{
+      const d=normDescConclusionV81(r.descripcion);
+      return d && !baseKeys.has(d) && d.includes('BRUTA') && !d.includes('TOTAL');
+    })
+    .map(r=>({...r, allowLevels:true}));
+
+  const totalIdx = merged.findIndex(r=>isBrutaTotalV81(r.descripcion));
+  if(totalIdx >= 0 && extras.length) merged.splice(totalIdx,0,...extras);
+
+  state.aprobatorio.conclusion = merged;
+  recalcAreasCOSV36();
+  console.log('V81 tabla editable reconstruida con todas las filas:', merged.map(r=>r.descripcion));
+  return true;
+}
+
+function conclusionZoneIndexesV81(){
+  const arr=state.aprobatorio?.conclusion || [];
+  const start=arr.findIndex(r=>isBrutaPBV81(r.descripcion || r.Descripción || r.Descripcion || ''));
+  const total=start>=0 ? arr.findIndex((r,i)=>i>start && isBrutaTotalV81(r.descripcion || r.Descripción || r.Descripcion || '')) : -1;
+  return {start,total};
+}
+function canLevelsV81(i){
+  const {start,total}=conclusionZoneIndexesV81();
+  return start>=0 && total>=0 && i>=start && i<total;
+}
+function canInsertV81(i){
+  return canLevelsV81(i);
+}
+
+function renderLevelsCellV81(r,i){
+  if(!canLevelsV81(i)) return '<td class="levels-edit levels-blocked-v73"></td>';
+  const levels=(r.levels||[]).map((v,j)=>`<div class="level-item"><input value="${esc(v)}" placeholder="Nivel" oninput="updConclusionLevel(${i},${j},this.value)"><button class="secondary mini-btn" onclick="delConclusionLevel(${i},${j})">×</button></div>`).join('');
+  return `<td class="levels-edit">${levels}<button class="secondary add-level-row" onclick="addConclusionLevel(${i})">+ Niveles</button></td>`;
+}
+
+function renderActionsCellV81(r,i){
+  const computed=isComputedConclusionV81(r);
+  const add=canInsertV81(i) ? `<button class="mini-plus" title="Agregar fila antes de Área Bruta total de construcción" onclick="addConclusionRowAfter(${i})">+</button>` : '';
+  const quit=computed ? '' : `<button class="danger mini-btn" onclick="delConclusion(${i})">Quitar</button>`;
+  return `<td class="row-actions"><div class="actions-v73">${add}${quit || (!add?'<span class="no-row-action-v73">—</span>':'')}</div></td>`;
+}
+
+/* Render editable propio: aquí NO se filtra por Activo. */
+renderConclusionTabla = function(){
+  rebuildEditableConclusionAllRowsV81(false);
+  recalcAreasCOSV36();
+
+  const cont=document.getElementById('conclusionTabla');
+  if(!cont) return;
+
+  const arr=state.aprobatorio.conclusion || [];
+
+  cont.innerHTML=`<div class="conclusion-help-v73">Use el botón + únicamente en el bloque de áreas brutas. Las filas nuevas se insertan antes de Área Bruta total de construcción y pueden usar niveles.</div>
+  <table class="editable-conclusion">
+    <thead><tr><th>Descripción</th><th style="width:18%">Niveles</th><th style="width:18%">Cantidad</th><th style="width:14%">Unidad</th><th style="width:16%">Acciones</th></tr></thead>
+    <tbody>${arr.map((raw,i)=>{
+      const r = typeof normalizeConclusionRowSafeV73 === 'function' ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+      const computed=isComputedConclusionV81(r);
+      const cls=[computed?'calc-readonly-v37':'',canLevelsV81(i)?'bruta-editable-v73':''].filter(Boolean).join(' ');
+      return `<tr class="${cls}">
+        <td><input id="conc_desc_${i}" value="${esc(r.descripcion)}" placeholder="Descripción" oninput="updConclusionField(${i},'descripcion',this.value)" onblur="renderConclusionTabla()" ${computed?'readonly':''}></td>
+        ${renderLevelsCellV81(r,i)}
+        <td><input id="conc_qty_${i}" value="${esc(r.cantidad)}" placeholder="Cantidad" oninput="updConclusionField(${i},'cantidad',this.value)" ${computed?'readonly':''}></td>
+        <td><input id="conc_unit_${i}" value="${esc(r.unidad)}" placeholder="Unidad" oninput="updConclusionField(${i},'unidad',this.value)"></td>
+        ${renderActionsCellV81(r,i)}
+      </tr>`;
+    }).join('')}</tbody>
+  </table>
+  <div class="calc-note">Área Bruta total = suma de filas con “Bruta”. COS PB = Área útil planta baja / Área del predio × 100. COS Total = Área útil total / Área del predio × 100.</div>`;
+};
+
+/* Reporte: aquí SÍ se filtra por Activo. */
+function conclusionRowsForReportV81(){
+  const arr=state.aprobatorio?.conclusion || [];
+  const activeKeys=activeConclusionKeysV81();
+  const baseKeys=allConclusionKeysV81();
+
+  if(baseKeys.size < 3 || activeKeys.size < 1) return arr;
+
+  return arr.filter(raw=>{
+    const r = typeof normalizeConclusionRowSafeV73 === 'function' ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+    const key=normDescConclusionV81(r.descripcion);
+    if(!key) return false;
+    if(baseKeys.has(key)) return activeKeys.has(key);
+    return key.includes('BRUTA') && !key.includes('TOTAL');
+  });
+}
+
+function conclusionReport(){
+  const arr=conclusionRowsForReportV81();
+  if(!arr.length) return '<p>No se registran datos de conclusión técnica.</p>';
+
+  return `<table class="informe-table conclusion-report"><thead><tr><th colspan="2">DESCRIPCIÓN</th><th>CANTIDAD</th><th>UNIDAD</th></tr></thead><tbody>${arr.map(raw=>{
+    const r = typeof normalizeConclusionRowSafeV73 === 'function' ? normalizeConclusionRowSafeV73(raw) : normalizeConclusionRow(raw);
+    const niveles=(r.levels||[]).filter(Boolean).map(esc).join('<br>');
+    const descClass=/TOTAL|NÚMERO DE PISOS|UNIDADES|COS/.test(upper(r.descripcion||''))?'desc-bold':'';
+    if(niveles){
+      return `<tr><td class="${descClass}">${esc(r.descripcion)}</td><td class="level-cell">${niveles}</td><td class="right">${esc(r.cantidad)}</td><td>${esc(r.unidad)}</td></tr>`;
+    }
+    return `<tr><td colspan="2" class="${descClass}">${esc(r.descripcion)}</td><td class="right">${esc(r.cantidad)}</td><td>${esc(r.unidad)}</td></tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+addConclusionRowAfter = function(i){
+  if(!canInsertV81(i)){
+    if(typeof msg==='function') msg('Solo puede agregar filas entre Área bruta planta baja y Área Bruta total de construcción.');
+    return;
+  }
+  const {total}=conclusionZoneIndexesV81();
+  const insertAt=Math.min(i+1,total);
+  state.aprobatorio.conclusion.splice(insertAt,0,{descripcion:'',levels:[],cantidad:'',unidad:'m2',allowLevels:true});
+  renderConclusionTabla(); renderReport(); renderPreview();
+};
+
+addConclusionLevel = function(i){
+  if(!canLevelsV81(i)){
+    if(typeof msg==='function') msg('Los niveles solo se permiten desde Área bruta planta baja hasta antes de Área Bruta total de construcción.');
+    return;
+  }
+  const r = typeof normalizeConclusionRowSafeV73 === 'function' ? normalizeConclusionRowSafeV73(state.aprobatorio.conclusion[i]) : normalizeConclusionRow(state.aprobatorio.conclusion[i]);
+  if(!Array.isArray(r.levels)) r.levels=[];
+  r.levels.push('');
+  syncConclusionObj(i,r);
+  renderConclusionTabla(); renderReport(); renderPreview();
+};
+
+async function aplicarConclusionCSVV81(force=false){
+  if(typeof cargarConclusionCSVV80 === 'function') await cargarConclusionCSVV80(force);
+  else if(typeof cargarConclusionCSVV77 === 'function') await cargarConclusionCSVDirectoV77(force);
+  rebuildEditableConclusionAllRowsV81(force);
+  renderConclusionTabla();
+  if(typeof renderReport === 'function') renderReport();
+  if(typeof renderPreview === 'function') renderPreview();
+}
+
+/* Anula funciones antiguas que filtraban la tabla editable. */
+if(typeof forceConclusionFromCSVV77 === 'function') forceConclusionFromCSVV77 = aplicarConclusionCSVV81;
+if(typeof aplicarActivoConclusionV79 === 'function') aplicarActivoConclusionV79 = aplicarConclusionCSVV81;
+if(typeof aplicarConclusionCSVV80 === 'function') aplicarConclusionCSVV80 = aplicarConclusionCSVV81;
+
+const _renderAprobatorioForm_base_V81 = typeof renderAprobatorioForm === 'function' ? renderAprobatorioForm : null;
+renderAprobatorioForm = function(){
+  if(_renderAprobatorioForm_base_V81) _renderAprobatorioForm_base_V81();
+  setTimeout(()=>aplicarConclusionCSVV81(false),120);
+};
+
+const _nuevoFormulario_base_V81 = typeof nuevoFormulario === 'function' ? nuevoFormulario : null;
+if(_nuevoFormulario_base_V81){
+  nuevoFormulario = function(){
+    _nuevoFormulario_base_V81();
+    setTimeout(()=>aplicarConclusionCSVV81(true),160);
+  };
+}
+
+const _showTab_base_V81 = typeof showTab === 'function' ? showTab : null;
+if(_showTab_base_V81){
+  showTab = function(id){
+    _showTab_base_V81(id);
+    if(id==='tab-apr' || id==='tab-vista') setTimeout(()=>aplicarConclusionCSVV81(false),120);
+  };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>aplicarConclusionCSVV81(false),1000);
+  setTimeout(()=>aplicarConclusionCSVV81(false),2000);
+});
+</script>
+
 </body>
 </html>
