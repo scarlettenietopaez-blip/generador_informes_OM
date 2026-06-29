@@ -1774,30 +1774,29 @@ input,select,textarea{
 }
 
 
-/* ===== V72: conclusión técnica con niveles y filas solo en bloque de áreas brutas ===== */
-.editable-conclusion .locked-actions-v72{
-  color:#64748b;
+/* ===== V73: conclusión técnica realmente restringida ===== */
+.editable-conclusion .no-row-action-v73{
+  color:#94a3b8;
   font-size:11px;
-  font-weight:700;
+  font-weight:800;
   text-align:center;
-  display:block;
 }
-.editable-conclusion .bruta-zone-v72 td{
+.editable-conclusion .bruta-editable-v73 td{
   background:#fbfdff;
 }
-.editable-conclusion .levels-locked-v72{
+.editable-conclusion .levels-blocked-v73{
   background:#f8fafc;
 }
-.editable-conclusion .levels-locked-v72::after{
-  content:'';
+.editable-conclusion .actions-v73{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
 }
-.calc-note-v72{
-  margin-top:8px;
-  padding:8px 10px;
-  border-left:4px solid #0b5cab;
-  background:#eef6ff;
-  border-radius:8px;
-  color:#0b2b4c;
+.conclusion-help-v73{
+  margin:0 0 6px 0;
+  color:#475569;
   font-size:12px;
   line-height:1.35;
 }
@@ -10266,146 +10265,193 @@ window.addEventListener('load',()=>{
 
 <script>
 /* ==========================================================
-   V72 SOBRE V71
-   Conclusión técnica:
-   - Solo se pueden agregar filas entre "Área bruta planta baja"
-     y "Área Bruta total de construcción".
-   - Solo "Área bruta planta baja" y las filas dentro de ese bloque
-     pueden tener NIVELES.
+   V73 SOBRE V71
+   Corrección forzada al final:
+   En Conclusión Técnica, solo se permite agregar niveles y filas
+   desde "Área bruta planta baja" hasta antes de
+   "Área Bruta total de construcción".
    ========================================================== */
-function normConclusionV72(v){
+
+function normConclusionTextV73(v){
   return String(v||'')
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .replace(/\s+/g,' ')
     .trim()
     .toUpperCase();
 }
-function conclusionDescV72(raw){
-  return normConclusionV72(normalizeConclusionRow(raw).descripcion||'');
+function isBrutaPBV73(desc){
+  const d=normConclusionTextV73(desc);
+  return d.includes('AREA BRUTA') && d.includes('PLANTA BAJA');
 }
-function isBrutaPlantaBajaV72(raw){
-  const d=conclusionDescV72(raw);
-  return d.includes('AREA BRUTA PLANTA BAJA');
+function isBrutaTotalV73(desc){
+  const d=normConclusionTextV73(desc);
+  return d.includes('AREA BRUTA') && d.includes('TOTAL') && d.includes('CONSTRUCCION');
 }
-function isBrutaTotalV72(raw){
-  const d=conclusionDescV72(raw);
-  return d.includes('AREA BRUTA TOTAL') || d.includes('AREA BRUTA TOTAL DE CONSTRUCCION');
+function isComputedConclusionV73(raw){
+  const d=normConclusionTextV73(raw?.descripcion || raw?.Descripción || raw?.Descripcion || '');
+  return d.includes('AREA BRUTA TOTAL') || d==='COS PB' || d==='COS TOTAL';
 }
-function brutaZoneIndexesV72(){
-  const arr=state.aprobatorio?.conclusion||[];
-  const start=arr.findIndex(isBrutaPlantaBajaV72);
-  const end=arr.findIndex(isBrutaTotalV72);
-  return {start,end};
+function conclusionIndexesV73(){
+  const arr=state.aprobatorio?.conclusion || [];
+  const start=arr.findIndex(r=>isBrutaPBV73(r.descripcion||r.Descripción||r.Descripcion||''));
+  let total=-1;
+  if(start>=0){
+    total=arr.findIndex((r,i)=>i>start && isBrutaTotalV73(r.descripcion||r.Descripción||r.Descripcion||''));
+  }
+  return {start,total};
 }
-function isInsideBrutaZoneV72(i){
-  const {start,end}=brutaZoneIndexesV72();
-  if(start<0) return false;
-  if(end<0) return i>=start;
-  return i>=start && i<end;
+function canEditLevelsV73(i){
+  const {start,total}=conclusionIndexesV73();
+  return start>=0 && total>=0 && i>=start && i<total;
 }
-function canUseLevelsV72(i){
-  return isInsideBrutaZoneV72(i);
+function canInsertAfterV73(i){
+  return canEditLevelsV73(i);
 }
-function canAddConclusionRowV72(i){
-  return isInsideBrutaZoneV72(i);
+function normalizeConclusionRowSafeV73(raw){
+  if(typeof normalizeConclusionRowV37 === 'function') return normalizeConclusionRowV37(raw);
+  if(typeof normalizeConclusionRow === 'function') return normalizeConclusionRow(raw);
+  return {
+    descripcion: raw?.descripcion || raw?.Descripción || raw?.Descripcion || '',
+    levels: Array.isArray(raw?.levels) ? raw.levels : [],
+    cantidad: raw?.cantidad || raw?.Cantidad || '',
+    unidad: raw?.unidad || raw?.Unidad || 'm2',
+    allowLevels: !!raw?.allowLevels
+  };
 }
-function brutaTotalIndexV72(){
-  const arr=state.aprobatorio?.conclusion||[];
-  return arr.findIndex(isBrutaTotalV72);
+function syncConclusionObjSafeV73(i,row){
+  if(typeof syncConclusionObj === 'function') syncConclusionObj(i,row);
+  else state.aprobatorio.conclusion[i]=row;
 }
-function markConclusionZoneFlagsV72(){
-  const arr=state.aprobatorio?.conclusion||[];
+function ensureConclusionOrderV73(){
+  ensureAprobatorioData();
+  if(!Array.isArray(state.aprobatorio.conclusion)) state.aprobatorio.conclusion=[];
+  const arr=state.aprobatorio.conclusion;
+
+  // Si por alguna razón falta el total, lo agrega después de planta baja.
+  let start=arr.findIndex(r=>isBrutaPBV73(r.descripcion||r.Descripción||r.Descripcion||''));
+  let total=arr.findIndex((r,i)=>isBrutaTotalV73(r.descripcion||r.Descripción||r.Descripcion||''));
+  if(start>=0 && total<0){
+    arr.splice(start+1,0,{descripcion:'Área Bruta total de construcción',levels:[],cantidad:'',unidad:'m2',allowLevels:false});
+  }
+
+  // Marca allowLevels solo en el bloque permitido.
+  const idx=conclusionIndexesV73();
   arr.forEach((raw,i)=>{
-    const r=normalizeConclusionRowV37 ? normalizeConclusionRowV37(raw) : normalizeConclusionRow(raw);
-    r.allowLevels=canUseLevelsV72(i);
+    const r=normalizeConclusionRowSafeV73(raw);
+    r.allowLevels = idx.start>=0 && idx.total>=0 && i>=idx.start && i<idx.total;
     if(!r.allowLevels) r.levels=[];
-    syncConclusionObj(i,r);
-    state.aprobatorio.conclusion[i].allowLevels=r.allowLevels;
+    syncConclusionObjSafeV73(i,r);
   });
 }
-/* Sobrescribe la regla heredada de niveles */
-rowAllowsLevelsV37 = function(raw,i){
-  return canUseLevelsV72(i);
-};
+function renderLevelsCellV73(r,i,canLevels){
+  if(!canLevels) return '<td class="levels-edit levels-blocked-v73"></td>';
+  const levels=(r.levels||[]).map((v,j)=>`<div class="level-item"><input value="${esc(v)}" placeholder="Nivel" oninput="updConclusionLevel(${i},${j},this.value)"><button class="secondary mini-btn" onclick="delConclusionLevel(${i},${j})">×</button></div>`).join('');
+  return `<td class="levels-edit">${levels}<button class="secondary add-level-row" onclick="addConclusionLevel(${i})">+ Niveles</button></td>`;
+}
+function renderActionsCellV73(i,computed){
+  const canInsert=canInsertAfterV73(i);
+  const addBtn=canInsert ? `<button class="mini-plus" title="Agregar fila dentro del bloque de áreas brutas" onclick="addConclusionRowAfter(${i})">+</button>` : '';
+  const quitarBtn = computed ? '' : `<button class="danger mini-btn" onclick="delConclusion(${i})">Quitar</button>`;
+  const content = `${addBtn}${quitarBtn}`;
+  return `<td class="row-actions"><div class="actions-v73">${content || '<span class="no-row-action-v73">—</span>'}</div></td>`;
+}
+
 renderConclusionTabla = function(){
   ensureAreaUtilTotalRowV37();
+  ensureConclusionOrderV73();
   recalcAreasCOSV36();
-  markConclusionZoneFlagsV72();
-  recalcAreasCOSV36();
+  ensureConclusionOrderV73();
+
   const arr=state.aprobatorio.conclusion||[];
-  const box=document.getElementById('conclusionTabla');
-  if(!box) return;
-  box.innerHTML=`<table class="editable-conclusion"><thead><tr><th>Descripción</th><th style="width:18%">Niveles</th><th style="width:18%">Cantidad</th><th style="width:14%">Unidad</th><th style="width:16%">Acciones</th></tr></thead><tbody>${arr.map((raw,i)=>{
-    const r=normalizeConclusionRowV37(raw);
-    syncConclusionObj(i,r);
-    state.aprobatorio.conclusion[i].allowLevels=canUseLevelsV72(i);
-    const canLevels=canUseLevelsV72(i);
-    const canAdd=canAddConclusionRowV72(i);
-    const computed=isComputedConclusionV37(raw);
-    const rowClass=[computed?'calc-readonly-v37':'', canLevels?'bruta-zone-v72':''].join(' ').trim();
-    return `<tr class="${rowClass}"><td><input id="conc_desc_${i}" value="${esc(r.descripcion)}" placeholder="Descripción" oninput="updConclusionField(${i},'descripcion',this.value)" onblur="renderConclusionTabla()" ${computed?'readonly':''}></td><td class="levels-edit ${canLevels?'':'levels-empty-v37 levels-locked-v72'}">${canLevels?`${r.levels.map((v,j)=>`<div class="level-item"><input value="${esc(v)}" placeholder="Nivel" oninput="updConclusionLevel(${i},${j},this.value)"><button class="secondary mini-btn" onclick="delConclusionLevel(${i},${j})">×</button></div>`).join('')}<button class="secondary add-level-row" onclick="addConclusionLevel(${i})">+ Niveles</button>`:''}</td><td><input id="conc_qty_${i}" value="${esc(r.cantidad)}" placeholder="Cantidad" oninput="updConclusionField(${i},'cantidad',this.value)" ${computed?'readonly':''}></td><td><input id="conc_unit_${i}" value="${esc(r.unidad)}" placeholder="Unidad" oninput="updConclusionField(${i},'unidad',this.value)"></td><td class="row-actions">${canAdd?`<button class="mini-plus" title="Agregar fila dentro del bloque de áreas brutas" onclick="addConclusionRowAfter(${i})">+</button>`:'<span class="locked-actions-v72">—</span>'}<button class="danger mini-btn" onclick="delConclusion(${i})">Quitar</button></td></tr>`;
-  }).join('')}</tbody></table><div class="calc-note-v72"><strong>Regla de niveles:</strong> solo se habilitan niveles y nuevas filas desde “Área bruta planta baja” hasta antes de “Área Bruta total de construcción”. Área Bruta total = suma de filas con “Bruta”. COS PB = Área útil planta baja / Área del predio × 100. COS Total = Área útil total / Área del predio × 100.</div>`;
+  const cont=document.getElementById('conclusionTabla');
+  if(!cont) return;
+
+  cont.innerHTML=`<div class="conclusion-help-v73">Use el botón + únicamente en el bloque de áreas brutas. Las filas nuevas se insertan antes de Área Bruta total de construcción y pueden usar niveles.</div><table class="editable-conclusion"><thead><tr><th>Descripción</th><th style="width:18%">Niveles</th><th style="width:18%">Cantidad</th><th style="width:14%">Unidad</th><th style="width:16%">Acciones</th></tr></thead><tbody>${arr.map((raw,i)=>{
+    const r=normalizeConclusionRowSafeV73(raw);
+    const canLevels=canEditLevelsV73(i);
+    const computed=isComputedConclusionV73(r);
+    const cls=[computed?'calc-readonly-v37':'',canLevels?'bruta-editable-v73':''].filter(Boolean).join(' ');
+    return `<tr class="${cls}">
+      <td><input id="conc_desc_${i}" value="${esc(r.descripcion)}" placeholder="Descripción" oninput="updConclusionField(${i},'descripcion',this.value)" onblur="renderConclusionTabla()" ${computed?'readonly':''}></td>
+      ${renderLevelsCellV73(r,i,canLevels)}
+      <td><input id="conc_qty_${i}" value="${esc(r.cantidad)}" placeholder="Cantidad" oninput="updConclusionField(${i},'cantidad',this.value)" ${computed?'readonly':''}></td>
+      <td><input id="conc_unit_${i}" value="${esc(r.unidad)}" placeholder="Unidad" oninput="updConclusionField(${i},'unidad',this.value)"></td>
+      ${renderActionsCellV73(i,computed)}
+    </tr>`;
+  }).join('')}</tbody></table><div class="calc-note">Área Bruta total = suma de filas con “Bruta”. COS PB = Área útil planta baja / Área del predio × 100. COS Total = Área útil total / Área del predio × 100.</div>`;
 };
-addConclusionLevel = function(i){
-  if(!canUseLevelsV72(i)){
-    msg('Solo se pueden agregar niveles en “Área bruta planta baja” y en las filas agregadas antes de “Área Bruta total de construcción”.');
-    return;
-  }
-  const row=normalizeConclusionRowV37(state.aprobatorio.conclusion[i]);
-  row.levels.push('');
-  row.allowLevels=true;
-  syncConclusionObj(i,row);
-  state.aprobatorio.conclusion[i].allowLevels=true;
-  renderConclusionTabla(); renderReport(); renderPreview();
-};
-updConclusionLevel = function(i,j,v){
-  if(!canUseLevelsV72(i)) return;
-  const row=normalizeConclusionRowV37(state.aprobatorio.conclusion[i]);
-  row.levels[j]=smartInputCase(v);
-  row.allowLevels=true;
-  syncConclusionObj(i,row);
-  renderReport(); renderPreview();
-};
-delConclusionLevel = function(i,j){
-  if(!canUseLevelsV72(i)) return;
-  const row=normalizeConclusionRowV37(state.aprobatorio.conclusion[i]);
-  row.levels.splice(j,1);
-  row.allowLevels=true;
-  syncConclusionObj(i,row);
-  renderConclusionTabla(); renderReport(); renderPreview();
-};
+
 addConclusionRowAfter = function(i){
-  if(!canAddConclusionRowV72(i)){
-    msg('Solo puede agregar filas entre “Área bruta planta baja” y “Área Bruta total de construcción”.');
+  ensureConclusionOrderV73();
+  if(!canInsertAfterV73(i)){
+    if(typeof msg==='function') msg('Solo puede agregar filas entre Área bruta planta baja y Área Bruta total de construcción.');
     return;
   }
-  const totalIdx=brutaTotalIndexV72();
-  const insertAt = (totalIdx>=0 && i+1>totalIdx) ? totalIdx : i+1;
-  state.aprobatorio.conclusion.splice(insertAt,0,{descripcion:'Área bruta ',levels:[],cantidad:'',unidad:'m2',allowLevels:true});
+  const {total}=conclusionIndexesV73();
+  const insertAt=Math.min(i+1,total);
+  state.aprobatorio.conclusion.splice(insertAt,0,{descripcion:'',levels:[],cantidad:'',unidad:'m2',allowLevels:true});
   renderConclusionTabla(); renderReport(); renderPreview();
 };
+
 agregarConclusionRow = function(tipo=''){
-  const totalIdx=brutaTotalIndexV72();
-  const insertAt=totalIdx>=0?totalIdx:(state.aprobatorio.conclusion||[]).length;
-  state.aprobatorio.conclusion.splice(insertAt,0,{descripcion:tipo||'Área bruta ',levels:[],cantidad:'',unidad:'m2',allowLevels:true});
+  ensureConclusionOrderV73();
+  const {start,total}=conclusionIndexesV73();
+  if(start<0 || total<0){
+    if(typeof msg==='function') msg('No se encontró el bloque Área bruta planta baja / Área Bruta total de construcción.');
+    return;
+  }
+  state.aprobatorio.conclusion.splice(total,0,{descripcion:tipo||'',levels:[],cantidad:'',unidad:'m2',allowLevels:true});
   renderConclusionTabla(); renderReport(); renderPreview();
 };
+
+const _updConclusionField_base_V73 = typeof updConclusionField === 'function' ? updConclusionField : null;
 updConclusionField = function(i,field,v){
-  const row=normalizeConclusionRowV37(state.aprobatorio.conclusion[i]);
-  if(isComputedConclusionV37(state.aprobatorio.conclusion[i]) && (field==='cantidad'||field==='descripcion')) return;
+  const row=normalizeConclusionRowSafeV73(state.aprobatorio.conclusion[i]);
+  if(isComputedConclusionV73(row) && (field==='cantidad'||field==='descripcion')) return;
   row[field]=field==='cantidad'?formatDecimalFlexible(v):smartInputCase(v);
-  row.allowLevels=canUseLevelsV72(i);
+  row.allowLevels=canEditLevelsV73(i);
   if(!row.allowLevels) row.levels=[];
-  syncConclusionObj(i,row);
-  state.aprobatorio.conclusion[i].allowLevels=row.allowLevels;
+  syncConclusionObjSafeV73(i,row);
   recalcAreasCOSV36();
-  if(typeof updateComputedConclusionInputsV38==='function') updateComputedConclusionInputsV38();
+  if(field==='descripcion'){
+    // Al cambiar descripción puede cambiar la zona, por eso reconstruye.
+    renderConclusionTabla();
+  }else if(typeof updateComputedConclusionInputsV38==='function'){
+    updateComputedConclusionInputsV38();
+  }
   renderReport(); renderPreview();
 };
+
+const _addConclusionLevel_base_V73 = typeof addConclusionLevel === 'function' ? addConclusionLevel : null;
+addConclusionLevel = function(i){
+  if(!canEditLevelsV73(i)){
+    if(typeof msg==='function') msg('Los niveles solo se permiten desde Área bruta planta baja hasta antes de Área Bruta total de construcción.');
+    return;
+  }
+  if(_addConclusionLevel_base_V73) return _addConclusionLevel_base_V73(i);
+  const r=normalizeConclusionRowSafeV73(state.aprobatorio.conclusion[i]);
+  if(!Array.isArray(r.levels)) r.levels=[];
+  r.levels.push('');
+  syncConclusionObjSafeV73(i,r);
+  renderConclusionTabla(); renderReport(); renderPreview();
+};
+
+const _renderAprobatorioForm_base_V73 = typeof renderAprobatorioForm === 'function' ? renderAprobatorioForm : null;
+renderAprobatorioForm = function(){
+  if(_renderAprobatorioForm_base_V73) _renderAprobatorioForm_base_V73();
+  setTimeout(()=>{
+    ensureConclusionOrderV73();
+    renderConclusionTabla();
+  },0);
+};
+
 window.addEventListener('load',()=>{
   setTimeout(()=>{
-    try{ if(document.getElementById('conclusionTabla')) renderConclusionTabla(); }catch(e){console.warn('No se pudo aplicar V72 conclusión técnica',e);}
-  },1000);
+    try{
+      ensureConclusionOrderV73();
+      renderConclusionTabla();
+    }catch(e){ console.warn('V73 conclusión técnica:', e); }
+  },900);
 });
 </script>
 
