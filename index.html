@@ -11946,5 +11946,112 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V84 SOBRE V83
+   Corrección de escritura en Conclusión Técnica:
+   - Permite escribir de corrido en la columna Descripción.
+   - Permite borrar valores editables en Cantidad, Unidad y Descripción.
+   - Evita redibujar toda la tabla en cada tecla.
+   ========================================================== */
+
+function safeNormalizeConclusionRowV84(raw){
+  if(typeof normalizeConclusionRowSafeV73 === 'function') return normalizeConclusionRowSafeV73(raw);
+  if(typeof normalizeConclusionRow === 'function') return normalizeConclusionRow(raw);
+  return {
+    descripcion: raw?.descripcion || raw?.Descripción || raw?.Descripcion || '',
+    levels: Array.isArray(raw?.levels) ? raw.levels : [],
+    cantidad: raw?.cantidad || raw?.Cantidad || '',
+    unidad: raw?.unidad || raw?.Unidad || 'm2',
+    allowLevels: !!raw?.allowLevels
+  };
+}
+
+function safeSyncConclusionObjV84(i,row){
+  if(typeof syncConclusionObj === 'function') syncConclusionObj(i,row);
+  else state.aprobatorio.conclusion[i]=row;
+}
+
+function isComputedConclusionV84(row){
+  const text = String(row?.descripcion || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+  return text.includes('AREA BRUTA TOTAL') || text === 'COS PB' || text === 'COS TOTAL';
+}
+
+function canUseLevelsConclusionV84(i){
+  if(typeof canLevelsV81 === 'function') return canLevelsV81(i);
+  if(typeof canEditLevelsV73 === 'function') return canEditLevelsV73(i);
+  return false;
+}
+
+/* Sobrescribe la función que antes redibujaba la tabla al escribir Descripción. */
+updConclusionField = function(i,field,v){
+  ensureAprobatorioData();
+
+  const row = safeNormalizeConclusionRowV84(state.aprobatorio.conclusion[i] || {});
+  const computed = isComputedConclusionV84(row);
+
+  // Las filas calculadas no se editan en descripción ni cantidad.
+  if(computed && (field === 'descripcion' || field === 'cantidad')) return;
+
+  const raw = String(v ?? '');
+
+  if(field === 'cantidad'){
+    row.cantidad = raw.trim() === '' ? '' : formatDecimalFlexible(raw);
+  }else if(field === 'descripcion'){
+    // No redibujar la tabla aquí. Eso causaba que se pierda el foco cada tecla.
+    row.descripcion = (typeof shouldForceUpper === 'function' && shouldForceUpper()) ? raw.toUpperCase() : raw;
+  }else if(field === 'unidad'){
+    row.unidad = raw.trim() === '' ? '' : raw;
+  }else{
+    row[field] = raw;
+  }
+
+  row.allowLevels = canUseLevelsConclusionV84(i);
+  if(!row.allowLevels) row.levels = [];
+
+  safeSyncConclusionObjV84(i,row);
+
+  if(typeof recalcAreasCOSV36 === 'function') recalcAreasCOSV36();
+
+  // Actualiza solo los campos calculados, sin reconstruir toda la tabla.
+  if(typeof updateComputedConclusionInputsV38 === 'function'){
+    try{ updateComputedConclusionInputsV38(); }catch(e){ console.warn('V84 updateComputedConclusionInputs:', e); }
+  }
+
+  if(typeof renderReport === 'function') renderReport();
+  if(typeof renderPreview === 'function') renderPreview();
+};
+
+/* Al salir del campo Descripción sí se puede redibujar para reubicar reglas de niveles/botones. */
+function conclusionDescBlurV84(){
+  if(typeof recalcAreasCOSV36 === 'function') recalcAreasCOSV36();
+  if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
+  if(typeof renderReport === 'function') renderReport();
+  if(typeof renderPreview === 'function') renderPreview();
+}
+
+/* Refuerza el render de la tabla para que use blur controlado y no bloquee la escritura. */
+const _renderConclusionTabla_base_V84 = typeof renderConclusionTabla === 'function' ? renderConclusionTabla : null;
+renderConclusionTabla = function(){
+  if(_renderConclusionTabla_base_V84) _renderConclusionTabla_base_V84();
+
+  // Reemplaza el onblur anterior por uno seguro, si existe la tabla.
+  document.querySelectorAll('.editable-conclusion input[id^="conc_desc_"]').forEach(input=>{
+    input.onblur = conclusionDescBlurV84;
+  });
+};
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
+  },800);
+});
+</script>
+
 </body>
 </html>
