@@ -12053,5 +12053,463 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V85 SOBRE V84
+   Corrección reforzada de escritura fluida:
+   - No redibuja tabla, vista previa ni reporte mientras se escribe
+     dentro de Conclusión Técnica.
+   - Guarda el valor en memoria y permite borrar.
+   - Actualiza informe solo al salir del campo o al cambiar de pestaña.
+   ========================================================== */
+
+window.__CONCLUSION_TYPING_V85__ = false;
+window.__CONCLUSION_TYPING_TIMER_V85__ = null;
+
+function normalizeConclusionRowV85(raw){
+  if(typeof safeNormalizeConclusionRowV84 === 'function') return safeNormalizeConclusionRowV84(raw);
+  if(typeof normalizeConclusionRowSafeV73 === 'function') return normalizeConclusionRowSafeV73(raw);
+  if(typeof normalizeConclusionRow === 'function') return normalizeConclusionRow(raw);
+  return {
+    descripcion: raw?.descripcion || raw?.Descripción || raw?.Descripcion || '',
+    levels: Array.isArray(raw?.levels) ? raw.levels : [],
+    cantidad: raw?.cantidad || raw?.Cantidad || '',
+    unidad: raw?.unidad || raw?.Unidad || 'm2',
+    allowLevels: !!raw?.allowLevels
+  };
+}
+
+function syncConclusionRowV85(i,row){
+  if(typeof safeSyncConclusionObjV84 === 'function') safeSyncConclusionObjV84(i,row);
+  else if(typeof syncConclusionObj === 'function') syncConclusionObj(i,row);
+  else state.aprobatorio.conclusion[i]=row;
+}
+
+function computedConclusionV85(row){
+  const text = String(row?.descripcion || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+  return text.includes('AREA BRUTA TOTAL') || text === 'COS PB' || text === 'COS TOTAL';
+}
+
+function markConclusionTypingV85(){
+  window.__CONCLUSION_TYPING_V85__ = true;
+  clearTimeout(window.__CONCLUSION_TYPING_TIMER_V85__);
+  window.__CONCLUSION_TYPING_TIMER_V85__ = setTimeout(()=>{
+    window.__CONCLUSION_TYPING_V85__ = false;
+  }, 900);
+}
+
+function updateComputedInputsOnlyV85(){
+  if(typeof updateComputedConclusionInputsV38 === 'function'){
+    try{ updateComputedConclusionInputsV38(); }catch(e){ console.warn("V85 update computed:", e); }
+  }
+}
+
+/* Función de escritura: NO llama renderReport/renderPreview/renderConclusionTabla. */
+updConclusionField = function(i,field,v){
+  ensureAprobatorioData();
+  markConclusionTypingV85();
+
+  const row = normalizeConclusionRowV85(state.aprobatorio.conclusion[i] || {});
+  const computed = computedConclusionV85(row);
+
+  if(computed && (field === "descripcion" || field === "cantidad")) return;
+
+  const raw = String(v ?? "");
+
+  if(field === "cantidad"){
+    // Permite borrar completamente. Si hay valor, mantiene formato flexible.
+    row.cantidad = raw.trim() === "" ? "" : formatDecimalFlexible(raw);
+  }else if(field === "descripcion"){
+    row.descripcion = (typeof shouldForceUpper === "function" && shouldForceUpper()) ? raw.toUpperCase() : raw;
+  }else if(field === "unidad"){
+    row.unidad = raw;
+  }else{
+    row[field] = raw;
+  }
+
+  if(typeof canLevelsV81 === "function") row.allowLevels = canLevelsV81(i);
+  else if(typeof canUseLevelsConclusionV84 === "function") row.allowLevels = canUseLevelsConclusionV84(i);
+
+  if(!row.allowLevels) row.levels = [];
+  syncConclusionRowV85(i,row);
+
+  if(field === "cantidad"){
+    if(typeof recalcAreasCOSV36 === "function") recalcAreasCOSV36();
+    updateComputedInputsOnlyV85();
+  }
+};
+
+/* Los niveles también se guardan sin redibujar toda la tabla mientras se escribe. */
+updConclusionLevel = function(i,j,v){
+  ensureAprobatorioData();
+  markConclusionTypingV85();
+
+  const row = normalizeConclusionRowV85(state.aprobatorio.conclusion[i] || {});
+  if(!Array.isArray(row.levels)) row.levels = [];
+  row.levels[j] = (typeof shouldForceUpper === "function" && shouldForceUpper()) ? String(v||"").toUpperCase() : String(v||"");
+  syncConclusionRowV85(i,row);
+};
+
+/* Al salir del campo recién se redibuja y actualiza el informe. */
+function finishConclusionEditingV85(){
+  clearTimeout(window.__CONCLUSION_TYPING_TIMER_V85__);
+  window.__CONCLUSION_TYPING_V85__ = false;
+
+  if(typeof recalcAreasCOSV36 === "function") recalcAreasCOSV36();
+
+  if(typeof renderConclusionTabla === "function"){
+    const active = document.activeElement;
+    const stillInside = active && active.closest && active.closest(".editable-conclusion");
+    if(!stillInside){
+      renderConclusionTabla();
+    }
+  }
+  if(typeof renderReport === "function") renderReport();
+  if(typeof renderPreview === "function") renderPreview();
+}
+
+/* Evita que funciones externas redibujen la tabla mientras hay foco en un input de Conclusión Técnica. */
+const _renderConclusionTabla_base_V85 = typeof renderConclusionTabla === "function" ? renderConclusionTabla : null;
+renderConclusionTabla = function(){
+  const active = document.activeElement;
+  const activeInside = active && active.closest && active.closest(".editable-conclusion");
+
+  if(window.__CONCLUSION_TYPING_V85__ && activeInside){
+    return;
+  }
+
+  if(_renderConclusionTabla_base_V85) _renderConclusionTabla_base_V85();
+
+  document.querySelectorAll(".editable-conclusion input").forEach(input=>{
+    input.addEventListener("focus", markConclusionTypingV85);
+    input.addEventListener("blur", finishConclusionEditingV85);
+  });
+};
+
+/* También bloquea actualizaciones fuertes de reporte mientras se está digitando en la tabla. */
+const _renderReport_base_V85 = typeof renderReport === "function" ? renderReport : null;
+renderReport = function(){
+  const active = document.activeElement;
+  const activeInside = active && active.closest && active.closest(".editable-conclusion");
+  if(window.__CONCLUSION_TYPING_V85__ && activeInside){
+    return document.getElementById("report")?.innerHTML || "";
+  }
+  return _renderReport_base_V85 ? _renderReport_base_V85() : "";
+};
+
+const _renderPreview_base_V85 = typeof renderPreview === "function" ? renderPreview : null;
+renderPreview = function(){
+  const active = document.activeElement;
+  const activeInside = active && active.closest && active.closest(".editable-conclusion");
+  if(window.__CONCLUSION_TYPING_V85__ && activeInside){
+    return;
+  }
+  if(_renderPreview_base_V85) return _renderPreview_base_V85();
+};
+
+/* Antes de guardar o cambiar de pestaña se fuerza la actualización final. */
+const _guardar_base_V85 = typeof guardar === "function" ? guardar : null;
+if(_guardar_base_V85){
+  guardar = function(){
+    finishConclusionEditingV85();
+    return _guardar_base_V85();
+  };
+}
+
+const _guardarYSeguir_base_V85 = typeof guardarYSeguir === "function" ? guardarYSeguir : null;
+if(_guardarYSeguir_base_V85){
+  guardarYSeguir = function(){
+    finishConclusionEditingV85();
+    return _guardarYSeguir_base_V85();
+  };
+}
+
+const _showTab_base_V85 = typeof showTab === "function" ? showTab : null;
+if(_showTab_base_V85){
+  showTab = function(id){
+    finishConclusionEditingV85();
+    return _showTab_base_V85(id);
+  };
+}
+
+window.addEventListener("load",()=>{
+  setTimeout(()=>{
+    if(typeof renderConclusionTabla === "function") renderConclusionTabla();
+  },900);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V86 SOBRE V85
+   Corrección definitiva de escritura:
+   Se elimina el uso de oninput inline dentro de Conclusión Técnica.
+   Los campos se dibujan como inputs simples y se actualizan con
+   listeners estables addEventListener. Así ninguna función antigua
+   puede redibujar la tabla en cada tecla.
+   ========================================================== */
+
+window.__CONCLUSION_EDITING_V86__ = false;
+
+function nrmConclV86(v){
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function rowConclV86(raw){
+  if(typeof normalizeConclusionRowSafeV73 === 'function') return normalizeConclusionRowSafeV73(raw);
+  if(typeof safeNormalizeConclusionRowV84 === 'function') return safeNormalizeConclusionRowV84(raw);
+  if(typeof normalizeConclusionRow === 'function') return normalizeConclusionRow(raw);
+  return {
+    descripcion: raw?.descripcion || raw?.Descripción || raw?.Descripcion || '',
+    levels: Array.isArray(raw?.levels) ? raw.levels : [],
+    cantidad: raw?.cantidad || raw?.Cantidad || '',
+    unidad: raw?.unidad || raw?.Unidad || 'm2',
+    allowLevels: !!raw?.allowLevels
+  };
+}
+
+function syncConclV86(i,row){
+  if(typeof syncConclusionObj === 'function') syncConclusionObj(i,row);
+  else state.aprobatorio.conclusion[i]=row;
+}
+
+function isCalcConclV86(r){
+  const d=nrmConclV86(r.descripcion);
+  return d.includes('AREA BRUTA TOTAL') || d === 'COS PB' || d === 'COS TOTAL';
+}
+
+function isBrutaPBV86(desc){
+  const d=nrmConclV86(desc);
+  return d.includes('AREA BRUTA') && d.includes('PLANTA BAJA');
+}
+
+function isBrutaTotalV86(desc){
+  const d=nrmConclV86(desc);
+  return d.includes('AREA BRUTA') && d.includes('TOTAL') && d.includes('CONSTRUCCION');
+}
+
+function idxZoneConclV86(){
+  const arr=state.aprobatorio?.conclusion || [];
+  const start=arr.findIndex(r=>isBrutaPBV86(rowConclV86(r).descripcion));
+  const total=start>=0 ? arr.findIndex((r,i)=>i>start && isBrutaTotalV86(rowConclV86(r).descripcion)) : -1;
+  return {start,total};
+}
+
+function canLevelConclV86(i){
+  const {start,total}=idxZoneConclV86();
+  return start>=0 && total>=0 && i>=start && i<total;
+}
+
+function canAddConclV86(i){
+  return canLevelConclV86(i);
+}
+
+function rebuildAllRowsConclV86(force=false){
+  if(typeof rebuildEditableConclusionAllRowsV81 === 'function'){
+    try{ rebuildEditableConclusionAllRowsV81(force); }catch(e){ console.warn('V86 rebuild V81:', e); }
+  }
+  ensureAprobatorioData();
+}
+
+function renderLevelsV86(row,i){
+  if(!canLevelConclV86(i)) return '<td class="levels-edit levels-blocked-v73"></td>';
+  const levels=(row.levels||[]).map((v,j)=>`
+    <div class="level-item">
+      <input class="concl-edit-v86" data-i="${i}" data-field="level" data-j="${j}" value="${esc(v)}" placeholder="Nivel">
+      <button type="button" class="secondary mini-btn" onclick="delConclusionLevel(${i},${j})">×</button>
+    </div>`).join('');
+  return `<td class="levels-edit">${levels}<button type="button" class="secondary add-level-row" onclick="addConclusionLevel(${i})">+ Niveles</button></td>`;
+}
+
+function renderActionsV86(row,i){
+  const computed=isCalcConclV86(row);
+  const add=canAddConclV86(i) ? `<button type="button" class="mini-plus" title="Agregar fila antes de Área Bruta total de construcción" onclick="addConclusionRowAfter(${i})">+</button>` : '';
+  const quit=computed ? '' : `<button type="button" class="danger mini-btn" onclick="delConclusion(${i})">Quitar</button>`;
+  return `<td class="row-actions"><div class="actions-v73">${add}${quit || (!add?'<span class="no-row-action-v73">—</span>':'')}</div></td>`;
+}
+
+function bindConclusionInputsV86(){
+  const table=document.querySelector('.editable-conclusion');
+  if(!table) return;
+
+  table.querySelectorAll('input.concl-edit-v86').forEach(input=>{
+    input.addEventListener('focus',()=>{ window.__CONCLUSION_EDITING_V86__=true; });
+
+    input.addEventListener('input',()=>{
+      window.__CONCLUSION_EDITING_V86__=true;
+      const i=Number(input.dataset.i);
+      const field=input.dataset.field;
+      const row=rowConclV86(state.aprobatorio.conclusion[i] || {});
+      const computed=isCalcConclV86(row);
+
+      if(field==='descripcion' && computed) return;
+      if(field==='cantidad' && computed) return;
+
+      if(field==='descripcion'){
+        row.descripcion = (typeof shouldForceUpper === 'function' && shouldForceUpper()) ? input.value.toUpperCase() : input.value;
+        if(row.descripcion !== input.value) input.value=row.descripcion;
+      }else if(field==='cantidad'){
+        row.cantidad = input.value; // sin formatear mientras escribe para permitir borrar y editar libremente
+      }else if(field==='unidad'){
+        row.unidad = input.value;
+      }else if(field==='level'){
+        const j=Number(input.dataset.j);
+        if(!Array.isArray(row.levels)) row.levels=[];
+        row.levels[j]=(typeof shouldForceUpper === 'function' && shouldForceUpper()) ? input.value.toUpperCase() : input.value;
+        if(row.levels[j] !== input.value) input.value=row.levels[j];
+      }
+
+      row.allowLevels=canLevelConclV86(i);
+      if(!row.allowLevels) row.levels=[];
+      syncConclV86(i,row);
+
+      // Solo actualiza campos calculados si se edita cantidad, pero no redibuja la tabla.
+      if(field==='cantidad' && typeof recalcAreasCOSV36 === 'function'){
+        recalcAreasCOSV36();
+        try{
+          const arr=state.aprobatorio.conclusion || [];
+          arr.forEach((raw,k)=>{
+            const r=rowConclV86(raw);
+            const d=nrmConclV86(r.descripcion);
+            if(d.includes('AREA BRUTA TOTAL') || d==='COS PB' || d==='COS TOTAL'){
+              const el=document.getElementById('conc_qty_'+k);
+              if(el && document.activeElement!==el) el.value=r.cantidad || '';
+            }
+          });
+        }catch(e){}
+      }
+    });
+
+    input.addEventListener('blur',()=>{
+      const i=Number(input.dataset.i);
+      const field=input.dataset.field;
+      const row=rowConclV86(state.aprobatorio.conclusion[i] || {});
+      if(field==='cantidad' && row.cantidad !== ''){
+        row.cantidad=formatDecimalFlexible(row.cantidad);
+        input.value=row.cantidad;
+        syncConclV86(i,row);
+      }
+      setTimeout(()=>{
+        const active=document.activeElement;
+        if(!(active && active.closest && active.closest('.editable-conclusion'))){
+          window.__CONCLUSION_EDITING_V86__=false;
+          if(typeof recalcAreasCOSV36 === 'function') recalcAreasCOSV36();
+          if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
+          if(typeof renderReport === 'function') renderReport();
+          if(typeof renderPreview === 'function') renderPreview();
+        }
+      },80);
+    });
+  });
+}
+
+/* Render propio sin oninput/onblur inline. */
+renderConclusionTabla = function(){
+  if(window.__CONCLUSION_EDITING_V86__) return;
+
+  rebuildAllRowsConclV86(false);
+  if(typeof recalcAreasCOSV36 === 'function') recalcAreasCOSV36();
+
+  const cont=document.getElementById('conclusionTabla');
+  if(!cont) return;
+
+  const arr=state.aprobatorio?.conclusion || [];
+
+  cont.innerHTML=`<div class="conclusion-help-v73">Use el botón + únicamente en el bloque de áreas brutas. Las filas nuevas se insertan antes de Área Bruta total de construcción y pueden usar niveles.</div>
+    <table class="editable-conclusion">
+      <thead><tr><th>Descripción</th><th style="width:18%">Niveles</th><th style="width:18%">Cantidad</th><th style="width:14%">Unidad</th><th style="width:16%">Acciones</th></tr></thead>
+      <tbody>${arr.map((raw,i)=>{
+        const r=rowConclV86(raw);
+        const computed=isCalcConclV86(r);
+        const cls=[computed?'calc-readonly-v37':'',canLevelConclV86(i)?'bruta-editable-v73':''].filter(Boolean).join(' ');
+        return `<tr class="${cls}">
+          <td><input class="concl-edit-v86" data-i="${i}" data-field="descripcion" id="conc_desc_${i}" value="${esc(r.descripcion)}" placeholder="Descripción" ${computed?'readonly':''}></td>
+          ${renderLevelsV86(r,i)}
+          <td><input class="concl-edit-v86" data-i="${i}" data-field="cantidad" id="conc_qty_${i}" value="${esc(r.cantidad)}" placeholder="Cantidad" ${computed?'readonly':''}></td>
+          <td><input class="concl-edit-v86" data-i="${i}" data-field="unidad" id="conc_unit_${i}" value="${esc(r.unidad)}" placeholder="Unidad"></td>
+          ${renderActionsV86(r,i)}
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+    <div class="calc-note">Área Bruta total = suma de filas con “Bruta”. COS PB = Área útil planta baja / Área del predio × 100. COS Total = Área útil total / Área del predio × 100.</div>`;
+
+  bindConclusionInputsV86();
+};
+
+addConclusionRowAfter = function(i){
+  if(!canAddConclV86(i)){
+    if(typeof msg==='function') msg('Solo puede agregar filas entre Área bruta planta baja y Área Bruta total de construcción.');
+    return;
+  }
+  const {total}=idxZoneConclV86();
+  const insertAt=Math.min(i+1,total);
+  state.aprobatorio.conclusion.splice(insertAt,0,{descripcion:'',levels:[],cantidad:'',unidad:'m2',allowLevels:true});
+  window.__CONCLUSION_EDITING_V86__=false;
+  renderConclusionTabla();
+};
+
+addConclusionLevel = function(i){
+  if(!canLevelConclV86(i)){
+    if(typeof msg==='function') msg('Los niveles solo se permiten desde Área bruta planta baja hasta antes de Área Bruta total de construcción.');
+    return;
+  }
+  const r=rowConclV86(state.aprobatorio.conclusion[i] || {});
+  if(!Array.isArray(r.levels)) r.levels=[];
+  r.levels.push('');
+  syncConclV86(i,r);
+  window.__CONCLUSION_EDITING_V86__=false;
+  renderConclusionTabla();
+};
+
+const _renderReport_base_V86 = typeof renderReport === 'function' ? renderReport : null;
+renderReport = function(){
+  if(window.__CONCLUSION_EDITING_V86__) return document.getElementById('report')?.innerHTML || '';
+  return _renderReport_base_V86 ? _renderReport_base_V86() : '';
+};
+
+const _renderPreview_base_V86 = typeof renderPreview === 'function' ? renderPreview : null;
+renderPreview = function(){
+  if(window.__CONCLUSION_EDITING_V86__) return;
+  if(_renderPreview_base_V86) return _renderPreview_base_V86();
+};
+
+function finishConclusionV86(){
+  window.__CONCLUSION_EDITING_V86__=false;
+  if(typeof recalcAreasCOSV36 === 'function') recalcAreasCOSV36();
+  if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
+  if(typeof renderReport === 'function') renderReport();
+  if(typeof renderPreview === 'function') renderPreview();
+}
+
+const _guardar_base_V86 = typeof guardar === 'function' ? guardar : null;
+if(_guardar_base_V86){
+  guardar = function(){ finishConclusionV86(); return _guardar_base_V86(); };
+}
+
+const _guardarYSeguir_base_V86 = typeof guardarYSeguir === 'function' ? guardarYSeguir : null;
+if(_guardarYSeguir_base_V86){
+  guardarYSeguir = function(){ finishConclusionV86(); return _guardarYSeguir_base_V86(); };
+}
+
+const _showTab_base_V86 = typeof showTab === 'function' ? showTab : null;
+if(_showTab_base_V86){
+  showTab = function(id){ finishConclusionV86(); return _showTab_base_V86(id); };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{ window.__CONCLUSION_EDITING_V86__=false; renderConclusionTabla(); },1000);
+});
+</script>
+
 </body>
 </html>
