@@ -12976,5 +12976,483 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V89 SOBRE V88
+   Corrección reforzada PIT / Parroquia:
+   Si un punto cae en más de un polígono con el mismo Código PIT
+   o hay PIT repetidos en distintas parroquias, se prioriza el
+   polígono cuya parroquia coincida con la Parroquia ya indicada
+   en el formulario.
+   ========================================================== */
+
+function normParroquiaV89(v){
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^A-Z0-9 ]/gi,' ')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function getFormularioParroquiaV89(){
+  try{
+    const f = DATA.infoFields.find(x => normParroquiaV89(x.label||'').includes('PARROQUIA'));
+    if(!f) return '';
+    return (state.info && state.info[f.key]) || document.getElementById('info_'+f.key)?.value || '';
+  }catch(e){
+    return '';
+  }
+}
+
+function findPitCandidatesByPointV89(x,y){
+  ensureIprusPitV43();
+  const out=[];
+  for(const item of DATA.iprusPitIndex||[]){
+    const b=item.bbox;
+    if(x<b[0] || y<b[1] || x>b[2] || y>b[3]) continue;
+    if(pointInGeomV43(x,y,item.geometry)) out.push(item);
+  }
+  return out;
+}
+
+function choosePitCandidateV89(candidates){
+  if(!candidates || !candidates.length) return null;
+
+  const parrForm = normParroquiaV89(getFormularioParroquiaV89());
+
+  if(parrForm){
+    const exact = candidates.find(item => normParroquiaV89(pgetV43(item.properties||{}, 'parroquia')) === parrForm);
+    if(exact) return exact;
+
+    const partial = candidates.find(item => {
+      const p = normParroquiaV89(pgetV43(item.properties||{}, 'parroquia'));
+      return p && (p.includes(parrForm) || parrForm.includes(p));
+    });
+    if(partial) return partial;
+  }
+
+  return candidates[0] || null;
+}
+
+/* Sobrescribe la búsqueda base para que no devuelva simplemente el primer polígono. */
+findPitByPointV43 = function(x,y){
+  return choosePitCandidateV89(findPitCandidatesByPointV89(x,y));
+};
+
+/* Reemplaza la búsqueda por coordenadas usando candidatos y parroquia formulario. */
+buscarPitPorCoordenadasV42 = function(){
+  const x=Number(String(coordValueV43('X')).replace(',','.'));
+  const y=Number(String(coordValueV43('Y')).replace(',','.'));
+
+  if(!isFinite(x) || !isFinite(y)){
+    msg('Ingrese coordenadas X/Y válidas antes de buscar el Código PIT.');
+    return;
+  }
+
+  if(!DATA.iprusPitIndex || !DATA.iprusPitIndex.length){
+    msg('La base IPRUS/PIT aún no está cargada. Verifique data/iprus_pit_lookup.geojson.');
+    return;
+  }
+
+  const candidates = findPitCandidatesByPointV89(x,y);
+  const hit = choosePitCandidateV89(candidates);
+
+  if(!state.pitMap) state.pitMap={};
+  state.pitMap = {
+    x,
+    y,
+    codigo: hit ? hit.codigo_pit : '',
+    lastHit: hit || null,
+    candidatesCount: candidates.length,
+    candidatesParroquias: candidates.map(c => pgetV43(c.properties||{}, 'parroquia')).filter(Boolean)
+  };
+
+  if(!hit){
+    msg('No se encontró un polígono PIT para esas coordenadas. Verifique que X/Y estén en el mismo sistema de coordenadas del GeoJSON.');
+    renderPitDetailV41();
+    return;
+  }
+
+  const parroquiaFormulario = getFormularioParroquiaV89();
+  const parroquiaHit = pgetV43(hit.properties,'parroquia');
+  const codigoHit = hit.codigo_pit || pgetV43(hit.properties,'codigo_pit','pit');
+
+  setCodigoPitV43(codigoHit);
+
+  /*
+    Si la Parroquia del formulario ya tiene valor, se respeta.
+    Esto evita que el PIT sobreescriba una parroquia correcta proveniente
+    de clave catastral.
+  */
+  if(!String(parroquiaFormulario||'').trim()){
+    setParroquiaV43(parroquiaHit);
+  }
+
+  setUsoPrincipalFromPitV43(pgetV43(hit.properties,'uso_principal','u_principa'));
+
+  renderInfoForm();
+  renderPitDetailV41();
+  renderReport();
+  renderPreview();
+
+  const msgExtra = candidates.length > 1
+    ? ' Se encontraron '+candidates.length+' polígonos candidatos y se priorizó la parroquia del formulario.'
+    : '';
+  msg('PIT encontrado por coordenadas: '+codigoHit+' / '+(getFormularioParroquiaV89()||parroquiaHit)+'.'+msgExtra, true);
+};
+
+/* Asegura que el panel use el hit elegido por parroquia. */
+function currentPitItemConsistenteV89(){
+  const x=Number(String(state.pitMap?.x || coordValueV43?.('X') || '').replace(',','.'));
+  const y=Number(String(state.pitMap?.y || coordValueV43?.('Y') || '').replace(',','.'));
+
+  if(isFinite(x) && isFinite(y)){
+    const candidates = findPitCandidatesByPointV89(x,y);
+    const hit = choosePitCandidateV89(candidates);
+    if(hit){
+      if(!state.pitMap) state.pitMap={};
+      state.pitMap.lastHit=hit;
+      state.pitMap.candidatesCount=candidates.length;
+      state.pitMap.candidatesParroquias=candidates.map(c => pgetV43(c.properties||{}, 'parroquia')).filter(Boolean);
+      return hit;
+    }
+  }
+
+  if(state.pitMap?.lastHit) return state.pitMap.lastHit;
+
+  const code = typeof currentPitCodeV41 === 'function' ? currentPitCodeV41() : '';
+  if(code && typeof findPitV41 === 'function'){
+    try{ return findPitV41(code); }catch(e){}
+  }
+
+  return null;
+}
+
+getCurrentPitItemV44 = function(){
+  return currentPitItemConsistenteV89();
+};
+
+renderPitDetailV41 = function(){
+  ensurePitPanelV41();
+
+  const box=document.getElementById('pitDetailContentV41');
+  if(!box) return;
+
+  box.classList.remove('mini');
+  box.classList.add('pit-detail-content-v58');
+
+  const code = typeof currentPitCodeV41 === 'function' ? currentPitCodeV41() : '';
+  const item = currentPitItemConsistenteV89();
+
+  let main='';
+  if(!code && !item){
+    main='<div class="pit-warning">Seleccione un Código PIT o busque por coordenadas X/Y.</div>';
+  }else if(!item){
+    main=`<div class="pit-warning">No se encontró información para el Código PIT <b>${esc(code||'')}</b>.</div>`;
+  }else{
+    const rows=pitDetailRowsV41(item).filter(x=>String(x[1]??'').trim()!=='');
+    const mapHtml=typeof miniMapV43==='function' ? miniMapV43(item) : '';
+
+    const parrForm = normParroquiaV89(getFormularioParroquiaV89());
+    const parrItem = normParroquiaV89(pgetV43(item.properties||{}, 'parroquia'));
+    const aviso = (parrForm && parrItem && parrForm !== parrItem)
+      ? `<div class="pit-warning">Aviso: el polígono PIT seleccionado registra parroquia <b>${escV57(pgetV43(item.properties||{}, 'parroquia'))}</b>, diferente a la parroquia del formulario <b>${escV57(getFormularioParroquiaV89())}</b>.</div>`
+      : '';
+
+    main=`${mapHtml}${aviso}<table class="pit-detail-table"><tbody>${rows.map(([k,v])=>`<tr><th>${escV57(k)}</th><td>${escV57(v)}</td></tr>`).join('')}</tbody></table>`;
+  }
+
+  const tools = typeof pitCoordToolsHTMLV60 === 'function'
+    ? pitCoordToolsHTMLV60()
+    : (typeof pitCoordToolsHTMLV42 === 'function' ? pitCoordToolsHTMLV42() : '');
+
+  box.innerHTML=`<div id="pitCoordToolsV42">${tools}</div>${main}`;
+
+  if(typeof ensurePitPanelVisibleV58==='function') ensurePitPanelVisibleV58();
+  if(typeof cleanPitToggleButtonsV59==='function') cleanPitToggleButtonsV59();
+
+  if(document.getElementById('pitLeafletMapV44')){
+    setTimeout(()=>{try{initLeafletPitMapV44('pitLeafletMapV44',false);}catch(e){}},100);
+  }
+};
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{try{renderPitDetailV41();}catch(e){console.warn('V89 PIT:',e);}},900);
+  setTimeout(()=>{try{renderPitDetailV41();}catch(e){console.warn('V89 PIT:',e);}},1800);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V90 SOBRE V89
+   Corrección PIT / Parroquia:
+   El panel izquierdo ya no debe depender del primer polígono por
+   Código PIT ni del primer candidato por coordenadas.
+   Primero busca el registro que coincida con:
+   CÓDIGO PIT del formulario + PARROQUIA del formulario.
+   Esto resuelve casos donde el buscador por coordenadas llena bien
+   Parroquia, pero el panel muestra otra parroquia porque el PIT está repetido.
+   ========================================================== */
+
+function normPitTextV90(v){
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^A-Z0-9 ]/gi,' ')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function getInfoValueByLabelV90(labels){
+  const arr = Array.isArray(labels) ? labels : [labels];
+  const wanted = arr.map(normPitTextV90);
+  const f = (DATA.infoFields||[]).find(x=>{
+    const lab = normPitTextV90(x.label||'');
+    return wanted.some(w=>lab===w || lab.includes(w) || w.includes(lab));
+  });
+  if(!f) return '';
+  return (state.info && state.info[f.key]) || document.getElementById('info_'+f.key)?.value || '';
+}
+
+function currentCodigoPitV90(){
+  return getInfoValueByLabelV90(['CÓDIGO PIT','CODIGO PIT']);
+}
+
+function currentParroquiaV90(){
+  return getInfoValueByLabelV90(['PARROQUIA']);
+}
+
+function codigoPitOfItemV90(item){
+  return String(item?.codigo_pit || pgetV43(item?.properties||{}, 'codigo_pit','pit') || '').trim();
+}
+
+function parroquiaOfItemV90(item){
+  return String(pgetV43(item?.properties||{}, 'parroquia') || '').trim();
+}
+
+function findPitByCodigoParroquiaV90(code, parroquia){
+  ensureIprusPitV43();
+
+  const c = normPitTextV90(code);
+  const p = normPitTextV90(parroquia);
+
+  if(!c || !p) return null;
+
+  return (DATA.iprusPitIndex||[]).find(item=>{
+    const ic = normPitTextV90(codigoPitOfItemV90(item));
+    const ip = normPitTextV90(parroquiaOfItemV90(item));
+    return ic === c && ip === p;
+  }) || (DATA.iprusPitIndex||[]).find(item=>{
+    const ic = normPitTextV90(codigoPitOfItemV90(item));
+    const ip = normPitTextV90(parroquiaOfItemV90(item));
+    return ic === c && ip && (ip.includes(p) || p.includes(ip));
+  }) || null;
+}
+
+function findPitCandidatesByPointV90(x,y){
+  ensureIprusPitV43();
+  const out=[];
+  for(const item of DATA.iprusPitIndex||[]){
+    const b=item.bbox;
+    if(x<b[0] || y<b[1] || x>b[2] || y>b[3]) continue;
+    if(pointInGeomV43(x,y,item.geometry)) out.push(item);
+  }
+  return out;
+}
+
+function choosePitCandidateV90(candidates){
+  const code = currentCodigoPitV90();
+  const parr = currentParroquiaV90();
+
+  // Prioridad 1: Código PIT + Parroquia ya visibles en el formulario.
+  const byCodeParr = findPitByCodigoParroquiaV90(code, parr);
+  if(byCodeParr) return byCodeParr;
+
+  // Prioridad 2: si hay candidatos por coordenadas, usar el que coincida con parroquia del formulario.
+  const p = normPitTextV90(parr);
+  if(p && candidates && candidates.length){
+    const exact = candidates.find(item => normPitTextV90(parroquiaOfItemV90(item)) === p);
+    if(exact) return exact;
+    const partial = candidates.find(item => {
+      const ip = normPitTextV90(parroquiaOfItemV90(item));
+      return ip && (ip.includes(p) || p.includes(ip));
+    });
+    if(partial) return partial;
+  }
+
+  // Prioridad 3: primer candidato por coordenadas.
+  if(candidates && candidates.length) return candidates[0];
+
+  // Prioridad 4: último hit guardado.
+  if(state.pitMap?.lastHit) return state.pitMap.lastHit;
+
+  // Prioridad 5: búsqueda antigua por código.
+  if(code && typeof findPitV41 === 'function'){
+    try{return findPitV41(code);}catch(e){}
+  }
+
+  return null;
+}
+
+function currentPitItemV90(){
+  const code = currentCodigoPitV90();
+  const parr = currentParroquiaV90();
+
+  // Esta es la regla más importante: si ya está escrito Código PIT y Parroquia,
+  // el panel debe coincidir con esos dos campos.
+  const byCodeParr = findPitByCodigoParroquiaV90(code, parr);
+  if(byCodeParr){
+    if(!state.pitMap) state.pitMap={};
+    state.pitMap.lastHit=byCodeParr;
+    return byCodeParr;
+  }
+
+  const x = Number(String(state.pitMap?.x || coordValueV43?.('X') || '').replace(',','.'));
+  const y = Number(String(state.pitMap?.y || coordValueV43?.('Y') || '').replace(',','.'));
+  if(isFinite(x) && isFinite(y)){
+    const candidates = findPitCandidatesByPointV90(x,y);
+    const chosen = choosePitCandidateV90(candidates);
+    if(chosen){
+      if(!state.pitMap) state.pitMap={};
+      state.pitMap.lastHit=chosen;
+      state.pitMap.candidatesCount=candidates.length;
+      state.pitMap.candidatesParroquias=candidates.map(parroquiaOfItemV90).filter(Boolean);
+      return chosen;
+    }
+  }
+
+  return choosePitCandidateV90([]);
+}
+
+/* El mapa y el panel usan esta función. */
+getCurrentPitItemV44 = function(){
+  return currentPitItemV90();
+};
+
+/* Búsqueda por coordenadas:
+   - llena Código PIT
+   - llena Parroquia si está vacía
+   - luego recalcula el item del panel por Código PIT + Parroquia.
+*/
+buscarPitPorCoordenadasV42 = function(){
+  const x=Number(String(coordValueV43('X')).replace(',','.'));
+  const y=Number(String(coordValueV43('Y')).replace(',','.'));
+
+  if(!isFinite(x) || !isFinite(y)){
+    msg('Ingrese coordenadas X/Y válidas antes de buscar el Código PIT.');
+    return;
+  }
+
+  if(!DATA.iprusPitIndex || !DATA.iprusPitIndex.length){
+    msg('La base IPRUS/PIT aún no está cargada. Verifique data/iprus_pit_lookup.geojson.');
+    return;
+  }
+
+  const candidates = findPitCandidatesByPointV90(x,y);
+  let hit = choosePitCandidateV90(candidates);
+
+  if(!state.pitMap) state.pitMap={};
+  state.pitMap.x=x;
+  state.pitMap.y=y;
+  state.pitMap.candidatesCount=candidates.length;
+  state.pitMap.candidatesParroquias=candidates.map(parroquiaOfItemV90).filter(Boolean);
+
+  if(!hit){
+    state.pitMap.codigo='';
+    state.pitMap.lastHit=null;
+    msg('No se encontró un polígono PIT para esas coordenadas. Verifique que X/Y estén en el mismo sistema de coordenadas del GeoJSON.');
+    renderPitDetailV41();
+    return;
+  }
+
+  const codigoHit = codigoPitOfItemV90(hit);
+  const parroquiaHit = parroquiaOfItemV90(hit);
+
+  setCodigoPitV43(codigoHit);
+
+  // Si la parroquia está vacía, se llena con la del hit.
+  // Si otra lógica ya la llenó correctamente, se conserva.
+  if(!String(currentParroquiaV90()||'').trim()){
+    setParroquiaV43(parroquiaHit);
+  }
+
+  setUsoPrincipalFromPitV43(pgetV43(hit.properties,'uso_principal','u_principa'));
+
+  // Después de llenar los campos, se vuelve a elegir por Código PIT + Parroquia.
+  hit = currentPitItemV90();
+
+  state.pitMap.codigo = codigoPitOfItemV90(hit);
+  state.pitMap.lastHit = hit;
+
+  renderInfoForm();
+  renderPitDetailV41();
+  renderReport();
+  renderPreview();
+
+  const parrFinal = currentParroquiaV90() || parroquiaOfItemV90(hit);
+  msg('PIT encontrado por coordenadas: '+codigoPitOfItemV90(hit)+' / '+parrFinal, true);
+};
+
+/* Panel izquierdo: muestra exactamente el registro asociado a Código PIT + Parroquia. */
+renderPitDetailV41 = function(){
+  ensurePitPanelV41();
+
+  const box=document.getElementById('pitDetailContentV41');
+  if(!box) return;
+
+  box.classList.remove('mini');
+  box.classList.add('pit-detail-content-v58');
+
+  const code = currentCodigoPitV90();
+  const parr = currentParroquiaV90();
+  const item = currentPitItemV90();
+
+  let main='';
+  if(!code && !item){
+    main='<div class="pit-warning">Seleccione un Código PIT o busque por coordenadas X/Y.</div>';
+  }else if(!item){
+    main=`<div class="pit-warning">No se encontró información para el Código PIT <b>${esc(code||'')}</b>${parr?` en la parroquia <b>${esc(parr)}</b>`:''}.</div>`;
+  }else{
+    const rows=pitDetailRowsV41(item).filter(x=>String(x[1]??'').trim()!=='');
+    const mapHtml=typeof miniMapV43==='function' ? miniMapV43(item) : '';
+
+    const itemParr = parroquiaOfItemV90(item);
+    const aviso = parr && normPitTextV90(parr)!==normPitTextV90(itemParr)
+      ? `<div class="pit-warning">Aviso: el panel encontró <b>${escV57(itemParr)}</b>, pero el formulario tiene <b>${escV57(parr)}</b>. Revise si el código PIT está repetido o si la base GeoJSON tiene parroquias inconsistentes.</div>`
+      : '';
+
+    main=`${mapHtml}${aviso}<table class="pit-detail-table"><tbody>${rows.map(([k,v])=>`<tr><th>${escV57(k)}</th><td>${escV57(v)}</td></tr>`).join('')}</tbody></table>`;
+  }
+
+  const tools = typeof pitCoordToolsHTMLV60 === 'function'
+    ? pitCoordToolsHTMLV60()
+    : (typeof pitCoordToolsHTMLV42 === 'function' ? pitCoordToolsHTMLV42() : '');
+
+  box.innerHTML=`<div id="pitCoordToolsV42">${tools}</div>${main}`;
+
+  if(typeof ensurePitPanelVisibleV58==='function') ensurePitPanelVisibleV58();
+  if(typeof cleanPitToggleButtonsV59==='function') cleanPitToggleButtonsV59();
+
+  if(document.getElementById('pitLeafletMapV44')){
+    setTimeout(()=>{try{initLeafletPitMapV44('pitLeafletMapV44',false);}catch(e){}},100);
+  }
+};
+
+/* Después de reordenar/renderizar Información General, vuelve a sincronizar el panel. */
+const _renderInfoForm_base_V90 = typeof renderInfoForm === 'function' ? renderInfoForm : null;
+renderInfoForm = function(){
+  if(_renderInfoForm_base_V90) _renderInfoForm_base_V90();
+  setTimeout(()=>{try{renderPitDetailV41();}catch(e){console.warn('V90 panel PIT:',e);}},80);
+};
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{try{renderPitDetailV41();}catch(e){console.warn('V90 PIT:',e);}},900);
+  setTimeout(()=>{try{renderPitDetailV41();}catch(e){console.warn('V90 PIT:',e);}},1800);
+});
+</script>
+
 </body>
 </html>
