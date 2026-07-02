@@ -13741,5 +13741,96 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V92 SOBRE V91
+   Corrección FECHA_SUBSANACION:
+   En algunas plantillas el marcador está escrito sin tilde:
+   {{FECHA_SUBSANACION}}
+   y el reemplazo anterior solo reconocía:
+   {{FECHA_SUBSANACIÓN}}
+   Ahora se reconocen ambas formas y otras variantes.
+   ========================================================== */
+
+function fechaSubsanacionReporteV92(){
+  try{
+    if(typeof collectTop === 'function') collectTop();
+  }catch(e){}
+
+  let val = state.fechaSubsanacion || document.getElementById('fechaSubsanacion')?.value || '';
+
+  if(!val){
+    const dias = state.fechaSubsanacionCincoDias ? 5 : 10;
+    const base = state.fechaRevision || document.getElementById('fechaRevision')?.value || (typeof today === 'function' ? today() : '');
+    if(base && typeof addBusinessDays === 'function'){
+      val = addBusinessDays(base, dias);
+      state.fechaSubsanacion = val;
+      const fs = document.getElementById('fechaSubsanacion');
+      if(fs) fs.value = val;
+    }
+  }
+
+  return val ? fmtDate(val) : '';
+}
+
+function replaceFechaSubsanacionTokensV92(text){
+  const fecha = fechaSubsanacionReporteV92();
+
+  return String(text||'')
+    .replaceAll('{{FECHA_SUBSANACION}}', fecha)
+    .replaceAll('{{FECHA_SUBSANACIÓN}}', fecha)
+    .replaceAll('{{Fecha_Subsanacion}}', fecha)
+    .replaceAll('{{Fecha_Subsanación}}', fecha)
+    .replaceAll('{{fecha_subsanacion}}', fecha)
+    .replaceAll('{{fecha_subsanación}}', fecha)
+    .replaceAll('“{{FECHA_SUBSANACION}}”', fecha)
+    .replaceAll('“{{FECHA_SUBSANACIÓN}}”', fecha);
+}
+
+const _placeholderMap_base_V92 = typeof placeholderMap === 'function' ? placeholderMap : null;
+if(_placeholderMap_base_V92){
+  placeholderMap = function(html=false){
+    const map = _placeholderMap_base_V92(html) || {};
+    const fecha = html ? esc(fechaSubsanacionReporteV92()) : fechaSubsanacionReporteV92();
+
+    map['{{FECHA_SUBSANACION}}'] = fecha;
+    map['{{FECHA_SUBSANACIÓN}}'] = fecha;
+    map['{{Fecha_Subsanacion}}'] = fecha;
+    map['{{Fecha_Subsanación}}'] = fecha;
+    map['{{fecha_subsanacion}}'] = fecha;
+    map['{{fecha_subsanación}}'] = fecha;
+
+    return map;
+  };
+}
+
+const _replaceTemplate_base_V92 = typeof replaceTemplate === 'function' ? replaceTemplate : null;
+replaceTemplate = function(text){
+  const base = _replaceTemplate_base_V92 ? _replaceTemplate_base_V92(text) : String(text||'');
+  return replaceFechaSubsanacionTokensV92(base);
+};
+
+const _replaceTemplateHtml_base_V92 = typeof replaceTemplateHtml === 'function' ? replaceTemplateHtml : null;
+replaceTemplateHtml = function(text){
+  const raw = replaceFechaSubsanacionTokensV92(String(text||''));
+  return _replaceTemplateHtml_base_V92 ? _replaceTemplateHtml_base_V92(raw) : esc(raw).replace(/\n/g,'<br>');
+};
+
+/* Refuerzo final antes de imprimir Conclusiones por si el texto ya fue procesado. */
+const _formatConclusionText_base_V92 = typeof formatConclusionText === 'function' ? formatConclusionText : null;
+formatConclusionText = function(text){
+  const fixed = replaceFechaSubsanacionTokensV92(text);
+  return _formatConclusionText_base_V92 ? _formatConclusionText_base_V92(fixed) : fixed;
+};
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    if(typeof renderReport === 'function') renderReport();
+    if(typeof renderPreview === 'function') renderPreview();
+  },800);
+});
+</script>
+
 </body>
 </html>
