@@ -13832,5 +13832,149 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V93 SOBRE V92
+   Corrección reforzada FECHA_SUBSANACIÓN:
+   Además de reemplazar en plantillas, se reemplaza el marcador
+   directamente en el HTML final del informe. Esto cubre cualquier
+   función anterior que haya dejado el marcador sin procesar.
+   ========================================================== */
+
+function fechaSubsanacionFinalV93(){
+  try{ if(typeof collectTop === 'function') collectTop(); }catch(e){}
+
+  let raw =
+    state.fechaSubsanacion ||
+    document.getElementById('fechaSubsanacion')?.value ||
+    document.querySelector('[name="fechaSubsanacion"]')?.value ||
+    '';
+
+  if(!raw){
+    const dias = state.fechaSubsanacionCincoDias ? 5 : 10;
+    const base =
+      state.fechaRevision ||
+      document.getElementById('fechaRevision')?.value ||
+      (typeof today === 'function' ? today() : '');
+
+    if(base && typeof addBusinessDays === 'function'){
+      raw = addBusinessDays(base, dias);
+      state.fechaSubsanacion = raw;
+      const fs = document.getElementById('fechaSubsanacion');
+      if(fs) fs.value = raw;
+    }
+  }
+
+  return raw ? fmtDate(raw) : '';
+}
+
+function reemplazarFechaSubsanacionFinalV93(html){
+  const fecha = fechaSubsanacionFinalV93();
+  let out = String(html || '');
+
+  /*
+    Cubre:
+    {{FECHA_SUBSANACION}}
+    {{FECHA_SUBSANACIÓN}}
+    {{ FECHA SUBSANACION }}
+    {{fecha_subsanacion}}
+    y también llaves escapadas en HTML.
+  */
+  const patterns = [
+    /\{\{\s*FECHA[\s_-]*SUBSANACI[ÓO]N\s*\}\}/gi,
+    /\{\{\s*Fecha[\s_-]*Subsanaci[óo]n\s*\}\}/g,
+    /\{\{\s*fecha[\s_-]*subsanaci[óo]n\s*\}\}/g,
+    /&#123;&#123;\s*FECHA[\s_-]*SUBSANACI(?:Ó|O)N\s*&#125;&#125;/gi,
+    /&lbrace;&lbrace;\s*FECHA[\s_-]*SUBSANACI(?:Ó|O)N\s*&rbrace;&rbrace;/gi
+  ];
+
+  patterns.forEach(rx => { out = out.replace(rx, fecha); });
+
+  // Refuerzo literal por si el navegador conserva variantes exactas.
+  out = out
+    .replaceAll('{{FECHA_SUBSANACION}}', fecha)
+    .replaceAll('{{FECHA_SUBSANACIÓN}}', fecha)
+    .replaceAll('{{ FECHA_SUBSANACION }}', fecha)
+    .replaceAll('{{ FECHA_SUBSANACIÓN }}', fecha)
+    .replaceAll('{{fecha_subsanacion}}', fecha)
+    .replaceAll('{{fecha_subsanación}}', fecha)
+    .replaceAll('{{Fecha_Subsanacion}}', fecha)
+    .replaceAll('{{Fecha_Subsanación}}', fecha);
+
+  return out;
+}
+
+/* Reemplazos en las funciones base. */
+const _replaceTemplate_base_V93 = typeof replaceTemplate === 'function' ? replaceTemplate : null;
+replaceTemplate = function(text){
+  const out = _replaceTemplate_base_V93 ? _replaceTemplate_base_V93(text) : String(text || '');
+  return reemplazarFechaSubsanacionFinalV93(out);
+};
+
+const _replaceTemplateHtml_base_V93 = typeof replaceTemplateHtml === 'function' ? replaceTemplateHtml : null;
+replaceTemplateHtml = function(text){
+  const raw = reemplazarFechaSubsanacionFinalV93(String(text || ''));
+  const out = _replaceTemplateHtml_base_V93 ? _replaceTemplateHtml_base_V93(raw) : esc(raw).replace(/\n/g,'<br>');
+  return reemplazarFechaSubsanacionFinalV93(out);
+};
+
+const _formatConclusionText_base_V93 = typeof formatConclusionText === 'function' ? formatConclusionText : null;
+formatConclusionText = function(text){
+  const fixed = reemplazarFechaSubsanacionFinalV93(text);
+  const out = _formatConclusionText_base_V93 ? _formatConclusionText_base_V93(fixed) : fixed;
+  return reemplazarFechaSubsanacionFinalV93(out);
+};
+
+/* Reemplazo directo en los informes, por si una versión anterior omitió replaceTemplate. */
+if(typeof renderInformeObservaciones === 'function'){
+  const _renderInformeObservaciones_base_V93 = renderInformeObservaciones;
+  renderInformeObservaciones = function(){
+    return reemplazarFechaSubsanacionFinalV93(_renderInformeObservaciones_base_V93());
+  };
+}
+
+if(typeof renderInformeDesistimientoV69 === 'function'){
+  const _renderInformeDesistimiento_base_V93 = renderInformeDesistimientoV69;
+  renderInformeDesistimientoV69 = function(){
+    return reemplazarFechaSubsanacionFinalV93(_renderInformeDesistimiento_base_V93());
+  };
+}
+
+/* Reemplazo final sobre el DOM del reporte. Este es el seguro principal. */
+const _renderReport_base_V93 = typeof renderReport === 'function' ? renderReport : null;
+renderReport = function(){
+  const html = _renderReport_base_V93 ? _renderReport_base_V93() : '';
+  const reportEl = document.getElementById('report');
+
+  if(reportEl){
+    reportEl.innerHTML = reemplazarFechaSubsanacionFinalV93(reportEl.innerHTML);
+  }
+
+  return reemplazarFechaSubsanacionFinalV93(html);
+};
+
+const _renderPreview_base_V93 = typeof renderPreview === 'function' ? renderPreview : null;
+renderPreview = function(){
+  const out = _renderPreview_base_V93 ? _renderPreview_base_V93() : undefined;
+  const reportEl = document.getElementById('report');
+  if(reportEl){
+    reportEl.innerHTML = reemplazarFechaSubsanacionFinalV93(reportEl.innerHTML);
+  }
+  return out;
+};
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    if(typeof renderReport === 'function') renderReport();
+    if(typeof renderPreview === 'function') renderPreview();
+    const reportEl = document.getElementById('report');
+    if(reportEl){
+      reportEl.innerHTML = reemplazarFechaSubsanacionFinalV93(reportEl.innerHTML);
+    }
+  },1000);
+});
+</script>
+
 </body>
 </html>
