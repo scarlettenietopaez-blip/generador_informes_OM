@@ -1843,6 +1843,49 @@ input,select,textarea{
 }
 </style>
 
+
+<style>
+/* V94 - nueva columna de resultado/detalle en Requisitos */
+.req-detail-v94{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  min-width:150px;
+}
+.req-detail-v94 input{
+  width:100%;
+  min-height:30px;
+  font-size:11px!important;
+  padding:5px 7px!important;
+}
+.req-detail-v94 label{
+  font-size:10px!important;
+  font-weight:900!important;
+  color:#0b2b4c!important;
+  margin:0!important;
+}
+.req-status-pill-v94{
+  display:inline-block;
+  font-weight:900;
+  font-size:11px;
+  padding:5px 7px;
+  border-radius:999px;
+  background:#eef4fb;
+  color:#0b2b4c;
+}
+.req-status-pill-v94.ok{background:#dcfce7;color:#14532d}
+.req-status-pill-v94.no{background:#fee2e2;color:#7f1d1d}
+.req-status-pill-v94.na{background:#fef3c7;color:#78350f}
+.report .req-report-v94 td,
+.report .req-report-v94 th{
+  vertical-align:top;
+}
+.report .req-detail-report-v94{
+  white-space:pre-line;
+  font-size:12px;
+}
+</style>
+
 </head>
 <body>
 
@@ -13973,6 +14016,242 @@ window.addEventListener('load',()=>{
       reportEl.innerHTML = reemplazarFechaSubsanacionFinalV93(reportEl.innerHTML);
     }
   },1000);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V94 SOBRE V93
+   Requisitos:
+   - Agrega columna "Resultado / detalle".
+   - En el informe imprime Cumple / No Cumple / No Aplica.
+   - Excepciones Requisitos Generales:
+     1) Formulario Nro. 13 por defecto.
+     2) IPRUS: permite llenar N° IPRUS, Fecha y N° eGOB.
+   ========================================================== */
+
+function normReqV94(v){
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function ensureReqObjV94(reqId){
+  if(!state.requisitos) state.requisitos={};
+  if(!state.requisitos[reqId]) state.requisitos[reqId]={};
+  if(!state.requisitos[reqId].detalle) state.requisitos[reqId].detalle={};
+  return state.requisitos[reqId];
+}
+
+function isReqGeneralV94(req){
+  return normReqV94(req.grupo).includes('REQUISITOS GENERALES');
+}
+
+function reqNumberV94(req){
+  const m=String(req.texto||'').match(/^\s*(\d+)\s*[\).\-]/);
+  return m ? Number(m[1]) : null;
+}
+
+function isFormulario13ReqV94(req){
+  return isReqGeneralV94(req) && reqNumberV94(req) === 1;
+}
+
+function isIprusReqV94(req){
+  const t=normReqV94(req.texto);
+  return isReqGeneralV94(req) && (reqNumberV94(req) === 2 || t.includes('INFORME PREDIAL') || t.includes('IPRUS'));
+}
+
+function reqEstadoV94(req){
+  return (state.requisitos?.[req.id]?.estado || '').trim();
+}
+
+function reqStatusClassV94(estado){
+  if(estado === 'Cumple') return 'ok';
+  if(estado === 'No Cumple') return 'no';
+  if(estado === 'No Aplica') return 'na';
+  return '';
+}
+
+function reqDefaultDetailV94(req){
+  const estado=reqEstadoV94(req);
+  if(isFormulario13ReqV94(req)) return 'Formulario Nro. 13';
+  if(isIprusReqV94(req)){
+    const d=state.requisitos?.[req.id]?.detalle || {};
+    const lines=[];
+    if(d.nroIprus) lines.push('N° IPRUS: '+d.nroIprus);
+    if(d.fechaIprus) lines.push('Fecha: '+fmtDate(d.fechaIprus));
+    if(d.egobIprus) lines.push('N° eGOB: '+d.egobIprus);
+    return lines.join('\n') || estado || '';
+  }
+  return estado || '';
+}
+
+function reqDetailInputHtmlV94(req){
+  const val=ensureReqObjV94(req.id);
+  const d=val.detalle || {};
+
+  if(isFormulario13ReqV94(req)){
+    return `<span class="req-status-pill-v94">Formulario Nro. 13</span>`;
+  }
+
+  if(isIprusReqV94(req)){
+    return `<div class="req-detail-v94">
+      <label>N° IPRUS</label>
+      <input data-req-detail="${esc(req.id)}" data-field="nroIprus" value="${esc(d.nroIprus||'')}" placeholder="N° IPRUS">
+      <label>Fecha</label>
+      <input type="date" data-req-detail="${esc(req.id)}" data-field="fechaIprus" value="${esc(d.fechaIprus||'')}">
+      <label>N° eGOB</label>
+      <input data-req-detail="${esc(req.id)}" data-field="egobIprus" value="${esc(d.egobIprus||'')}" placeholder="N° eGOB">
+    </div>`;
+  }
+
+  const estado=val.estado || '';
+  return `<span class="req-status-pill-v94 ${reqStatusClassV94(estado)}">${esc(estado || 'Sin seleccionar')}</span>`;
+}
+
+function bindReqDetailInputsV94(){
+  document.querySelectorAll('[data-req-detail]').forEach(input=>{
+    if(input.dataset.boundV94==='1') return;
+    input.dataset.boundV94='1';
+    input.addEventListener('input',()=>{
+      const id=input.dataset.reqDetail;
+      const field=input.dataset.field;
+      const obj=ensureReqObjV94(id);
+      obj.detalle[field]=input.value;
+      renderReport();
+      renderPreview();
+    });
+  });
+}
+
+/* Sobrescribe el render de Requisitos para agregar columna Resultado / detalle. */
+renderRequisitosForm = function(rebuild=true){
+  if(typeof ensureV55State === 'function') ensureV55State();
+
+  const box=document.getElementById('requisitosForm');
+  if(!box) return;
+
+  const reqs=DATA.requisitos.filter(shouldShowReq);
+  const cond=(numVal(infoValue('ALTURA EDIFICACIÓN'))>2 || numVal(infoValue('Área Bruta'))>400);
+
+  let html=`<div class="field"><label class="check-line"><input type="checkbox" id="toggleComplementarios" ${state.mostrarComplementarios?'checked':''}> Mostrar requisitos complementarios cuando apliquen</label></div>`;
+
+  const groups=[...new Set(reqs.map(r=>r.grupo))];
+
+  groups.forEach(grupo=>{
+    const rows=reqs.filter(r=>r.grupo===grupo);
+    const forceNA=typeof isReqMasDe2V55==='function' ? isReqMasDe2V55(grupo) : (upper(grupo||'').includes('MÁS DE 2') || upper(grupo||'').includes('MAS DE 2') || upper(grupo||'').includes('400'));
+    const showNA=forceNA || rows.some(r=>(r.opciones||[]).includes('No Aplica'));
+
+    html+=`<div class="section-title">${esc(grupo)}</div>
+    <table class="req-compact req-compact-v55 req-compact-v94">
+      <thead>
+        <tr>
+          <th style="width:34%">Requisito</th>
+          <th style="width:8%">Cumple</th>
+          <th style="width:9%">No cumple</th>
+          ${showNA?'<th style="width:8%">No aplica</th>':''}
+          <th style="width:18%">Resultado / detalle</th>
+          <th>Observación para el usuario</th>
+          <th class="adjunto">Adjunto</th>
+        </tr>
+      </thead><tbody>`;
+
+    rows.forEach(req=>{
+      const val=state.requisitos[req.id]||{estado:'', observacion:'', detalle:{}};
+      const opts=(req.opciones&&req.opciones.length?req.opciones:['Cumple','No Cumple']);
+      const hasNA=forceNA || opts.includes('No Aplica');
+
+      html+=`<tr>
+        <td>${esc(req.texto)}</td>
+        <td class="center"><input type="checkbox" data-req-id="${esc(req.id)}" value="Cumple" ${val.estado==='Cumple'?'checked':''} onchange="setReqEstado('${esc(req.id)}','Cumple',this.checked)"></td>
+        <td class="center"><input type="checkbox" data-req-id="${esc(req.id)}" value="No Cumple" ${val.estado==='No Cumple'?'checked':''} onchange="setReqEstado('${esc(req.id)}','No Cumple',this.checked)"></td>
+        ${showNA?`<td class="center">${hasNA?`<input type="checkbox" data-req-id="${esc(req.id)}" value="No Aplica" ${val.estado==='No Aplica'?'checked':''} onchange="setReqEstado('${esc(req.id)}','No Aplica',this.checked)">`:''}</td>`:''}
+        <td>${reqDetailInputHtmlV94(req)}</td>
+        <td><textarea id="req_obs_${req.id}" placeholder="Solo si no cumple" style="display:${val.estado==='No Cumple'?'block':'none'}">${esc(val.observacion||'')}</textarea></td>
+        <td>${typeof reqAdjuntoCellV55 === 'function' ? reqAdjuntoCellV55(req.id) : ''}</td>
+      </tr>`;
+    });
+
+    html+='</tbody></table>';
+  });
+
+  html+=`<div class="note-box">Condición automática: ALTURA EDIFICACIÓN = ${esc(infoValue('ALTURA EDIFICACIÓN')||'0')} PISOS / ÁREA BRUTA = ${esc(infoValue('Área Bruta')||'0')} M². ${cond?'SE ACTIVAN':'NO SE ACTIVAN'} LOS REQUISITOS DE MÁS DE 2 PISOS O 400 M².</div>`;
+
+  box.innerHTML=html;
+
+  const tog=document.getElementById('toggleComplementarios');
+  if(tog) tog.addEventListener('change',e=>{
+    state.mostrarComplementarios=e.target.checked;
+    renderRequisitosForm();
+    renderObsSeleccionadas();
+    renderReport();
+    renderPreview();
+  });
+
+  reqs.forEach(req=>{
+    const obs=document.getElementById(`req_obs_${req.id}`);
+    if(obs) obs.addEventListener('input',()=>{
+      if(shouldForceUpper()) normalizeUpperInput(obs);
+      if(!state.requisitos[req.id]) state.requisitos[req.id]={};
+      state.requisitos[req.id].observacion=obs.value;
+      renderObsSeleccionadas();
+      renderReport();
+      renderPreview();
+    });
+  });
+
+  bindReqDetailInputsV94();
+};
+
+/* Refuerzo del cambio de estado para que la columna Resultado se actualice al marcar checks. */
+const _setReqEstado_base_V94 = typeof setReqEstado === 'function' ? setReqEstado : null;
+setReqEstado = function(id,value,checked){
+  if(!state.requisitos[id]) state.requisitos[id]={};
+  if(!state.requisitos[id].detalle) state.requisitos[id].detalle={};
+
+  if(_setReqEstado_base_V94){
+    _setReqEstado_base_V94(id,value,checked);
+  }else{
+    state.requisitos[id].estado=checked ? value : '';
+  }
+
+  renderRequisitosForm(false);
+  renderObsSeleccionadas();
+  renderReport();
+  renderPreview();
+};
+
+/* Tabla de requisitos del informe con nueva columna Resultado / detalle. */
+function reqTable(reqs, mode){
+  if(!reqs.length) return '<p>No se registran requisitos para esta sección.</p>';
+
+  return `<table class="req-report-v94"><thead><tr>
+    <th>Nro.</th>
+    <th>Requisito</th>
+    <th>Resultado / detalle</th>
+    ${mode==='obs'?'<th>Corrección requerida</th>':''}
+  </tr></thead><tbody>${reqs.map((r,i)=>{
+    const v=state.requisitos[r.id]||{};
+    const detalle=reqDefaultDetailV94(r);
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${esc(stripReqNumber(r.texto))}</td>
+      <td class="req-detail-report-v94">${esc(detalle)}</td>
+      ${mode==='obs'?`<td>${esc(v.observacion||r.correccionDefault||'')}</td>`:''}
+    </tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    if(typeof renderRequisitosForm === 'function') renderRequisitosForm(false);
+    if(typeof renderReport === 'function') renderReport();
+    if(typeof renderPreview === 'function') renderPreview();
+  },900);
 });
 </script>
 
