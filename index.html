@@ -2109,6 +2109,47 @@ input,select,textarea{
 }
 </style>
 
+
+<style>
+/* V102 - punto medio para tabla Información General */
+.report .apr-info-table,
+.report .apr-info-table *,
+.report table.apr-info-table,
+.report table.apr-info-table *,
+.report .report-aprobatorio .apr-info-table,
+.report .report-aprobatorio .apr-info-table *{
+  font-size:8.5pt!important;
+  line-height:1.12!important;
+}
+.report .apr-info-table td,
+.report .apr-info-table th{
+  padding:2px 4px!important;
+  min-height:0!important;
+  height:auto!important;
+}
+.report .apr-info-table .apr-info-label,
+.report .apr-info-table .apr-info-value,
+.report .apr-info-table .apr-info-section{
+  font-size:8.5pt!important;
+  line-height:1.12!important;
+  padding:2px 4px!important;
+}
+.report .apr-info-table .apr-info-label{
+  font-weight:800!important;
+}
+@media print{
+  .report .apr-info-table,
+  .report .apr-info-table *{
+    font-size:8.5pt!important;
+    line-height:1.12!important;
+  }
+  .report .apr-info-table td,
+  .report .apr-info-table th{
+    padding:2px 4px!important;
+  }
+}
+</style>
+
 </head>
 <body>
 
@@ -15457,6 +15498,95 @@ window.addEventListener('load',()=>{
     if(typeof renderReport==='function') renderReport();
     if(typeof renderPreview==='function') renderPreview();
   },900);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V102 SOBRE V101
+   Tabla Información General:
+   Ajuste de punto medio entre v98/v99 y v100.
+   Nuevo tamaño: 8.5 pt con padding 2px 4px.
+   ========================================================== */
+
+function compactarTablaInfoGeneralV102(root=document){
+  try{
+    const tables = root.querySelectorAll ? root.querySelectorAll('.apr-info-table') : [];
+    tables.forEach(tbl=>{
+      tbl.style.setProperty('font-size','8.5pt','important');
+      tbl.style.setProperty('line-height','1.12','important');
+      tbl.style.setProperty('border-collapse','collapse','important');
+      tbl.style.setProperty('table-layout','fixed','important');
+
+      tbl.querySelectorAll('td, th, .apr-info-label, .apr-info-value, .apr-info-section').forEach(cell=>{
+        cell.style.setProperty('font-size','8.5pt','important');
+        cell.style.setProperty('line-height','1.12','important');
+        cell.style.setProperty('padding','2px 4px','important');
+        cell.style.setProperty('height','auto','important');
+        cell.style.setProperty('min-height','0','important');
+      });
+
+      tbl.querySelectorAll('.apr-info-label').forEach(cell=>{
+        cell.style.setProperty('font-weight','800','important');
+      });
+    });
+  }catch(e){
+    console.warn('V102 compactar tabla Información General:', e);
+  }
+}
+
+/* Reemplaza los inline style de v100 para que no sigan en 7 pt. */
+const _aprobatorioInfoTableFromTemplate_base_V102 = typeof aprobatorioInfoTableFromTemplate === 'function' ? aprobatorioInfoTableFromTemplate : null;
+if(_aprobatorioInfoTableFromTemplate_base_V102){
+  aprobatorioInfoTableFromTemplate = function(text){
+    let out = _aprobatorioInfoTableFromTemplate_base_V102(text);
+
+    out = String(out || '')
+      .replaceAll('font-size:7pt!important;', 'font-size:8.5pt!important;')
+      .replaceAll('line-height:1.02!important;', 'line-height:1.12!important;')
+      .replaceAll('padding:1px 3px!important;', 'padding:2px 4px!important;');
+
+    if(!out.includes('font-size:8.5pt!important')){
+      out = out.replace(
+        '<table class="apr-info-table">',
+        '<table class="apr-info-table" style="font-size:8.5pt!important;line-height:1.12!important;border-collapse:collapse!important;table-layout:fixed!important;">'
+      );
+    }
+
+    return out;
+  };
+}
+
+const _renderReport_base_V102 = typeof renderReport === 'function' ? renderReport : null;
+if(_renderReport_base_V102){
+  renderReport = function(){
+    const out = _renderReport_base_V102();
+    compactarTablaInfoGeneralV102(document);
+    return out;
+  };
+}
+
+const _renderPreview_base_V102 = typeof renderPreview === 'function' ? renderPreview : null;
+if(_renderPreview_base_V102){
+  renderPreview = function(){
+    const out = _renderPreview_base_V102();
+    compactarTablaInfoGeneralV102(document);
+    return out;
+  };
+}
+
+const _imprimirInforme_base_V102 = typeof imprimirInforme === 'function' ? imprimirInforme : null;
+if(_imprimirInforme_base_V102){
+  imprimirInforme = function(){
+    compactarTablaInfoGeneralV102(document);
+    return _imprimirInforme_base_V102();
+  };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>compactarTablaInfoGeneralV102(document),800);
+  setTimeout(()=>compactarTablaInfoGeneralV102(document),1800);
 });
 </script>
 
