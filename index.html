@@ -16042,5 +16042,201 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V106 SOBRE V105
+   Conclusión Técnica:
+   Para AMPLIATORIO / MODIFICATORIO se permite quitar las filas
+   por defecto que NO calculan valores automáticamente.
+   Se mantiene bloqueado Quitar únicamente en:
+   - Área Bruta total de construcción
+   - COS PB
+   - COS Total
+   ========================================================== */
+
+function ensureDeletedConclusionKeysV106(){
+  if(!state.aprobatorio) state.aprobatorio={};
+  if(!Array.isArray(state.aprobatorio.deletedConclusionKeysV106)){
+    state.aprobatorio.deletedConclusionKeysV106=[];
+  }
+  return state.aprobatorio.deletedConclusionKeysV106;
+}
+
+function conclusionDeleteKeyV106(i,row){
+  const r = row || (typeof rowConclV87 === 'function'
+    ? rowConclV87(state.aprobatorio?.conclusion?.[i] || {})
+    : (state.aprobatorio?.conclusion?.[i] || {}));
+
+  const role = typeof conclusionRoleV104 === 'function' ? conclusionRoleV104(i,r) : '';
+
+  /*
+    Para las filas calculadas usamos rol, pero no se eliminan.
+    Para las demás usamos descripción. Así no se eliminan varias filas
+    de área bruta por tener el mismo rol genérico "bruta".
+  */
+  const desc = r?.descripcion || '';
+  const key = typeof normDescConclusionV81 === 'function'
+    ? normDescConclusionV81(desc)
+    : (typeof normTextConclusionV104 === 'function' ? normTextConclusionV104(desc) : String(desc||'').trim().toUpperCase());
+
+  if(role && ['brutaTotal','cosPB','cosTotal'].includes(role)){
+    return 'role:' + role;
+  }
+
+  return key ? 'desc:' + key : 'idx:' + i;
+}
+
+function isAutoCalculatedConclusionV106(i,row){
+  const r = row || (typeof rowConclV87 === 'function'
+    ? rowConclV87(state.aprobatorio?.conclusion?.[i] || {})
+    : (state.aprobatorio?.conclusion?.[i] || {}));
+
+  if(typeof isCalculatedConclusionV104 === 'function') return isCalculatedConclusionV104(i,r);
+
+  const d = typeof normTextConclusionV104 === 'function'
+    ? normTextConclusionV104(r.descripcion || '')
+    : String(r.descripcion||'').toUpperCase();
+
+  return d.includes('AREA BRUTA TOTAL') || d.includes('COS PB') || d.includes('COS TOTAL');
+}
+
+function filterDeletedConclusionRowsV106(){
+  if(!(typeof permiteDescripcionCalculadaV104 === 'function' && permiteDescripcionCalculadaV104())) return;
+
+  const deleted = new Set(ensureDeletedConclusionKeysV106());
+  if(!deleted.size || !Array.isArray(state.aprobatorio?.conclusion)) return;
+
+  state.aprobatorio.conclusion = state.aprobatorio.conclusion.filter((raw,i)=>{
+    const r = typeof rowConclV87 === 'function' ? rowConclV87(raw || {}) : (raw || {});
+    const key = conclusionDeleteKeyV106(i,r);
+    return !deleted.has(key);
+  });
+}
+
+function renderActionsV106(row,i,allowDeleteDefault){
+  const computed = isAutoCalculatedConclusionV106(i,row);
+  const add = (typeof canLevelConclV87 === 'function' && canLevelConclV87(i))
+    ? `<button type="button" class="mini-plus" title="Agregar fila antes de Área Bruta total de construcción" onclick="addConclusionRowAfter(${i})">+</button>`
+    : '';
+
+  let quit='';
+  if(allowDeleteDefault){
+    quit = computed
+      ? ''
+      : `<button type="button" class="danger mini-btn" onclick="delConclusion(${i})">Quitar</button>`;
+  }else if(typeof renderActionsV87 === 'function'){
+    return renderActionsV87(row,i);
+  }
+
+  return `<td class="row-actions"><div class="actions-v73">${add}${quit || (!add?'<span class="no-row-action-v73">—</span>':'')}</div></td>`;
+}
+
+/* Sobrescribe Quitar solo para ampliatorio/modificatorio. */
+const _delConclusion_base_V106 = typeof delConclusion === 'function' ? delConclusion : null;
+delConclusion = function(i){
+  const allowMode = typeof permiteDescripcionCalculadaV104 === 'function' && permiteDescripcionCalculadaV104();
+
+  if(!allowMode){
+    if(_delConclusion_base_V106) return _delConclusion_base_V106(i);
+    state.aprobatorio.conclusion.splice(i,1);
+    renderConclusionTabla(); renderReport(); renderPreview();
+    return;
+  }
+
+  const row = typeof rowConclV87 === 'function'
+    ? rowConclV87(state.aprobatorio?.conclusion?.[i] || {})
+    : (state.aprobatorio?.conclusion?.[i] || {});
+
+  if(isAutoCalculatedConclusionV106(i,row)){
+    if(typeof msg === 'function'){
+      msg('Esta fila calcula valores automáticamente y no se puede quitar.');
+    }
+    return;
+  }
+
+  const key = conclusionDeleteKeyV106(i,row);
+  const deleted = ensureDeletedConclusionKeysV106();
+  if(key && !deleted.includes(key)) deleted.push(key);
+
+  state.aprobatorio.conclusion.splice(i,1);
+
+  if(typeof recalcAreasCOSV36 === 'function') recalcAreasCOSV36();
+  if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
+  if(typeof renderReport === 'function') renderReport();
+  if(typeof renderPreview === 'function') renderPreview();
+};
+
+/* Render de tabla actualizado: mantiene v104/v105, pero en ampliatorio/modificatorio
+   muestra Quitar en todas las filas no calculadas, incluso si vienen por defecto. */
+renderConclusionTabla = function(){
+  if(window.__CONCLUSION_EDITING_V87__) return;
+
+  if(typeof buildRowsConclV87 === 'function') buildRowsConclV87(false);
+
+  filterDeletedConclusionRowsV106();
+
+  if(typeof recalcAreasCOSV36 === 'function') recalcAreasCOSV36();
+
+  filterDeletedConclusionRowsV106();
+
+  const cont=document.getElementById('conclusionTabla');
+  if(!cont) return;
+
+  const arr=state.aprobatorio?.conclusion || [];
+  const allowDesc=typeof permiteDescripcionCalculadaV104 === 'function' && permiteDescripcionCalculadaV104();
+
+  cont.innerHTML=`<div class="conclusion-help-v73">Use el botón + únicamente en el bloque de áreas brutas. Las filas nuevas se insertan antes de Área Bruta total de construcción y pueden usar niveles.</div>
+    <table class="editable-conclusion ${allowDesc?'descripcion-editable-v104':''}">
+      <thead><tr><th>Descripción</th><th style="width:18%">Niveles</th><th style="width:18%">Cantidad</th><th style="width:14%">Unidad</th><th style="width:16%">Acciones</th></tr></thead>
+      <tbody>${arr.map((raw,i)=>{
+        const r=typeof rowConclV87 === 'function' ? rowConclV87(raw || {}) : (raw || {});
+        const computed=isAutoCalculatedConclusionV106(i,r);
+        const descReadonly=computed && !allowDesc;
+        const qtyReadonly=computed;
+        const cls=[computed?'calc-readonly-v37':'',typeof canLevelConclV87==='function' && canLevelConclV87(i)?'bruta-editable-v73':''].filter(Boolean).join(' ');
+        const levelsHtml=typeof renderLevelsV87 === 'function'
+          ? renderLevelsV87(r,i)
+          : `<td class="levels-edit"></td>`;
+        const actionsHtml=renderActionsV106(r,i,allowDesc);
+
+        return `<tr class="${cls}">
+          <td><textarea class="concl-edit-v87" data-i="${i}" data-field="descripcion" id="conc_desc_${i}" placeholder="Descripción" ${descReadonly?'readonly':''}>${escapeAttrV87(r.descripcion)}</textarea></td>
+          ${levelsHtml}
+          <td><input class="concl-edit-v87" data-i="${i}" data-field="cantidad" id="conc_qty_${i}" value="${escapeAttrV87(r.cantidad)}" placeholder="Cantidad" ${qtyReadonly?'readonly':''}></td>
+          <td><input class="concl-edit-v87" data-i="${i}" data-field="unidad" id="conc_unit_${i}" value="${escapeAttrV87(r.unidad)}" placeholder="Unidad"></td>
+          ${actionsHtml}
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+    <div class="calc-note ${allowDesc?'descripcion-editable-note-v104':''}">
+      ${allowDesc
+        ? 'Modo ampliatorio/modificatorio: puede quitar filas no calculadas. Las filas con valores automáticos permanecen protegidas.'
+        : 'Área Bruta total = suma de filas con “Bruta”. COS PB = Área útil planta baja / Área del predio × 100. COS Total = Área útil total / Área del predio × 100.'}
+    </div>`;
+
+  if(typeof bindConclusionInputsV87 === 'function') bindConclusionInputsV87();
+};
+
+/* Refuerzo para el informe: si una fila fue quitada en ampliatorio/modificatorio,
+   tampoco debe reaparecer en la vista del informe. */
+if(typeof conclusionRowsForReportV81 === 'function'){
+  const _conclusionRowsForReportV81_base_V106 = conclusionRowsForReportV81;
+  conclusionRowsForReportV81 = function(){
+    filterDeletedConclusionRowsV106();
+    return _conclusionRowsForReportV81_base_V106();
+  };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    filterDeletedConclusionRowsV106();
+    if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
+    if(typeof renderReport === 'function') renderReport();
+    if(typeof renderPreview === 'function') renderPreview();
+  },900);
+});
+</script>
+
 </body>
 </html>
