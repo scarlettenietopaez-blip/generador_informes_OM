@@ -1904,6 +1904,110 @@ input,select,textarea{
 }
 </style>
 
+
+<style>
+/* V96 - tabla visible de errores y títulos más pequeños en Información General */
+#tab-info #infoForm .section-title{
+  font-size:10pt!important;
+  line-height:1.15!important;
+  padding:8px 10px!important;
+  margin:10px 0 8px!important;
+}
+.validation-modal-v96{
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  background:rgba(15,23,42,.42);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+}
+.validation-modal-v96.show{
+  display:flex;
+}
+.validation-card-v96{
+  background:#fff;
+  width:min(760px,96vw);
+  max-height:86vh;
+  overflow:auto;
+  border-radius:16px;
+  box-shadow:0 20px 60px rgba(15,23,42,.30);
+  border:1px solid #dbe7f3;
+}
+.validation-head-v96{
+  background:#0b2b4c;
+  color:#fff;
+  padding:14px 18px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+}
+.validation-head-v96 h3{
+  margin:0;
+  font-size:15px;
+  line-height:1.2;
+}
+.validation-close-v96{
+  border:0;
+  background:#e8eef6;
+  color:#0b2b4c;
+  border-radius:8px;
+  padding:6px 10px;
+  font-weight:900;
+  cursor:pointer;
+}
+.validation-body-v96{
+  padding:16px 18px 18px;
+  color:#0f172a;
+}
+.validation-body-v96 p{
+  margin:0 0 10px;
+  font-size:13px;
+}
+.validation-table-v96{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:8px;
+  font-size:12px;
+}
+.validation-table-v96 th,
+.validation-table-v96 td{
+  border:1px solid #cbd5e1;
+  padding:7px 8px;
+  vertical-align:top;
+  text-align:left;
+}
+.validation-table-v96 th{
+  background:#eef4fb;
+  color:#0b2b4c;
+  font-weight:900;
+}
+.validation-actions-v96{
+  display:flex;
+  gap:8px;
+  justify-content:flex-end;
+  margin-top:14px;
+  flex-wrap:wrap;
+}
+.validation-actions-v96 button{
+  border:0;
+  border-radius:9px;
+  padding:8px 12px;
+  font-weight:900;
+  cursor:pointer;
+}
+.validation-go-v96{
+  background:#176b4d;
+  color:#fff;
+}
+.validation-muted-v96{
+  background:#e8eef6;
+  color:#0b2b4c;
+}
+</style>
+
 </head>
 <body>
 
@@ -14509,6 +14613,161 @@ window.addEventListener('load',()=>{
   setTimeout(()=>{
     try{ validateAllVisibleInfo(false); }catch(e){}
   },900);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V96 SOBRE V95
+   - Muestra una tabla visible de campos pendientes.
+   - Ya no envía automáticamente al campo sin mostrar la tabla.
+   - Reduce títulos de secciones en Información General a 10 pt.
+   ========================================================== */
+
+window.__lastValidationErrorsV96__ = [];
+
+function parseValidationErrorV96(text){
+  const raw=String(text||'').trim();
+  let campo='General';
+  let detalle=raw;
+
+  const m=raw.match(/^([^:]{2,80}):\s*(.+)$/);
+  if(m){
+    campo=m[1].trim();
+    detalle=m[2].trim();
+  }else{
+    const m2=raw.match(/^Falta el campo:\s*(.+)\.?$/i);
+    if(m2){
+      campo=m2[1].replace(/\.$/,'').trim();
+      detalle='Campo obligatorio.';
+    }
+  }
+
+  return {campo, detalle, raw};
+}
+
+function ensureValidationModalV96(){
+  let modal=document.getElementById('validationModalV96');
+  if(modal) return modal;
+
+  modal=document.createElement('div');
+  modal.id='validationModalV96';
+  modal.className='validation-modal-v96';
+  modal.innerHTML=`
+    <div class="validation-card-v96" role="dialog" aria-modal="true" aria-labelledby="validationTitleV96">
+      <div class="validation-head-v96">
+        <h3 id="validationTitleV96">Campos pendientes</h3>
+        <button type="button" class="validation-close-v96" onclick="closeValidationModalV96()">Cerrar</button>
+      </div>
+      <div class="validation-body-v96">
+        <p id="validationIntroV96">Revise los siguientes campos antes de continuar.</p>
+        <div id="validationTableWrapV96"></div>
+        <div class="validation-actions-v96">
+          <button type="button" class="validation-muted-v96" onclick="closeValidationModalV96()">Cerrar</button>
+          <button type="button" class="validation-go-v96" onclick="goFirstInvalidFieldV96()">Ir al primer campo</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  modal.addEventListener('click',ev=>{
+    if(ev.target===modal) closeValidationModalV96();
+  });
+
+  return modal;
+}
+
+function closeValidationModalV96(){
+  const modal=document.getElementById('validationModalV96');
+  if(modal) modal.classList.remove('show');
+}
+
+function showValidationTableV96(title, errors){
+  const modal=ensureValidationModalV96();
+  const intro=document.getElementById('validationIntroV96');
+  const titleEl=document.getElementById('validationTitleV96');
+  const wrap=document.getElementById('validationTableWrapV96');
+
+  const clean=[...new Set((errors||[]).map(e=>String(e||'').trim()).filter(Boolean))];
+  window.__lastValidationErrorsV96__=clean;
+
+  if(titleEl) titleEl.textContent=title || 'Campos pendientes';
+  if(intro) intro.textContent='No se puede continuar porque falta completar o corregir la siguiente información:';
+
+  const rows=clean.map((e,i)=>{
+    const p=parseValidationErrorV96(e);
+    return `<tr>
+      <td style="width:54px">${i+1}</td>
+      <td>${esc(p.campo)}</td>
+      <td>${esc(p.detalle)}</td>
+    </tr>`;
+  }).join('');
+
+  if(wrap){
+    wrap.innerHTML=`<table class="validation-table-v96">
+      <thead><tr><th>Nro.</th><th>Campo</th><th>Detalle</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="3">No se detectaron detalles.</td></tr>'}</tbody>
+    </table>`;
+  }
+
+  modal.classList.add('show');
+}
+
+function goFirstInvalidFieldV96(){
+  closeValidationModalV96();
+  if(typeof focusFirstInvalidFieldV95 === 'function'){
+    focusFirstInvalidFieldV95();
+    return;
+  }
+  showTab('tab-info');
+}
+
+/* Reemplaza el error detallado para que sea tabla visible, no solo mensaje. */
+showDetailedErrorV70 = function(title, errors){
+  const clean=[...new Set((errors||[]).map(e=>String(e||'').trim()).filter(Boolean))];
+  showValidationTableV96(title || 'Campos pendientes', clean);
+  console.warn(title, clean);
+};
+
+/* Evita salto automático inmediato; primero muestra tabla. */
+validateForPrint = function(){
+  const errors=validationErrorsV70('generar el PDF');
+  if(errors.length){
+    showDetailedErrorV70('No se puede generar el PDF todavía.', errors);
+    return false;
+  }
+  return true;
+};
+
+/* Copiar también muestra tabla visible. */
+if(typeof copiarInformeActualV70 === 'function'){
+  const _copiarInformeActual_base_V96 = copiarInformeActualV70;
+  copiarInformeActualV70 = async function(){
+    collectTop();
+
+    if(!isCopyEnabledReportV70()){
+      showDetailedErrorV70('No se puede copiar este informe.', ['El botón Copiar está habilitado únicamente para Informe Técnico Aprobatorio e Informe de Desistimiento.']);
+      return;
+    }
+
+    const errors=validationErrorsV70('copiar el informe');
+    if(errors.length){
+      showDetailedErrorV70('No se pudo copiar el informe.', errors);
+      return;
+    }
+
+    return _copiarInformeActual_base_V96();
+  };
+
+  copiarInformeAprobatorio = function(){
+    return copiarInformeActualV70();
+  };
+}
+
+/* Si hay funciones antiguas que llamen a focus automáticamente, este botón mantiene control manual. */
+window.addEventListener('keydown',ev=>{
+  if(ev.key==='Escape') closeValidationModalV96();
 });
 </script>
 
