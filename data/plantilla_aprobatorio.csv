@@ -1,5 +1,5 @@
 ﻿ID_Bloque;Orden;Sección;Título;Texto_Base;Tipo_Bloque;Mostrar;Observación_Interna
-ENC_002;1;Subtítulo;Informe;INFORME TÉCNICO APROBATORIO DE OBRA MAYOR ;Fijo;Sí;Título principal del Informe Técnico Aprobatorio.
+ENC_002;1;Subtítulo;Informe;INFORME TÉCNICO APROBATORIO DE OBRA MAYOR ;Fijo;No;Título principal del Informe Técnico Aprobatorio.
 INF_001;2;INFORMACIÓN;INFORMACIÓN GENERAL;"TRÁMITE EGOB NRO.: 
 NOMBRE DEL PROPIETARIO:   |  CI/RUC:
 PROYECTO DEFINITIVO:
