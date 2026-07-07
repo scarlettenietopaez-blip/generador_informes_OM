@@ -2008,6 +2008,37 @@ input,select,textarea{
 }
 </style>
 
+
+<style>
+/* V98 - texto de tabla Información General en 10 pt */
+/* Vista del informe aprobatorio */
+.report .apr-info-table,
+.report .apr-info-table td,
+.report .apr-info-table th,
+.report .apr-info-table .apr-info-label,
+.report .apr-info-table .apr-info-value,
+.report .apr-info-table .apr-info-section{
+  font-size:10pt!important;
+  line-height:1.22!important;
+}
+.report .apr-info-table td,
+.report .apr-info-table th{
+  padding:4px 6px!important;
+}
+
+/* Tabla de información general en informes de observaciones/desistimiento */
+.report table.info-general-v98,
+.report table.info-general-v98 td,
+.report table.info-general-v98 th{
+  font-size:10pt!important;
+  line-height:1.22!important;
+}
+.report table.info-general-v98 td,
+.report table.info-general-v98 th{
+  padding:4px 6px!important;
+}
+</style>
+
 </head>
 <body>
 
@@ -14959,6 +14990,31 @@ validationErrorsV70 = function(context='generar el PDF'){
 window.addEventListener('load',()=>{
   setTimeout(()=>syncParroquiaToInfoStateV97(),900);
   setTimeout(()=>syncParroquiaToInfoStateV97(),1800);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V98 SOBRE V97
+   Tamaño de texto:
+   - Tabla de Información General del Informe Aprobatorio en 10 pt.
+   - Tabla general de antecedentes/observaciones/desistimiento también en 10 pt.
+   ========================================================== */
+
+if(typeof generalTable === 'function'){
+  const _generalTable_base_V98 = generalTable;
+  generalTable = function(){
+    const out = _generalTable_base_V98();
+    return String(out||'').replace('<table>', '<table class="info-general-v98">');
+  };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    if(typeof renderReport === 'function') renderReport();
+    if(typeof renderPreview === 'function') renderPreview();
+  },900);
 });
 </script>
 
