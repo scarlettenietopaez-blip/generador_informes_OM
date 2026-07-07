@@ -2068,6 +2068,47 @@ input,select,textarea{
 }
 </style>
 
+
+<style>
+/* V100 - tabla Información General realmente compacta */
+.report .apr-info-table,
+.report .apr-info-table *,
+.report table.apr-info-table,
+.report table.apr-info-table *,
+.report .report-aprobatorio .apr-info-table,
+.report .report-aprobatorio .apr-info-table *{
+  font-size:7pt!important;
+  line-height:1.02!important;
+}
+.report .apr-info-table td,
+.report .apr-info-table th{
+  padding:1px 3px!important;
+  min-height:0!important;
+  height:auto!important;
+}
+.report .apr-info-table .apr-info-label,
+.report .apr-info-table .apr-info-value,
+.report .apr-info-table .apr-info-section{
+  font-size:7pt!important;
+  line-height:1.02!important;
+  padding:1px 3px!important;
+}
+.report .apr-info-table .apr-info-label{
+  font-weight:800!important;
+}
+@media print{
+  .report .apr-info-table,
+  .report .apr-info-table *{
+    font-size:7pt!important;
+    line-height:1.02!important;
+  }
+  .report .apr-info-table td,
+  .report .apr-info-table th{
+    padding:1px 3px!important;
+  }
+}
+</style>
+
 </head>
 <body>
 
@@ -15234,6 +15275,188 @@ if(typeof setParroquiaV43 === 'function'){
 window.addEventListener('load',()=>{
   setTimeout(()=>syncParroquiaV99(),700);
   setTimeout(()=>syncParroquiaV99(),1500);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V100 SOBRE V99
+   Tabla Información General compacta:
+   Se aplican estilos inline porque algunas reglas antiguas/print
+   seguían dejando la tabla grande aunque existiera CSS.
+   ========================================================== */
+
+function compactarTablaInfoGeneralV100(root=document){
+  try{
+    const tables = root.querySelectorAll ? root.querySelectorAll('.apr-info-table') : [];
+    tables.forEach(tbl=>{
+      tbl.style.setProperty('font-size','7pt','important');
+      tbl.style.setProperty('line-height','1.02','important');
+      tbl.style.setProperty('border-collapse','collapse','important');
+      tbl.style.setProperty('table-layout','fixed','important');
+
+      tbl.querySelectorAll('td, th, .apr-info-label, .apr-info-value, .apr-info-section').forEach(cell=>{
+        cell.style.setProperty('font-size','7pt','important');
+        cell.style.setProperty('line-height','1.02','important');
+        cell.style.setProperty('padding','1px 3px','important');
+        cell.style.setProperty('height','auto','important');
+        cell.style.setProperty('min-height','0','important');
+      });
+
+      tbl.querySelectorAll('.apr-info-label').forEach(cell=>{
+        cell.style.setProperty('font-weight','800','important');
+      });
+    });
+  }catch(e){
+    console.warn('V100 compactar tabla Información General:', e);
+  }
+}
+
+/* También modifica el HTML generado, para que al copiar/imprimir ya salga con inline style. */
+const _aprobatorioInfoTableFromTemplate_base_V100 = typeof aprobatorioInfoTableFromTemplate === 'function' ? aprobatorioInfoTableFromTemplate : null;
+if(_aprobatorioInfoTableFromTemplate_base_V100){
+  aprobatorioInfoTableFromTemplate = function(text){
+    let out = _aprobatorioInfoTableFromTemplate_base_V100(text);
+    out = String(out || '').replace(
+      '<table class="apr-info-table">',
+      '<table class="apr-info-table" style="font-size:7pt!important;line-height:1.02!important;border-collapse:collapse!important;table-layout:fixed!important;">'
+    );
+
+    out = out
+      .replaceAll('<td class="apr-info-label"', '<td class="apr-info-label" style="font-size:7pt!important;line-height:1.02!important;padding:1px 3px!important;font-weight:800!important;"')
+      .replaceAll('<td class="apr-info-value"', '<td class="apr-info-value" style="font-size:7pt!important;line-height:1.02!important;padding:1px 3px!important;"')
+      .replaceAll('<td class="apr-info-section"', '<td class="apr-info-section" style="font-size:7pt!important;line-height:1.02!important;padding:1px 3px!important;"');
+
+    return out;
+  };
+}
+
+/* Refuerza después de renderizar la vista. */
+const _renderReport_base_V100 = typeof renderReport === 'function' ? renderReport : null;
+if(_renderReport_base_V100){
+  renderReport = function(){
+    const out = _renderReport_base_V100();
+    compactarTablaInfoGeneralV100(document);
+    return out;
+  };
+}
+
+const _renderPreview_base_V100 = typeof renderPreview === 'function' ? renderPreview : null;
+if(_renderPreview_base_V100){
+  renderPreview = function(){
+    const out = _renderPreview_base_V100();
+    compactarTablaInfoGeneralV100(document);
+    return out;
+  };
+}
+
+/* Refuerza antes de imprimir/PDF. */
+const _imprimirInforme_base_V100 = typeof imprimirInforme === 'function' ? imprimirInforme : null;
+if(_imprimirInforme_base_V100){
+  imprimirInforme = function(){
+    compactarTablaInfoGeneralV100(document);
+    return _imprimirInforme_base_V100();
+  };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>compactarTablaInfoGeneralV100(document),800);
+  setTimeout(()=>compactarTablaInfoGeneralV100(document),1800);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V101 SOBRE V100
+   Plantilla Aprobatorio:
+   - Respeta la columna Mostrar del bloque ENC_002.
+   - Si ENC_002 tiene Mostrar = No, no se imprime el título/subtítulo.
+   ========================================================== */
+
+function normalizarMostrarV101(v){
+  return String(v ?? '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .trim()
+    .toLowerCase();
+}
+
+function bloqueVisibleV101(row, defecto=true){
+  if(!row || row.Mostrar === undefined || row.Mostrar === null || String(row.Mostrar).trim()==='') return defecto;
+  const v=normalizarMostrarV101(row.Mostrar);
+  if(['no','n','false','0','ocultar','oculto'].includes(v)) return false;
+  if(['si','sí','s','true','1','mostrar','activo'].includes(v)) return true;
+  return defecto;
+}
+
+function tituloAprobatorioVisibleV101(){
+  const row=tmplRow(DATA.plantillaAprobatorio || [], 'ENC_002');
+  if(!bloqueVisibleV101(row, true)) return '';
+  return row.Texto_Base || row.Título || 'INFORME TÉCNICO APROBATORIO DE OBRA MAYOR';
+}
+
+/* Si no hay título visible, no renderiza el bloque de encabezado. */
+reportHeaderAprobatorioV55 = function(title){
+  const t=String(title||'').trim();
+  return t ? `<div class="head"><div class="sub">${esc(t)}</div></div>` : '';
+};
+
+/* Render final del Informe Aprobatorio respetando Mostrar de ENC_002. */
+renderInformeAprobatorio = function(){
+  const t=DATA.plantillaAprobatorio || [];
+  const title=tituloAprobatorioVisibleV101();
+
+  const baseRow=tmplRow(t,'BLG_001');
+  const base=bloqueVisibleV101(baseRow,true) ? (baseRow.Texto_Base||'') : '';
+
+  const con2Row=tmplRow(t,'CON_002');
+  const con2=bloqueVisibleV101(con2Row,true)
+    ? replaceTemplate(con2Row.Texto_Base||'').replaceAll('{{TABLA_HOJA_CONCLUSION_TECNICA_BASE}}','')
+    : '';
+
+  let n=1;
+  const incumplidos=requisitosPorEstado('No Cumple');
+  const alertReq=incumplidos.length
+    ? `<div class="apr-alert">ALERTA: Existen ${incumplidos.length} requisito(s) marcado(s) como NO CUMPLE. Revise la pestaña Requisitos antes de emitir el informe técnico aprobatorio.</div>`
+    : '';
+
+  let html=`${reportHeaderAprobatorioV55(title)}${alertReq}<h2>${n++}. Información general</h2>${reportInfoGeneralAprobatorio()}`;
+
+  const inf2=tmplRow(t,'INF_002');
+  if(bloqueVisibleV101(inf2,true)){
+    html+=`<h2>${n++}. Detalle del proyecto</h2><p>${nl2br(inf2.Texto_Base||'')}</p>${reqTable(requisitosPorEstado('Cumple'),'apr')}`;
+  }
+
+  if(base){
+    html+=`<h2>${n++}. Base técnico - legal</h2>${formatBaseTecnicoLegalAprobatorio(base)}`;
+  }
+
+  syncAnteproyectoAuto();
+  if(anteproyectoActivo()){
+    html+=`<h2>${n++}. Resolución de Anteproyecto</h2>${anteproyectoReport()}`;
+  }
+
+  html+=`<h2>${n++}. Consideraciones estructurales</h2>${aprobatorioStructuralTable()}`;
+  html+=`<h2>${n++}. Estudios complementarios</h2>${estudiosReport()}`;
+  html+=`<h2>${n++}. Conclusión técnica</h2><p>En concordancia a lo dispuesto en la Ordenanza No. 016-2023 de Actualización del Código Urbano, <strong>Artículo 92</strong> Componentes del Proyecto Técnico de Edificación de Obras Mayores, se concluye emitir el presente <strong>INFORME TÉCNICO FAVORABLE</strong>, de conformidad al siguiente detalle:</p>${conclusionReport()}`;
+
+  if(con2){
+    html+=`<p>${nl2br(con2)}</p>`;
+  }
+
+  if(typeof notaAprobatorioReportV66 === 'function'){
+    html+=notaAprobatorioReportV66();
+  }
+
+  return html;
+};
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    if(typeof renderReport==='function') renderReport();
+    if(typeof renderPreview==='function') renderPreview();
+  },900);
 });
 </script>
 
