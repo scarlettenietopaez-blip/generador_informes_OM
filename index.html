@@ -2152,15 +2152,15 @@ input,select,textarea{
 
 
 <style>
-/* V103 - modo ampliatorio para Conclusión Técnica */
-.editable-conclusion.ampliatorio-v103{
-  outline:2px solid rgba(23,107,77,.18);
+/* V104 - descripciones editables en ampliatorio/modificatorio */
+.editable-conclusion.descripcion-editable-v104{
+  outline:2px solid rgba(11,92,171,.14);
   border-radius:8px;
 }
-.calc-note.ampliatorio-note-v103{
-  background:#ecfdf5;
-  border:1px solid #bbf7d0;
-  color:#14532d;
+.calc-note.descripcion-editable-note-v104{
+  background:#eef6ff;
+  border:1px solid #bfdbfe;
+  color:#0b2b4c;
   padding:7px 9px;
   border-radius:8px;
   font-weight:800;
@@ -15610,17 +15610,15 @@ window.addEventListener('load',()=>{
 
 <script>
 /* ==========================================================
-   V103 SOBRE V102
-   Conclusión Técnica para proyecto AMPLIATORIO:
-   - Si Proyecto Definitivo contiene AMPLIACIÓN / AMPLIACION / AMPLIATORIO,
-     toda la tabla queda editable.
-   - Se pueden editar descripciones, cantidades, unidades y valores que
-     normalmente se calculan automáticamente.
-   - No se recalculan Área Bruta total, COS PB ni COS Total en modo ampliatorio.
-   - En obra nueva/modificatorio se mantienen las reglas existentes.
+   V104 SOBRE V102
+   Conclusión Técnica:
+   - Se mantiene la estructura y comportamiento de v102.
+   - Para AMPLIACIÓN / AMPLIATORIO / MODIFICATORIO:
+     solo se permite editar también las DESCRIPCIONES de filas calculadas.
+   - Las cantidades calculadas siguen protegidas y automáticas.
    ========================================================== */
 
-function normTextV103(v){
+function normTextConclusionV104(v){
   return String(v||'')
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .replace(/\s+/g,' ')
@@ -15628,12 +15626,13 @@ function normTextV103(v){
     .toUpperCase();
 }
 
-function proyectoDefinitivoValueV103(){
+function proyectoDefinitivoValueV104(){
   try{
-    const f=(DATA.infoFields||[]).find(x=>normTextV103(x.label||'').includes('PROYECTO DEFINITIVO'));
+    const f=(DATA.infoFields||[]).find(x=>normTextConclusionV104(x.label||'').includes('PROYECTO DEFINITIVO'));
     if(f){
       const el=document.getElementById('info_'+f.key);
       const stateVal=state.info?.[f.key] || '';
+
       if(el){
         if(el.tagName==='DIV'){
           const selected=[...el.querySelectorAll('input[type="checkbox"]:checked')].map(x=>x.value).join(', ');
@@ -15641,6 +15640,7 @@ function proyectoDefinitivoValueV103(){
         }
         if(String(el.value||'').trim()) return el.value;
       }
+
       if(String(stateVal||'').trim()) return stateVal;
     }
   }catch(e){}
@@ -15652,161 +15652,204 @@ function proyectoDefinitivoValueV103(){
   return '';
 }
 
-function esProyectoAmpliatorioV103(){
-  const v=normTextV103(proyectoDefinitivoValueV103());
-  return v.includes('AMPLIACION') || v.includes('AMPLIATORIO') || v.includes('AMPLIACION DE OBRA');
+function permiteDescripcionCalculadaV104(){
+  const v=normTextConclusionV104(proyectoDefinitivoValueV104());
+  return v.includes('AMPLIACION') || v.includes('AMPLIATORIO') || v.includes('MODIFICATORIO');
 }
 
-/* Guarda referencias a las funciones originales antes de cambiarlas. */
-const _recalcAreasCOSV36_base_V103 = typeof recalcAreasCOSV36 === 'function' ? recalcAreasCOSV36 : null;
-if(_recalcAreasCOSV36_base_V103){
-  recalcAreasCOSV36 = function(){
-    if(esProyectoAmpliatorioV103()){
-      return;
-    }
-    return _recalcAreasCOSV36_base_V103();
-  };
+function inferConclusionRoleV104(desc){
+  const d=normTextConclusionV104(desc);
+
+  if(d.includes('AREA') && d.includes('PREDIO')) return 'predio';
+  if(d.includes('UTIL') && d.includes('PLANTA BAJA')) return 'utilPB';
+  if(d.includes('UTIL') && d.includes('TOTAL')) return 'utilTotal';
+  if(d.includes('BRUTA') && d.includes('TOTAL')) return 'brutaTotal';
+  if(d.includes('BRUTA')) return 'bruta';
+  if(d === 'COS PB' || d.includes('COS PB')) return 'cosPB';
+  if(d.includes('COS TOTAL')) return 'cosTotal';
+
+  return '';
 }
 
-const _isCalcConclV87_base_V103 = typeof isCalcConclV87 === 'function' ? isCalcConclV87 : null;
-if(_isCalcConclV87_base_V103){
-  isCalcConclV87 = function(row){
-    if(esProyectoAmpliatorioV103()) return false;
-    return _isCalcConclV87_base_V103(row);
-  };
+function conclusionRoleV104(i,row){
+  const raw=state.aprobatorio?.conclusion?.[i];
+  if(raw && raw._roleV104) return raw._roleV104;
+
+  const role=inferConclusionRoleV104(row?.descripcion || raw?.descripcion || '');
+  if(role && raw) raw._roleV104=role;
+  return role;
 }
 
-const _isCalcConclV86_base_V103 = typeof isCalcConclV86 === 'function' ? isCalcConclV86 : null;
-if(_isCalcConclV86_base_V103){
-  isCalcConclV86 = function(row){
-    if(esProyectoAmpliatorioV103()) return false;
-    return _isCalcConclV86_base_V103(row);
-  };
+function isCalculatedConclusionV104(i,row){
+  const role=conclusionRoleV104(i,row);
+  return ['brutaTotal','cosPB','cosTotal'].includes(role);
 }
 
-const _computedConclusionV85_base_V103 = typeof computedConclusionV85 === 'function' ? computedConclusionV85 : null;
-if(_computedConclusionV85_base_V103){
-  computedConclusionV85 = function(row){
-    if(esProyectoAmpliatorioV103()) return false;
-    return _computedConclusionV85_base_V103(row);
-  };
+function assignConclusionRolesV104(){
+  const arr=state.aprobatorio?.conclusion || [];
+  arr.forEach((raw,i)=>{
+    const row=typeof rowConclV87 === 'function' ? rowConclV87(raw || {}) : (raw || {});
+    const role=conclusionRoleV104(i,row);
+    if(role) raw._roleV104=role;
+  });
 }
 
-const _isComputedConclusionV84_base_V103 = typeof isComputedConclusionV84 === 'function' ? isComputedConclusionV84 : null;
-if(_isComputedConclusionV84_base_V103){
-  isComputedConclusionV84 = function(row){
-    if(esProyectoAmpliatorioV103()) return false;
-    return _isComputedConclusionV84_base_V103(row);
-  };
+function qtyNumberV104(v){
+  return parseFloat(String(v||'').replace(',','.')) || 0;
 }
 
-/* En ampliatorio, todas las filas permiten niveles y botón +. */
-const _canLevelConclV87_base_V103 = typeof canLevelConclV87 === 'function' ? canLevelConclV87 : null;
-if(_canLevelConclV87_base_V103){
-  canLevelConclV87 = function(i){
-    if(esProyectoAmpliatorioV103()) return true;
-    return _canLevelConclV87_base_V103(i);
-  };
+function formatCalcV104(n, dec=2){
+  if(!isFinite(n)) return '';
+  const s=Number(n).toFixed(dec);
+  return s.replace(/\.00$/,'').replace(/(\.\d)0$/,'$1');
 }
 
-const _canLevelConclV86_base_V103 = typeof canLevelConclV86 === 'function' ? canLevelConclV86 : null;
-if(_canLevelConclV86_base_V103){
-  canLevelConclV86 = function(i){
-    if(esProyectoAmpliatorioV103()) return true;
-    return _canLevelConclV86_base_V103(i);
-  };
-}
+/* Mantiene cálculos aun si se modifican las descripciones, usando roles internos. */
+const _recalcAreasCOSV36_base_V104 = typeof recalcAreasCOSV36 === 'function' ? recalcAreasCOSV36 : null;
+recalcAreasCOSV36 = function(){
+  if(_recalcAreasCOSV36_base_V104) _recalcAreasCOSV36_base_V104();
 
-/* Acciones: en ampliatorio se puede agregar/quitar en cualquier fila. */
-const _addConclusionRowAfter_base_V103 = typeof addConclusionRowAfter === 'function' ? addConclusionRowAfter : null;
-addConclusionRowAfter = function(i){
-  if(esProyectoAmpliatorioV103()){
-    if(typeof commitAllConclusionInputsV87 === 'function') commitAllConclusionInputsV87();
-    if(!state.aprobatorio) state.aprobatorio={};
-    if(!Array.isArray(state.aprobatorio.conclusion)) state.aprobatorio.conclusion=[];
-    state.aprobatorio.conclusion.splice(i+1,0,{descripcion:'',levels:[],cantidad:'',unidad:'m2',allowLevels:true});
-    window.__CONCLUSION_EDITING_V87__=false;
-    if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
-    if(typeof renderReport === 'function') renderReport();
-    if(typeof renderPreview === 'function') renderPreview();
-    return;
-  }
+  try{
+    assignConclusionRolesV104();
+    const arr=state.aprobatorio?.conclusion || [];
+    let predio=0, utilPB=0, utilTotal=0, bruta=0;
 
-  if(_addConclusionRowAfter_base_V103) return _addConclusionRowAfter_base_V103(i);
-};
+    arr.forEach((raw,i)=>{
+      const r=typeof rowConclV87 === 'function' ? rowConclV87(raw || {}) : (raw || {});
+      const role=conclusionRoleV104(i,r);
+      const q=qtyNumberV104(r.cantidad);
 
-const _addConclusionLevel_base_V103 = typeof addConclusionLevel === 'function' ? addConclusionLevel : null;
-addConclusionLevel = function(i){
-  if(esProyectoAmpliatorioV103()){
-    if(typeof commitAllConclusionInputsV87 === 'function') commitAllConclusionInputsV87();
-    const row = typeof rowConclV87 === 'function'
-      ? rowConclV87(state.aprobatorio.conclusion[i] || {})
-      : (state.aprobatorio.conclusion[i] || {});
-    if(!Array.isArray(row.levels)) row.levels=[];
-    row.levels.push('');
-    row.allowLevels=true;
-    if(typeof syncConclV87 === 'function') syncConclV87(i,row);
-    else state.aprobatorio.conclusion[i]=row;
-    window.__CONCLUSION_EDITING_V87__=false;
-    if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
-    if(typeof renderReport === 'function') renderReport();
-    if(typeof renderPreview === 'function') renderPreview();
-    return;
-  }
+      if(role==='predio') predio=q;
+      if(role==='utilPB') utilPB=q;
+      if(role==='utilTotal') utilTotal=q;
+      if(role==='bruta') bruta+=q;
+    });
 
-  if(_addConclusionLevel_base_V103) return _addConclusionLevel_base_V103(i);
-};
+    arr.forEach((raw,i)=>{
+      const r=typeof rowConclV87 === 'function' ? rowConclV87(raw || {}) : (raw || {});
+      const role=conclusionRoleV104(i,r);
 
-/* En ampliatorio se puede quitar cualquier fila, incluso las calculadas. */
-const _delConclusion_base_V103 = typeof delConclusion === 'function' ? delConclusion : null;
-delConclusion = function(i){
-  if(esProyectoAmpliatorioV103()){
-    if(!Array.isArray(state.aprobatorio?.conclusion)) return;
-    state.aprobatorio.conclusion.splice(i,1);
-    window.__CONCLUSION_EDITING_V87__=false;
-    if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
-    if(typeof renderReport === 'function') renderReport();
-    if(typeof renderPreview === 'function') renderPreview();
-    return;
-  }
-  if(_delConclusion_base_V103) return _delConclusion_base_V103(i);
-};
-
-/* Cambia la nota inferior y marca visualmente cuando está en modo ampliatorio. */
-const _renderConclusionTabla_base_V103 = typeof renderConclusionTabla === 'function' ? renderConclusionTabla : null;
-if(_renderConclusionTabla_base_V103){
-  renderConclusionTabla = function(){
-    const out=_renderConclusionTabla_base_V103();
-
-    if(esProyectoAmpliatorioV103()){
-      const table=document.querySelector('.editable-conclusion');
-      if(table) table.classList.add('ampliatorio-v103');
-
-      const note=document.querySelector('#conclusionTabla .calc-note');
-      if(note){
-        note.classList.add('ampliatorio-note-v103');
-        note.textContent='Modo ampliatorio: toda la tabla de Conclusión Técnica es editable. Los valores calculados automáticamente no se recalculan; puede escribirlos manualmente.';
+      if(role==='brutaTotal'){
+        r.cantidad=formatCalcV104(bruta,2);
+        if(typeof syncConclV87 === 'function') syncConclV87(i,r);
+        else state.aprobatorio.conclusion[i]={...raw,...r};
       }
 
-      // Refuerzo: quitar readonly si alguna versión anterior lo dejó aplicado.
-      document.querySelectorAll('#conclusionTabla input[readonly], #conclusionTabla textarea[readonly]').forEach(el=>{
-        el.removeAttribute('readonly');
-      });
-    }
+      if(role==='cosPB'){
+        r.cantidad=predio ? formatCalcV104((utilPB/predio)*100,2) : '';
+        if(typeof syncConclV87 === 'function') syncConclV87(i,r);
+        else state.aprobatorio.conclusion[i]={...raw,...r};
+      }
 
-    return out;
-  };
-}
+      if(role==='cosTotal'){
+        r.cantidad=predio ? formatCalcV104((utilTotal/predio)*100,2) : '';
+        if(typeof syncConclV87 === 'function') syncConclV87(i,r);
+        else state.aprobatorio.conclusion[i]={...raw,...r};
+      }
+    });
+  }catch(e){
+    console.warn('V104 recálculo por roles:', e);
+  }
+};
 
-/* Al cambiar Proyecto Definitivo, se redibuja la tabla para activar/desactivar modo ampliatorio. */
-function patchProyectoDefinitivoChangeV103(){
+/* Permite cambiar descripción de filas calculadas solo en ampliatorio/modificatorio.
+   Mantiene bloqueada la cantidad de las filas calculadas. */
+commitConclusionInputV87 = function(input){
+  const i=Number(input.dataset.i);
+  const field=input.dataset.field;
+  const row=typeof rowConclV87 === 'function' ? rowConclV87(state.aprobatorio.conclusion[i] || {}) : (state.aprobatorio.conclusion[i] || {});
+  const computed=isCalculatedConclusionV104(i,row);
+  const allowDesc=permiteDescripcionCalculadaV104();
+  let val=String(input.value ?? '');
+
+  if(computed && field==='cantidad') return;
+  if(computed && field==='descripcion' && !allowDesc) return;
+
+  if(field==='descripcion'){
+    // Antes de cambiar la descripción se conserva el rol original.
+    const raw=state.aprobatorio.conclusion[i];
+    const role=conclusionRoleV104(i,row);
+    if(role && raw) raw._roleV104=role;
+
+    val=(typeof shouldForceUpper==='function' && shouldForceUpper()) ? val.toUpperCase() : val;
+    row.descripcion=val;
+    input.value=val;
+  }else if(field==='cantidad'){
+    row.cantidad=val.trim()==='' ? '' : formatDecimalFlexible(val);
+    input.value=row.cantidad;
+  }else if(field==='unidad'){
+    row.unidad=val;
+  }else if(field==='level'){
+    const j=Number(input.dataset.j);
+    if(!Array.isArray(row.levels)) row.levels=[];
+    val=(typeof shouldForceUpper==='function' && shouldForceUpper()) ? val.toUpperCase() : val;
+    row.levels[j]=val;
+    input.value=val;
+  }
+
+  row.allowLevels=typeof canLevelConclV87 === 'function' ? canLevelConclV87(i) : false;
+  if(!row.allowLevels) row.levels=[];
+
+  if(typeof syncConclV87 === 'function') syncConclV87(i,row);
+  else state.aprobatorio.conclusion[i]=row;
+};
+
+/* Render igual a v102/v87, pero la descripción de filas calculadas puede editarse
+   si es ampliatorio/modificatorio. Cantidad calculada sigue readonly. */
+renderConclusionTabla = function(){
+  if(window.__CONCLUSION_EDITING_V87__) return;
+
+  if(typeof buildRowsConclV87 === 'function') buildRowsConclV87(false);
+  if(typeof recalcAreasCOSV36 === 'function') recalcAreasCOSV36();
+
+  const cont=document.getElementById('conclusionTabla');
+  if(!cont) return;
+
+  const arr=state.aprobatorio?.conclusion || [];
+  const allowDesc=permiteDescripcionCalculadaV104();
+
+  cont.innerHTML=`<div class="conclusion-help-v73">Use el botón + únicamente en el bloque de áreas brutas. Las filas nuevas se insertan antes de Área Bruta total de construcción y pueden usar niveles.</div>
+    <table class="editable-conclusion ${allowDesc?'descripcion-editable-v104':''}">
+      <thead><tr><th>Descripción</th><th style="width:18%">Niveles</th><th style="width:18%">Cantidad</th><th style="width:14%">Unidad</th><th style="width:16%">Acciones</th></tr></thead>
+      <tbody>${arr.map((raw,i)=>{
+        const r=typeof rowConclV87 === 'function' ? rowConclV87(raw || {}) : (raw || {});
+        const computed=isCalculatedConclusionV104(i,r);
+        const descReadonly=computed && !allowDesc;
+        const qtyReadonly=computed;
+        const cls=[computed?'calc-readonly-v37':'',typeof canLevelConclV87==='function' && canLevelConclV87(i)?'bruta-editable-v73':''].filter(Boolean).join(' ');
+        const levelsHtml=typeof renderLevelsV87 === 'function'
+          ? renderLevelsV87(r,i)
+          : `<td class="levels-edit"></td>`;
+        const actionsHtml=typeof renderActionsV87 === 'function'
+          ? renderActionsV87(r,i)
+          : `<td class="row-actions"></td>`;
+
+        return `<tr class="${cls}">
+          <td><textarea class="concl-edit-v87" data-i="${i}" data-field="descripcion" id="conc_desc_${i}" placeholder="Descripción" ${descReadonly?'readonly':''}>${escapeAttrV87(r.descripcion)}</textarea></td>
+          ${levelsHtml}
+          <td><input class="concl-edit-v87" data-i="${i}" data-field="cantidad" id="conc_qty_${i}" value="${escapeAttrV87(r.cantidad)}" placeholder="Cantidad" ${qtyReadonly?'readonly':''}></td>
+          <td><input class="concl-edit-v87" data-i="${i}" data-field="unidad" id="conc_unit_${i}" value="${escapeAttrV87(r.unidad)}" placeholder="Unidad"></td>
+          ${actionsHtml}
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+    <div class="calc-note ${allowDesc?'descripcion-editable-note-v104':''}">
+      ${allowDesc
+        ? 'Modo ampliatorio/modificatorio: se mantiene la estructura y los cálculos automáticos. Puede modificar las descripciones, incluso de filas calculadas.'
+        : 'Área Bruta total = suma de filas con “Bruta”. COS PB = Área útil planta baja / Área del predio × 100. COS Total = Área útil total / Área del predio × 100.'}
+    </div>`;
+
+  if(typeof bindConclusionInputsV87 === 'function') bindConclusionInputsV87();
+};
+
+function patchProyectoDefinitivoConclusionV104(){
   try{
-    const f=(DATA.infoFields||[]).find(x=>normTextV103(x.label||'').includes('PROYECTO DEFINITIVO'));
+    const f=(DATA.infoFields||[]).find(x=>normTextConclusionV104(x.label||'').includes('PROYECTO DEFINITIVO'));
     if(!f) return;
 
     const el=document.getElementById('info_'+f.key);
-    if(!el || el.dataset.v103Patched==='1') return;
-    el.dataset.v103Patched='1';
+    if(!el || el.dataset.v104Patched==='1') return;
+    el.dataset.v104Patched='1';
 
     const rerender=()=>{
       setTimeout(()=>{
@@ -15820,25 +15863,26 @@ function patchProyectoDefinitivoChangeV103(){
     el.addEventListener('input',rerender);
     el.querySelectorAll?.('input[type="checkbox"]').forEach(chk=>chk.addEventListener('change',rerender));
   }catch(e){
-    console.warn('V103 patch Proyecto Definitivo:', e);
+    console.warn('V104 patch Proyecto Definitivo:', e);
   }
 }
 
 if(typeof renderInfoForm === 'function'){
-  const _renderInfoForm_base_V103 = renderInfoForm;
+  const _renderInfoForm_base_V104 = renderInfoForm;
   renderInfoForm = function(){
-    const out=_renderInfoForm_base_V103();
-    setTimeout(patchProyectoDefinitivoChangeV103,50);
+    const out=_renderInfoForm_base_V104();
+    setTimeout(patchProyectoDefinitivoConclusionV104,50);
     return out;
   };
 }
 
 window.addEventListener('load',()=>{
   setTimeout(()=>{
-    patchProyectoDefinitivoChangeV103();
+    assignConclusionRolesV104();
+    patchProyectoDefinitivoConclusionV104();
     if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
   },900);
-  setTimeout(patchProyectoDefinitivoChangeV103,1800);
+  setTimeout(patchProyectoDefinitivoConclusionV104,1800);
 });
 </script>
 
