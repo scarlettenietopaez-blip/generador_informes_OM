@@ -16238,5 +16238,298 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V107 SOBRE V106
+   Reglas definitivas para botón Quitar en Conclusión Técnica:
+
+   OBRA MAYOR / tipos normales:
+   - No se muestra Quitar en filas que vienen por defecto.
+   - Solo se muestra Quitar en filas nuevas agregadas por el usuario.
+
+   AMPLIATORIO / MODIFICATORIO:
+   - Se mantienen protegidas sin Quitar:
+     Área del predio, Área útil planta baja, Área útil total,
+     Área Bruta total de construcción, COS PB, COS Total.
+   - Todas las demás filas, aunque vengan por defecto, sí muestran Quitar
+     y se eliminan de esa fila.
+   ========================================================== */
+
+function normConclusionV107(v){
+  if(typeof normDescConclusionV81 === 'function') return normDescConclusionV81(v);
+  if(typeof normTextConclusionV104 === 'function') return normTextConclusionV104(v);
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function modoAmpliatorioModificatorioV107(){
+  return typeof permiteDescripcionCalculadaV104 === 'function' && permiteDescripcionCalculadaV104();
+}
+
+function baseConclusionKeysV107(){
+  try{
+    if(typeof allConclusionCSVRowsV81 === 'function'){
+      return new Set((allConclusionCSVRowsV81()||[])
+        .map(r=>normConclusionV107(r.descripcion || r.Descripcion || r.Descripción || ''))
+        .filter(Boolean));
+    }
+  }catch(e){}
+  return new Set();
+}
+
+function ensureDeletedConclusionKeysV107(){
+  if(!state.aprobatorio) state.aprobatorio={};
+  if(!Array.isArray(state.aprobatorio.deletedConclusionKeysV107)){
+    state.aprobatorio.deletedConclusionKeysV107=[];
+  }
+  return state.aprobatorio.deletedConclusionKeysV107;
+}
+
+function rowConclusionV107(raw){
+  if(typeof rowConclV87 === 'function') return rowConclV87(raw || {});
+  if(typeof normalizeConclusionRowSafeV73 === 'function') return normalizeConclusionRowSafeV73(raw || {});
+  if(typeof normalizeConclusionRow === 'function') return normalizeConclusionRow(raw || {});
+  return raw || {};
+}
+
+function roleConclusionV107(i,row){
+  const raw=state.aprobatorio?.conclusion?.[i];
+
+  if(raw && raw._roleV104) return raw._roleV104;
+
+  if(typeof conclusionRoleV104 === 'function'){
+    const role=conclusionRoleV104(i,row);
+    if(role && raw) raw._roleV104=role;
+    return role;
+  }
+
+  const d=normConclusionV107(row?.descripcion || raw?.descripcion || '');
+  if(d.includes('AREA') && d.includes('PREDIO')) return 'predio';
+  if(d.includes('UTIL') && d.includes('PLANTA BAJA')) return 'utilPB';
+  if(d.includes('UTIL') && d.includes('TOTAL')) return 'utilTotal';
+  if(d.includes('BRUTA') && d.includes('TOTAL')) return 'brutaTotal';
+  if(d.includes('COS PB')) return 'cosPB';
+  if(d.includes('COS TOTAL')) return 'cosTotal';
+  return '';
+}
+
+function assignBaseKeyConclusionV107(i,row){
+  const raw=state.aprobatorio?.conclusion?.[i];
+  if(!raw) return '';
+
+  if(raw._baseKeyV107) return raw._baseKeyV107;
+
+  const key=normConclusionV107(row?.descripcion || raw.descripcion || '');
+  const baseKeys=baseConclusionKeysV107();
+
+  if(key && baseKeys.has(key)){
+    raw._baseKeyV107=key;
+    return key;
+  }
+
+  return '';
+}
+
+function deleteKeyConclusionV107(i,row){
+  const raw=state.aprobatorio?.conclusion?.[i];
+  const r=row || rowConclusionV107(raw || {});
+  const baseKey=raw?._baseKeyV107 || assignBaseKeyConclusionV107(i,r);
+  const descKey=normConclusionV107(r.descripcion || '');
+
+  return baseKey || descKey || ('idx:'+i);
+}
+
+function isDefaultConclusionRowV107(i,row){
+  const raw=state.aprobatorio?.conclusion?.[i];
+  const r=row || rowConclusionV107(raw || {});
+  if(raw?._baseKeyV107) return true;
+
+  const key=assignBaseKeyConclusionV107(i,r);
+  return !!key;
+}
+
+function isProtectedAmpliatorioConclusionV107(i,row){
+  const r=row || rowConclusionV107(state.aprobatorio?.conclusion?.[i] || {});
+  const role=roleConclusionV107(i,r);
+  const d=normConclusionV107(r.descripcion || '');
+
+  // Filas que deben mantenerse siempre en ampliatorio/modificatorio.
+  if(['predio','utilPB','utilTotal','brutaTotal','cosPB','cosTotal'].includes(role)) return true;
+
+  // Refuerzo por texto, por si el rol no fue detectado.
+  if(d.includes('AREA') && d.includes('PREDIO')) return true;
+  if(d.includes('AREA') && d.includes('UTIL') && d.includes('PLANTA BAJA')) return true;
+  if(d.includes('AREA') && d.includes('UTIL') && d.includes('TOTAL')) return true;
+  if(d.includes('AREA') && d.includes('BRUTA') && d.includes('TOTAL')) return true;
+  if(d === 'COS PB' || d.includes('COS PB')) return true;
+  if(d.includes('COS TOTAL')) return true;
+
+  return false;
+}
+
+function canDeleteConclusionRowV107(i,row){
+  const r=row || rowConclusionV107(state.aprobatorio?.conclusion?.[i] || {});
+
+  if(modoAmpliatorioModificatorioV107()){
+    return !isProtectedAmpliatorioConclusionV107(i,r);
+  }
+
+  // Obra Mayor / tipo normal: solo filas nuevas agregadas por el usuario.
+  return !isDefaultConclusionRowV107(i,r);
+}
+
+function markDeletedConclusionRowV107(i,row){
+  const r=row || rowConclusionV107(state.aprobatorio?.conclusion?.[i] || {});
+  const key=deleteKeyConclusionV107(i,r);
+  const isDefault=isDefaultConclusionRowV107(i,r);
+
+  // Solo se guardan como eliminadas las filas base. Las filas nuevas se eliminan con splice.
+  if(isDefault && key){
+    const deleted=ensureDeletedConclusionKeysV107();
+    if(!deleted.includes(key)) deleted.push(key);
+  }
+}
+
+function filterDeletedConclusionRowsV107(){
+  const deleted=new Set(ensureDeletedConclusionKeysV107());
+  if(!deleted.size || !Array.isArray(state.aprobatorio?.conclusion)) return;
+
+  state.aprobatorio.conclusion=state.aprobatorio.conclusion.filter((raw,i)=>{
+    const r=rowConclusionV107(raw);
+    const key=deleteKeyConclusionV107(i,r);
+    return !deleted.has(key);
+  });
+}
+
+function prepareConclusionRowsV107(){
+  // Reconstituye estructura base de v102/v104, pero después elimina lo que el usuario quitó.
+  if(typeof buildRowsConclV87 === 'function'){
+    buildRowsConclV87(false);
+  }else if(typeof rebuildEditableConclusionAllRowsV81 === 'function'){
+    rebuildEditableConclusionAllRowsV81(false);
+  }
+
+  const arr=state.aprobatorio?.conclusion || [];
+  arr.forEach((raw,i)=>{
+    const r=rowConclusionV107(raw);
+    assignBaseKeyConclusionV107(i,r);
+    roleConclusionV107(i,r);
+  });
+
+  filterDeletedConclusionRowsV107();
+
+  if(typeof recalcAreasCOSV36 === 'function') recalcAreasCOSV36();
+
+  filterDeletedConclusionRowsV107();
+}
+
+function renderActionsConclusionV107(row,i){
+  const add=(typeof canLevelConclV87 === 'function' && canLevelConclV87(i))
+    ? `<button type="button" class="mini-plus" title="Agregar fila antes de Área Bruta total de construcción" onclick="addConclusionRowAfter(${i})">+</button>`
+    : '';
+
+  const quit=canDeleteConclusionRowV107(i,row)
+    ? `<button type="button" class="danger mini-btn" onclick="delConclusion(${i})">Quitar</button>`
+    : '';
+
+  return `<td class="row-actions"><div class="actions-v73">${add}${quit || (!add?'<span class="no-row-action-v73">—</span>':'')}</div></td>`;
+}
+
+/* Botón Quitar: elimina exactamente la fila presionada y guarda eliminación si era fila base. */
+delConclusion = function(i){
+  if(!Array.isArray(state.aprobatorio?.conclusion)) return;
+
+  const row=rowConclusionV107(state.aprobatorio.conclusion[i] || {});
+
+  if(!canDeleteConclusionRowV107(i,row)){
+    if(typeof msg === 'function'){
+      msg(modoAmpliatorioModificatorioV107()
+        ? 'Esta fila debe mantenerse en Ampliatorio/Modificatorio y no se puede quitar.'
+        : 'En Obra Mayor solo se pueden quitar las filas nuevas agregadas por el usuario.');
+    }
+    return;
+  }
+
+  markDeletedConclusionRowV107(i,row);
+  state.aprobatorio.conclusion.splice(i,1);
+
+  if(typeof recalcAreasCOSV36 === 'function') recalcAreasCOSV36();
+  filterDeletedConclusionRowsV107();
+
+  if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
+  if(typeof renderReport === 'function') renderReport();
+  if(typeof renderPreview === 'function') renderPreview();
+};
+
+/* Render final de Conclusión Técnica con reglas nuevas de Quitar. */
+renderConclusionTabla = function(){
+  if(window.__CONCLUSION_EDITING_V87__) return;
+
+  prepareConclusionRowsV107();
+
+  const cont=document.getElementById('conclusionTabla');
+  if(!cont) return;
+
+  const arr=state.aprobatorio?.conclusion || [];
+  const allowDesc=modoAmpliatorioModificatorioV107();
+
+  cont.innerHTML=`<div class="conclusion-help-v73">Use el botón + únicamente en el bloque de áreas brutas. Las filas nuevas se insertan antes de Área Bruta total de construcción y pueden usar niveles.</div>
+    <table class="editable-conclusion ${allowDesc?'descripcion-editable-v104':''}">
+      <thead><tr><th>Descripción</th><th style="width:18%">Niveles</th><th style="width:18%">Cantidad</th><th style="width:14%">Unidad</th><th style="width:16%">Acciones</th></tr></thead>
+      <tbody>${arr.map((raw,i)=>{
+        const r=rowConclusionV107(raw || {});
+        const computed=typeof isCalculatedConclusionV104 === 'function'
+          ? isCalculatedConclusionV104(i,r)
+          : isProtectedAmpliatorioConclusionV107(i,r) && ['brutaTotal','cosPB','cosTotal'].includes(roleConclusionV107(i,r));
+
+        const descReadonly=computed && !allowDesc;
+        const qtyReadonly=computed;
+        const cls=[computed?'calc-readonly-v37':'',typeof canLevelConclV87==='function' && canLevelConclV87(i)?'bruta-editable-v73':''].filter(Boolean).join(' ');
+
+        const levelsHtml=typeof renderLevelsV87 === 'function'
+          ? renderLevelsV87(r,i)
+          : `<td class="levels-edit"></td>`;
+
+        return `<tr class="${cls}">
+          <td><textarea class="concl-edit-v87" data-i="${i}" data-field="descripcion" id="conc_desc_${i}" placeholder="Descripción" ${descReadonly?'readonly':''}>${escapeAttrV87(r.descripcion)}</textarea></td>
+          ${levelsHtml}
+          <td><input class="concl-edit-v87" data-i="${i}" data-field="cantidad" id="conc_qty_${i}" value="${escapeAttrV87(r.cantidad)}" placeholder="Cantidad" ${qtyReadonly?'readonly':''}></td>
+          <td><input class="concl-edit-v87" data-i="${i}" data-field="unidad" id="conc_unit_${i}" value="${escapeAttrV87(r.unidad)}" placeholder="Unidad"></td>
+          ${renderActionsConclusionV107(r,i)}
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+    <div class="calc-note ${allowDesc?'descripcion-editable-note-v104':''}">
+      ${allowDesc
+        ? 'Modo ampliatorio/modificatorio: se mantienen Área del predio, Área útil planta baja, Área útil total, Área Bruta total, COS PB y COS Total. Las demás filas pueden quitarse.'
+        : 'Obra Mayor: las filas base no se pueden quitar. Solo se pueden quitar las filas nuevas agregadas por el usuario.'}
+    </div>`;
+
+  if(typeof bindConclusionInputsV87 === 'function') bindConclusionInputsV87();
+};
+
+/* Refuerzo para que las filas eliminadas tampoco aparezcan en el informe. */
+if(typeof conclusionRowsForReportV81 === 'function'){
+  const _conclusionRowsForReportV81_base_V107 = conclusionRowsForReportV81;
+  conclusionRowsForReportV81 = function(){
+    filterDeletedConclusionRowsV107();
+    return _conclusionRowsForReportV81_base_V107();
+  };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    prepareConclusionRowsV107();
+    if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
+    if(typeof renderReport === 'function') renderReport();
+    if(typeof renderPreview === 'function') renderPreview();
+  },900);
+});
+</script>
+
 </body>
 </html>
