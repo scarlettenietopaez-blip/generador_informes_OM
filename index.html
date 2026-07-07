@@ -15886,5 +15886,161 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V105 SOBRE V104
+   Correcciones:
+   1. En la tabla Conclusión Técnica del informe, los niveles se imprimen como N+valor.
+   2. La clave catastral se imprime separada por campos:
+      06 01 01 002 003 004 005 000000000
+   3. En la tabla de Requisitos del informe ya no se imprime la columna Nro.
+   ========================================================== */
+
+function normalizarNivelV105(v){
+  const raw = String(v ?? '').trim();
+  if(!raw) return '';
+
+  // Si el usuario ya escribió N+3, N + 3 o Nivel 3, se normaliza a N+3.
+  const limpio = raw
+    .replace(/^N\s*\+\s*/i, '')
+    .replace(/^NIVEL\s*/i, '')
+    .trim();
+
+  return 'N+' + limpio;
+}
+
+function formatClaveCatastralV105(v){
+  const raw = String(v ?? '').trim();
+  if(!raw) return '';
+
+  // Si ya viene separada con espacios, normaliza espacios y devuelve.
+  if(/\s/.test(raw)){
+    const clean = raw.replace(/\s+/g,' ').trim();
+    const digits = clean.replace(/\D/g,'');
+    if(digits.length === 27) return clean;
+  }
+
+  const d = raw.replace(/\D/g,'');
+
+  // Formato GADMR usado en el formulario:
+  // Prov(2) Cant(2) Parr(2) Zona(3) Sect(3) Polg(3) Pred(3) Resto(9)
+  if(d.length === 27){
+    return [
+      d.slice(0,2),
+      d.slice(2,4),
+      d.slice(4,6),
+      d.slice(6,9),
+      d.slice(9,12),
+      d.slice(12,15),
+      d.slice(15,18),
+      d.slice(18,27)
+    ].join(' ');
+  }
+
+  return raw;
+}
+
+function infoValueForReportV105(label){
+  const val = typeof infoValue === 'function' ? infoValue(label) : '';
+  if(normTextConclusionV104 && normTextConclusionV104(label).includes('CLAVE CATASTRAL')){
+    return formatClaveCatastralV105(val);
+  }
+  return val;
+}
+
+/* Sobrescribe tabla de Información General para aplicar clave catastral con espacios.
+   Conserva la misma estructura visual de v102/v104. */
+const _aprobatorioInfoTableFromTemplate_base_V105 = typeof aprobatorioInfoTableFromTemplate === 'function' ? aprobatorioInfoTableFromTemplate : null;
+aprobatorioInfoTableFromTemplate = function(text){
+  ensurePropietarios();
+  syncPropietariosInfo();
+
+  const proyecto = infoValueForReportV105('PROYECTO DEFINITIVO');
+  const x = infoValueForReportV105('X:');
+  const y = infoValueForReportV105('Y:');
+
+  const apod = (state.apoderado && state.apoderado.activo)
+    ? aprTwo('APODERADO', state.apoderado.nombre || '', 'CI/RUC APODERADO', state.apoderado.ci || '')
+    : '';
+
+  return `<table class="apr-info-table"><colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"></colgroup><tbody>
+    ${aprOne('TRÁMITE E-GOB', state.egob || infoValueForReportV105('TRÁMITE EGOB'))}
+    ${aprTwo('NOMBRE DEL PROPIETARIO', infoValueForReportV105('NOMBRE DEL PROPIETARIO'), 'CI/RUC', infoValueForReportV105('CI/RUC'))}
+    ${apod}
+    ${aprOne('PROYECTO DEFINITIVO', proyecto)}
+    ${aprOne('NOMBRE DEL PROYECTO', infoValueForReportV105('NOMBRE DEL PROYECTO'))}
+    ${aprTwo('USO PRINCIPAL', infoValueForReportV105('USO PRINCIPAL'), 'ALTURA EDIFICACIÓN', infoValueForReportV105('ALTURA EDIFICACIÓN') ? infoValueForReportV105('ALTURA EDIFICACIÓN')+' pisos' : '')}
+    <tr><td class="apr-info-section" colspan="4">REFERENCIA UBICACIÓN</td></tr>
+    ${aprTwo('X', x, 'Y', y)}
+    ${aprOne('CLAVE CATASTRAL', infoValueForReportV105('CLAVE CATASTRAL'))}
+    ${state.catastral && state.catastral.urbanoRural ? aprOne('URBANO / RURAL', state.catastral.urbanoRural) : ''}
+    ${aprTwo('BARRIO / SECTOR', infoValueForReportV105('BARRIO/SECTOR'), 'CÓDIGO PIT', infoValueForReportV105('CÓDIGO PIT'))}
+    ${aprOne('DIRECCIÓN', infoValueForReportV105('DIRECCIÓN'))}
+    ${aprOne('PROYECTISTA', infoValueForReportV105('PROYECTISTA'))}
+    ${aprTwo('REG. SENESCYT', infoValueForReportV105('REGISTRO SENESCYT'), 'REG. MUNICIPAL', infoValueForReportV105('REGISTRO MUNICIPAL'))}
+  </tbody></table>`;
+};
+
+/* Tabla de Conclusión Técnica del informe:
+   añade N+ antes de cada nivel. */
+function conclusionReport(){
+  const arr = typeof conclusionRowsForReportV81 === 'function'
+    ? conclusionRowsForReportV81()
+    : (state.aprobatorio?.conclusion || []);
+
+  if(!arr.length) return '<p>No se registran datos de conclusión técnica.</p>';
+
+  return `<table class="informe-table conclusion-report"><thead><tr><th colspan="2">DESCRIPCIÓN</th><th>CANTIDAD</th><th>UNIDAD</th></tr></thead><tbody>${arr.map(raw=>{
+    const r = typeof normalizeConclusionRowSafeV73 === 'function'
+      ? normalizeConclusionRowSafeV73(raw)
+      : (typeof normalizeConclusionRow === 'function' ? normalizeConclusionRow(raw) : raw);
+
+    const niveles = (r.levels || [])
+      .filter(v => String(v ?? '').trim())
+      .map(v => esc(normalizarNivelV105(v)))
+      .join('<br>');
+
+    const descClass = /TOTAL|NÚMERO DE PISOS|NUMERO DE PISOS|UNIDADES|COS/.test(upper(r.descripcion || '')) ? 'desc-bold' : '';
+
+    if(niveles){
+      return `<tr><td class="${descClass}">${esc(r.descripcion)}</td><td class="level-cell">${niveles}</td><td class="right">${esc(r.cantidad)}</td><td>${esc(r.unidad)}</td></tr>`;
+    }
+
+    return `<tr><td colspan="2" class="${descClass}">${esc(r.descripcion)}</td><td class="right">${esc(r.cantidad)}</td><td>${esc(r.unidad)}</td></tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+/* Tabla de Requisitos del informe:
+   elimina la columna Nro. */
+function reqTable(reqs, mode){
+  if(!reqs.length) return '<p>No se registran requisitos para esta sección.</p>';
+
+  return `<table class="req-report-v94"><thead><tr>
+    <th>Requisito</th>
+    <th>Resultado / detalle</th>
+    ${mode === 'obs' ? '<th>Corrección requerida</th>' : ''}
+  </tr></thead><tbody>${reqs.map((r)=>{
+    const v = state.requisitos[r.id] || {};
+    const detalle = typeof reqDefaultDetailV94 === 'function'
+      ? reqDefaultDetailV94(r)
+      : (v.estado || '');
+
+    return `<tr>
+      <td>${esc(stripReqNumber(r.texto))}</td>
+      <td class="req-detail-report-v94">${esc(detalle)}</td>
+      ${mode === 'obs' ? `<td>${esc(v.observacion || r.correccionDefault || '')}</td>` : ''}
+    </tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    if(typeof renderReport === 'function') renderReport();
+    if(typeof renderPreview === 'function') renderPreview();
+  },900);
+});
+</script>
+
 </body>
 </html>
