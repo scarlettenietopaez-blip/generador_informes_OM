@@ -2150,6 +2150,23 @@ input,select,textarea{
 }
 </style>
 
+
+<style>
+/* V103 - modo ampliatorio para Conclusión Técnica */
+.editable-conclusion.ampliatorio-v103{
+  outline:2px solid rgba(23,107,77,.18);
+  border-radius:8px;
+}
+.calc-note.ampliatorio-note-v103{
+  background:#ecfdf5;
+  border:1px solid #bbf7d0;
+  color:#14532d;
+  padding:7px 9px;
+  border-radius:8px;
+  font-weight:800;
+}
+</style>
+
 </head>
 <body>
 
@@ -15587,6 +15604,241 @@ if(_imprimirInforme_base_V102){
 window.addEventListener('load',()=>{
   setTimeout(()=>compactarTablaInfoGeneralV102(document),800);
   setTimeout(()=>compactarTablaInfoGeneralV102(document),1800);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V103 SOBRE V102
+   Conclusión Técnica para proyecto AMPLIATORIO:
+   - Si Proyecto Definitivo contiene AMPLIACIÓN / AMPLIACION / AMPLIATORIO,
+     toda la tabla queda editable.
+   - Se pueden editar descripciones, cantidades, unidades y valores que
+     normalmente se calculan automáticamente.
+   - No se recalculan Área Bruta total, COS PB ni COS Total en modo ampliatorio.
+   - En obra nueva/modificatorio se mantienen las reglas existentes.
+   ========================================================== */
+
+function normTextV103(v){
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function proyectoDefinitivoValueV103(){
+  try{
+    const f=(DATA.infoFields||[]).find(x=>normTextV103(x.label||'').includes('PROYECTO DEFINITIVO'));
+    if(f){
+      const el=document.getElementById('info_'+f.key);
+      const stateVal=state.info?.[f.key] || '';
+      if(el){
+        if(el.tagName==='DIV'){
+          const selected=[...el.querySelectorAll('input[type="checkbox"]:checked')].map(x=>x.value).join(', ');
+          if(selected) return selected;
+        }
+        if(String(el.value||'').trim()) return el.value;
+      }
+      if(String(stateVal||'').trim()) return stateVal;
+    }
+  }catch(e){}
+
+  try{
+    if(typeof infoValue === 'function') return infoValue('PROYECTO DEFINITIVO') || '';
+  }catch(e){}
+
+  return '';
+}
+
+function esProyectoAmpliatorioV103(){
+  const v=normTextV103(proyectoDefinitivoValueV103());
+  return v.includes('AMPLIACION') || v.includes('AMPLIATORIO') || v.includes('AMPLIACION DE OBRA');
+}
+
+/* Guarda referencias a las funciones originales antes de cambiarlas. */
+const _recalcAreasCOSV36_base_V103 = typeof recalcAreasCOSV36 === 'function' ? recalcAreasCOSV36 : null;
+if(_recalcAreasCOSV36_base_V103){
+  recalcAreasCOSV36 = function(){
+    if(esProyectoAmpliatorioV103()){
+      return;
+    }
+    return _recalcAreasCOSV36_base_V103();
+  };
+}
+
+const _isCalcConclV87_base_V103 = typeof isCalcConclV87 === 'function' ? isCalcConclV87 : null;
+if(_isCalcConclV87_base_V103){
+  isCalcConclV87 = function(row){
+    if(esProyectoAmpliatorioV103()) return false;
+    return _isCalcConclV87_base_V103(row);
+  };
+}
+
+const _isCalcConclV86_base_V103 = typeof isCalcConclV86 === 'function' ? isCalcConclV86 : null;
+if(_isCalcConclV86_base_V103){
+  isCalcConclV86 = function(row){
+    if(esProyectoAmpliatorioV103()) return false;
+    return _isCalcConclV86_base_V103(row);
+  };
+}
+
+const _computedConclusionV85_base_V103 = typeof computedConclusionV85 === 'function' ? computedConclusionV85 : null;
+if(_computedConclusionV85_base_V103){
+  computedConclusionV85 = function(row){
+    if(esProyectoAmpliatorioV103()) return false;
+    return _computedConclusionV85_base_V103(row);
+  };
+}
+
+const _isComputedConclusionV84_base_V103 = typeof isComputedConclusionV84 === 'function' ? isComputedConclusionV84 : null;
+if(_isComputedConclusionV84_base_V103){
+  isComputedConclusionV84 = function(row){
+    if(esProyectoAmpliatorioV103()) return false;
+    return _isComputedConclusionV84_base_V103(row);
+  };
+}
+
+/* En ampliatorio, todas las filas permiten niveles y botón +. */
+const _canLevelConclV87_base_V103 = typeof canLevelConclV87 === 'function' ? canLevelConclV87 : null;
+if(_canLevelConclV87_base_V103){
+  canLevelConclV87 = function(i){
+    if(esProyectoAmpliatorioV103()) return true;
+    return _canLevelConclV87_base_V103(i);
+  };
+}
+
+const _canLevelConclV86_base_V103 = typeof canLevelConclV86 === 'function' ? canLevelConclV86 : null;
+if(_canLevelConclV86_base_V103){
+  canLevelConclV86 = function(i){
+    if(esProyectoAmpliatorioV103()) return true;
+    return _canLevelConclV86_base_V103(i);
+  };
+}
+
+/* Acciones: en ampliatorio se puede agregar/quitar en cualquier fila. */
+const _addConclusionRowAfter_base_V103 = typeof addConclusionRowAfter === 'function' ? addConclusionRowAfter : null;
+addConclusionRowAfter = function(i){
+  if(esProyectoAmpliatorioV103()){
+    if(typeof commitAllConclusionInputsV87 === 'function') commitAllConclusionInputsV87();
+    if(!state.aprobatorio) state.aprobatorio={};
+    if(!Array.isArray(state.aprobatorio.conclusion)) state.aprobatorio.conclusion=[];
+    state.aprobatorio.conclusion.splice(i+1,0,{descripcion:'',levels:[],cantidad:'',unidad:'m2',allowLevels:true});
+    window.__CONCLUSION_EDITING_V87__=false;
+    if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
+    if(typeof renderReport === 'function') renderReport();
+    if(typeof renderPreview === 'function') renderPreview();
+    return;
+  }
+
+  if(_addConclusionRowAfter_base_V103) return _addConclusionRowAfter_base_V103(i);
+};
+
+const _addConclusionLevel_base_V103 = typeof addConclusionLevel === 'function' ? addConclusionLevel : null;
+addConclusionLevel = function(i){
+  if(esProyectoAmpliatorioV103()){
+    if(typeof commitAllConclusionInputsV87 === 'function') commitAllConclusionInputsV87();
+    const row = typeof rowConclV87 === 'function'
+      ? rowConclV87(state.aprobatorio.conclusion[i] || {})
+      : (state.aprobatorio.conclusion[i] || {});
+    if(!Array.isArray(row.levels)) row.levels=[];
+    row.levels.push('');
+    row.allowLevels=true;
+    if(typeof syncConclV87 === 'function') syncConclV87(i,row);
+    else state.aprobatorio.conclusion[i]=row;
+    window.__CONCLUSION_EDITING_V87__=false;
+    if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
+    if(typeof renderReport === 'function') renderReport();
+    if(typeof renderPreview === 'function') renderPreview();
+    return;
+  }
+
+  if(_addConclusionLevel_base_V103) return _addConclusionLevel_base_V103(i);
+};
+
+/* En ampliatorio se puede quitar cualquier fila, incluso las calculadas. */
+const _delConclusion_base_V103 = typeof delConclusion === 'function' ? delConclusion : null;
+delConclusion = function(i){
+  if(esProyectoAmpliatorioV103()){
+    if(!Array.isArray(state.aprobatorio?.conclusion)) return;
+    state.aprobatorio.conclusion.splice(i,1);
+    window.__CONCLUSION_EDITING_V87__=false;
+    if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
+    if(typeof renderReport === 'function') renderReport();
+    if(typeof renderPreview === 'function') renderPreview();
+    return;
+  }
+  if(_delConclusion_base_V103) return _delConclusion_base_V103(i);
+};
+
+/* Cambia la nota inferior y marca visualmente cuando está en modo ampliatorio. */
+const _renderConclusionTabla_base_V103 = typeof renderConclusionTabla === 'function' ? renderConclusionTabla : null;
+if(_renderConclusionTabla_base_V103){
+  renderConclusionTabla = function(){
+    const out=_renderConclusionTabla_base_V103();
+
+    if(esProyectoAmpliatorioV103()){
+      const table=document.querySelector('.editable-conclusion');
+      if(table) table.classList.add('ampliatorio-v103');
+
+      const note=document.querySelector('#conclusionTabla .calc-note');
+      if(note){
+        note.classList.add('ampliatorio-note-v103');
+        note.textContent='Modo ampliatorio: toda la tabla de Conclusión Técnica es editable. Los valores calculados automáticamente no se recalculan; puede escribirlos manualmente.';
+      }
+
+      // Refuerzo: quitar readonly si alguna versión anterior lo dejó aplicado.
+      document.querySelectorAll('#conclusionTabla input[readonly], #conclusionTabla textarea[readonly]').forEach(el=>{
+        el.removeAttribute('readonly');
+      });
+    }
+
+    return out;
+  };
+}
+
+/* Al cambiar Proyecto Definitivo, se redibuja la tabla para activar/desactivar modo ampliatorio. */
+function patchProyectoDefinitivoChangeV103(){
+  try{
+    const f=(DATA.infoFields||[]).find(x=>normTextV103(x.label||'').includes('PROYECTO DEFINITIVO'));
+    if(!f) return;
+
+    const el=document.getElementById('info_'+f.key);
+    if(!el || el.dataset.v103Patched==='1') return;
+    el.dataset.v103Patched='1';
+
+    const rerender=()=>{
+      setTimeout(()=>{
+        if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
+        if(typeof renderReport === 'function') renderReport();
+        if(typeof renderPreview === 'function') renderPreview();
+      },80);
+    };
+
+    el.addEventListener('change',rerender);
+    el.addEventListener('input',rerender);
+    el.querySelectorAll?.('input[type="checkbox"]').forEach(chk=>chk.addEventListener('change',rerender));
+  }catch(e){
+    console.warn('V103 patch Proyecto Definitivo:', e);
+  }
+}
+
+if(typeof renderInfoForm === 'function'){
+  const _renderInfoForm_base_V103 = renderInfoForm;
+  renderInfoForm = function(){
+    const out=_renderInfoForm_base_V103();
+    setTimeout(patchProyectoDefinitivoChangeV103,50);
+    return out;
+  };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    patchProyectoDefinitivoChangeV103();
+    if(typeof renderConclusionTabla === 'function') renderConclusionTabla();
+  },900);
+  setTimeout(patchProyectoDefinitivoChangeV103,1800);
 });
 </script>
 
