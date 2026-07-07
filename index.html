@@ -1886,6 +1886,24 @@ input,select,textarea{
 }
 </style>
 
+
+<style>
+/* V95 - mensajes de validación más claros */
+.error-text.v95-detail{
+  font-weight:800;
+}
+.invalid-v95-focus{
+  box-shadow:0 0 0 3px rgba(185, 28, 28, .18)!important;
+}
+.validation-list-v95{
+  margin:6px 0 0 0;
+  padding-left:18px;
+}
+.validation-list-v95 li{
+  margin:2px 0;
+}
+</style>
+
 </head>
 <body>
 
@@ -14251,6 +14269,245 @@ window.addEventListener('load',()=>{
     if(typeof renderRequisitosForm === 'function') renderRequisitosForm(false);
     if(typeof renderReport === 'function') renderReport();
     if(typeof renderPreview === 'function') renderPreview();
+  },900);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V95 SOBRE V94
+   Validación clara:
+   - Ya no muestra solo "Campo obligatorio."
+   - Indica el nombre exacto del campo faltante o con formato incorrecto.
+   - Aplica a Generar PDF y Copiar.
+   ========================================================== */
+
+function cleanLabelV95(label){
+  return String(label||'')
+    .replace(/\*/g,'')
+    .replace(/[:：]\s*$/,'')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+function fieldDisplayNameV95(f){
+  let label='';
+  try{
+    const meta = typeof fieldMeta === 'function' ? fieldMeta(f) : {};
+    label = typeof displayInfoLabel === 'function' ? displayInfoLabel(f, meta) : (f.label || f.Label || f.key || '');
+  }catch(e){
+    label = f.label || f.Label || f.key || '';
+  }
+  return cleanLabelV95(label);
+}
+
+function visibleInvalidFieldNamesV95(){
+  const out=[];
+  (DATA.infoFields||[]).forEach(f=>{
+    const err=document.getElementById('err_'+f.key);
+    const el=document.getElementById('info_'+f.key);
+    if(!err || !el) return;
+    const txt=String(err.textContent||'').trim();
+    if(!txt) return;
+    const name=fieldDisplayNameV95(f);
+    out.push(txt.includes(name) ? txt : `${name}: ${txt}`);
+  });
+
+  const propErr=document.getElementById('err_propietarios');
+  if(propErr && String(propErr.textContent||'').trim()){
+    out.push(String(propErr.textContent||'').trim());
+  }
+
+  return [...new Set(out)];
+}
+
+function focusFirstInvalidFieldV95(){
+  const firstErr=[...document.querySelectorAll('.error-text')]
+    .find(e=>String(e.textContent||'').trim());
+
+  if(!firstErr) return;
+
+  const id=firstErr.id||'';
+  let target=null;
+
+  if(id.startsWith('err_')){
+    const key=id.replace(/^err_/,'');
+    target=document.getElementById('info_'+key);
+  }
+
+  if(id==='err_propietarios'){
+    target=document.querySelector('#propietariosBox input');
+  }
+
+  if(target){
+    showTab('tab-info');
+    setTimeout(()=>{
+      try{
+        target.scrollIntoView({behavior:'smooth', block:'center'});
+        target.classList.add('invalid-v95-focus');
+        if(typeof target.focus==='function') target.focus();
+        setTimeout(()=>target.classList.remove('invalid-v95-focus'),2200);
+      }catch(e){}
+    },120);
+  }
+}
+
+/* Sobrescribe validateInfoField para incluir nombre del campo en cada mensaje. */
+validateInfoField = function(f, show=true){
+  const meta=fieldMeta(f);
+  const err=document.getElementById('err_'+f.key);
+  const el=document.getElementById('info_'+f.key);
+  if(!err||!el) return true;
+
+  const value = f.type==='multiselect' ? (state.info[f.key]||'') : String(el.value||'').trim();
+  const name = fieldDisplayNameV95(f);
+
+  let ok=true, message='';
+
+  if(meta.required && !value){
+    ok=false;
+    message=`${name}: campo obligatorio.`;
+  }
+
+  if(value && meta.isCi && !(/^\d{10}$/.test(value)||/^\d{13}$/.test(value))){
+    ok=false;
+    message=`${name}: debe tener 10 dígitos para CI o 13 dígitos para RUC.`;
+  }
+
+  if(value && meta.isSenescyt && !(/^\d{4}-\d{4}-\d{7}$/.test(value) || /^\d{4}-\d{2}-\d{6}$/.test(value))){
+    ok=false;
+    message=`${name}: formato requerido 0000-0000-0000000 o 0000-00-000000.`;
+  }
+
+  if(value && meta.isRegMun && !(parseInt(value,10)>=1)){
+    ok=false;
+    message=`${name}: debe ser un número entero desde 1.`;
+  }
+
+  if(value && meta.isAltura && !/^\d+$/.test(value)){
+    ok=false;
+    message=`${name}: debe ser un número entero de pisos.`;
+  }
+
+  if(value && meta.isArea && !/^\d+(\.\d+)?$/.test(value)){
+    ok=false;
+    message=`${name}: debe ser un número decimal. Use punto como separador decimal, ej.: 450.75.`;
+  }
+
+  if(value && meta.isClave && !/^\d{27}$/.test(value)){
+    ok=false;
+    message=`${name}: la clave catastral debe tener exactamente 27 dígitos.`;
+  }
+
+  if(value && meta.isX && !/^\d{6}(\.\d{1,4})?$/.test(value)){
+    ok=false;
+    message=`${name}: X debe tener 6 números y máximo 4 decimales. Use punto decimal.`;
+  }
+
+  if(value && meta.isY && !/^\d{7}(\.\d{1,4})?$/.test(value)){
+    ok=false;
+    message=`${name}: Y debe tener 7 números y máximo 4 decimales. Use punto decimal.`;
+  }
+
+  if(value && meta.isParroquia && !PARROQUIAS.includes(value)){
+    ok=false;
+    message=`${name}: seleccione una parroquia de la lista.`;
+  }
+
+  el.classList.toggle('invalid',!ok);
+  err.textContent=message;
+  err.classList.toggle('v95-detail', !!message);
+  err.style.display=(!ok && show)?'block':'none';
+
+  return ok;
+};
+
+/* Refuerza validación general para que el error de PDF/Copiar liste campos específicos. */
+const _validationErrors_base_V95 = typeof validationErrorsV70 === 'function' ? validationErrorsV70 : null;
+validationErrorsV70 = function(context='generar el PDF'){
+  const errors=[];
+  collectTop();
+
+  if(!state.egob) errors.push('Falta el campo: Nro. eGOB principal.');
+  const match=tecnicoCoincidente(state.tecnico);
+  if(!match) errors.push('Técnico revisor: debe coincidir con la lista de la hoja Técnicos.');
+  if(!state.tipoInforme) errors.push('Falta el campo: Tipo de informe.');
+  if(!state.fechaRevision) errors.push((state.tipoInforme==='Informe Técnico Aprobatorio'||state.tipoInforme==='Informe de Desistimiento')?'Falta el campo: Fecha de emisión.':'Falta el campo: Fecha de revisión.');
+  if(state.tipoInforme!=='Informe Técnico Aprobatorio' && state.tipoInforme!=='Informe de Desistimiento' && !state.fechaSubsanacion){
+    errors.push('Falta el campo: Fecha máxima de subsanación.');
+  }
+
+  if(state.tipoInforme==='Informe de Desistimiento'){
+    ensureDesistimientoV69();
+    if(!state.desistimiento?.motivo) errors.push('Falta el campo: Motivo de desistimiento.');
+  }
+
+  try{
+    const okInfo=validateAllVisibleInfo(true);
+    if(!okInfo){
+      const fieldErrors=visibleInvalidFieldNamesV95();
+      if(fieldErrors.length){
+        fieldErrors.forEach(e=>errors.push(e));
+      }else{
+        errors.push('Información General: hay campos obligatorios o con formato incorrecto. Revise los campos resaltados en rojo.');
+      }
+    }
+  }catch(e){
+    errors.push('No se pudo validar la Información General: '+(e.message||e));
+  }
+
+  return [...new Set(errors)];
+};
+
+/* Mensaje visual más legible. */
+showDetailedErrorV70 = function(title, errors){
+  const clean=(errors||[]).map(e=>String(e||'').trim()).filter(Boolean);
+  const text = clean.length ? `${title}\n\nCampos o motivos pendientes:\n- ${clean.join('\n- ')}` : title;
+  msg(text);
+  console.warn(title, clean);
+};
+
+/* Validación para impresión/PDF con enfoque al campo faltante. */
+validateForPrint = function(){
+  const errors=validationErrorsV70('generar el PDF');
+  if(errors.length){
+    showDetailedErrorV70('No se puede generar el PDF todavía.', errors);
+    focusFirstInvalidFieldV95();
+    return false;
+  }
+  return true;
+};
+
+/* Copiar también usa los mismos mensajes detallados. */
+if(typeof copiarInformeActualV70 === 'function'){
+  const _copiarInformeActual_base_V95 = copiarInformeActualV70;
+  copiarInformeActualV70 = async function(){
+    collectTop();
+
+    if(!isCopyEnabledReportV70()){
+      showDetailedErrorV70('No se puede copiar este informe.', ['El botón Copiar está habilitado únicamente para Informe Técnico Aprobatorio e Informe de Desistimiento.']);
+      return;
+    }
+
+    const errors=validationErrorsV70('copiar el informe');
+    if(errors.length){
+      showDetailedErrorV70('No se pudo copiar el informe.', errors);
+      focusFirstInvalidFieldV95();
+      return;
+    }
+
+    return _copiarInformeActual_base_V95();
+  };
+
+  copiarInformeAprobatorio = function(){
+    return copiarInformeActualV70();
+  };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    try{ validateAllVisibleInfo(false); }catch(e){}
   },900);
 });
 </script>
