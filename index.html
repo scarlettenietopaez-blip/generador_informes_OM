@@ -14771,5 +14771,196 @@ window.addEventListener('keydown',ev=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V97 SOBRE V96
+   Corrección Parroquia autocompletada:
+   El campo Parroquia puede mostrarse lleno por la clave catastral
+   o por PIT/coordenadas, pero el valor no siempre queda sincronizado
+   con state.info antes de validar PDF/Copiar.
+   Ahora la validación lee el valor visible y lo sincroniza.
+   ========================================================== */
+
+function normTextV97(v){
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function isParroquiaFieldV97(f){
+  return normTextV97(f?.label || '').includes('PARROQUIA');
+}
+
+function normalizeParroquiaValueV97(v){
+  const raw=String(v||'').trim();
+  if(!raw) return '';
+
+  // Si llega "57-PUNGALA" o "57 - PUNGALA", conserva solo el nombre.
+  let name=raw.replace(/^\s*\d+\s*[-–]\s*/,'').trim();
+
+  // Si llega con código pegado, intenta comparar por nombre.
+  const n=normTextV97(name);
+  if(Array.isArray(PARROQUIAS)){
+    const exact=PARROQUIAS.find(p=>normTextV97(p)===n);
+    if(exact) return exact;
+
+    const partial=PARROQUIAS.find(p=>{
+      const np=normTextV97(p);
+      return np && (n.includes(np) || np.includes(n));
+    });
+    if(partial) return partial;
+  }
+
+  return smartInputCase ? smartInputCase(name) : name.toUpperCase();
+}
+
+/* Busca cualquier control visible que tenga etiqueta Parroquia y valor. */
+function visibleParroquiaValueV97(){
+  const candidates=[];
+
+  document.querySelectorAll('input, select').forEach(el=>{
+    if(!el || el.type==='hidden') return;
+    const val=String(el.value||'').trim();
+    if(!val) return;
+
+    const id=String(el.id||'');
+    const name=String(el.name||'');
+    const aria=String(el.getAttribute('aria-label')||'');
+
+    let labelText='';
+    if(id){
+      const lab=document.querySelector(`label[for="${CSS.escape(id)}"]`);
+      if(lab) labelText += ' '+lab.textContent;
+    }
+
+    const field=el.closest('.field,.catastral-info-v49,.info-row-v49,.row,.row3');
+    if(field) labelText += ' '+field.textContent;
+
+    const nearLabel=el.parentElement?.querySelector?.('label');
+    if(nearLabel) labelText += ' '+nearLabel.textContent;
+
+    const all=normTextV97([id,name,aria,labelText].join(' '));
+
+    if(all.includes('PARROQUIA')){
+      candidates.push(val);
+    }
+  });
+
+  // Prioriza valores que no sean placeholder.
+  const usable=candidates
+    .map(normalizeParroquiaValueV97)
+    .filter(v=>v && !normTextV97(v).includes('SELECCIONE'));
+
+  return usable[0] || '';
+}
+
+function syncParroquiaToInfoStateV97(){
+  const f=(DATA.infoFields||[]).find(isParroquiaFieldV97);
+  if(!f) return '';
+
+  let val=String(state.info?.[f.key] || '').trim();
+
+  const el=document.getElementById('info_'+f.key);
+  if(el && String(el.value||'').trim()){
+    val=String(el.value||'').trim();
+  }
+
+  const visible=visibleParroquiaValueV97();
+  if(visible) val=visible;
+
+  val=normalizeParroquiaValueV97(val);
+
+  if(val){
+    if(!state.info) state.info={};
+    state.info[f.key]=val;
+    if(el) el.value=val;
+  }
+
+  return val;
+}
+
+/* Si alguna función autocompleta parroquia, fuerza sincronización posterior. */
+if(typeof setParroquiaV43 === 'function'){
+  const _setParroquiaV43_base_V97 = setParroquiaV43;
+  setParroquiaV43 = function(v){
+    const out=_setParroquiaV43_base_V97(v);
+    setTimeout(()=>syncParroquiaToInfoStateV97(),0);
+    return out;
+  };
+}
+
+if(typeof applyCatastralSearchV49 === 'function'){
+  const _applyCatastralSearch_base_V97 = applyCatastralSearchV49;
+  applyCatastralSearchV49 = function(){
+    const out=_applyCatastralSearch_base_V97();
+    setTimeout(()=>syncParroquiaToInfoStateV97(),0);
+    return out;
+  };
+}
+
+/* Override de validateInfoField para que Parroquia no falle si está autocompletada visualmente. */
+const _validateInfoField_base_V97 = typeof validateInfoField === 'function' ? validateInfoField : null;
+validateInfoField = function(f, show=true){
+  if(isParroquiaFieldV97(f)){
+    const val=syncParroquiaToInfoStateV97();
+    const err=document.getElementById('err_'+f.key);
+    const el=document.getElementById('info_'+f.key);
+    const name=(typeof fieldDisplayNameV95==='function') ? fieldDisplayNameV95(f) : 'Parroquia';
+
+    let ok=!!val;
+    let message='';
+
+    if(ok && Array.isArray(PARROQUIAS) && !PARROQUIAS.some(p=>normTextV97(p)===normTextV97(val))){
+      // Intenta corregir por comparación parcial antes de marcar error.
+      const fixed=normalizeParroquiaValueV97(val);
+      if(PARROQUIAS.some(p=>normTextV97(p)===normTextV97(fixed))){
+        state.info[f.key]=fixed;
+        if(el) el.value=fixed;
+        ok=true;
+      }else{
+        ok=false;
+        message=`${name}: seleccione una parroquia de la lista.`;
+      }
+    }
+
+    if(!ok && !message){
+      message=`${name}: campo obligatorio.`;
+    }
+
+    if(el) el.classList.toggle('invalid',!ok);
+    if(err){
+      err.textContent=message;
+      err.classList.toggle('v95-detail', !!message);
+      err.style.display=(!ok && show)?'block':'none';
+    }
+    return ok;
+  }
+
+  return _validateInfoField_base_V97 ? _validateInfoField_base_V97(f, show) : true;
+};
+
+/* Antes de listar errores para PDF/Copiar, sincroniza parroquia. */
+const _validationErrorsV70_base_V97 = typeof validationErrorsV70 === 'function' ? validationErrorsV70 : null;
+validationErrorsV70 = function(context='generar el PDF'){
+  syncParroquiaToInfoStateV97();
+  const errors=_validationErrorsV70_base_V97 ? _validationErrorsV70_base_V97(context) : [];
+  const parr=syncParroquiaToInfoStateV97();
+
+  // Elimina falso positivo si Parroquia ya fue sincronizada.
+  if(parr){
+    return errors.filter(e=>!/^Parroquia:\s*campo obligatorio\.?$/i.test(String(e||'').trim()));
+  }
+  return errors;
+};
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>syncParroquiaToInfoStateV97(),900);
+  setTimeout(()=>syncParroquiaToInfoStateV97(),1800);
+});
+</script>
+
 </body>
 </html>
