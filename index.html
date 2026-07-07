@@ -2039,6 +2039,35 @@ input,select,textarea{
 }
 </style>
 
+
+<style>
+/* V99 - Información General más pequeña que 10 pt */
+/* En CSS 10pt equivale aprox. a 13.3px, por eso se veía más grande.
+   Ahora se fuerza a 8pt para que realmente se vea menor. */
+.report .apr-info-table,
+.report .apr-info-table *,
+.report table.info-general-v98,
+.report table.info-general-v98 *,
+.report .info-general-v99,
+.report .info-general-v99 *{
+  font-size:8pt!important;
+  line-height:1.12!important;
+}
+.report .apr-info-table td,
+.report .apr-info-table th,
+.report table.info-general-v98 td,
+.report table.info-general-v98 th,
+.report .info-general-v99 td,
+.report .info-general-v99 th{
+  padding:2px 4px!important;
+}
+.report .apr-info-table .apr-info-section{
+  font-size:8pt!important;
+  line-height:1.1!important;
+  padding:3px 4px!important;
+}
+</style>
+
 </head>
 <body>
 
@@ -15015,6 +15044,196 @@ window.addEventListener('load',()=>{
     if(typeof renderReport === 'function') renderReport();
     if(typeof renderPreview === 'function') renderPreview();
   },900);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V99 SOBRE V98
+   - Corrección reforzada del falso error "Parroquia: campo obligatorio".
+   - Reduce tabla de Información General a 8 pt.
+   ========================================================== */
+
+function normParrV99(v){
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^A-Z0-9 ]/gi,' ')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function parroquiasListV99(){
+  const base = Array.isArray(PARROQUIAS) ? PARROQUIAS : [];
+  const extra = [
+    'LIZARZABURU','MALDONADO','VELASCO','VELOZ','YARUQUÍES',
+    'RIOBAMBA','CACHA','CALPI','CUBIJÍES','FLORES','LICÁN','LICTO',
+    'PUNGALA','PUNÍN','QUIMIAG','SAN JUAN','SAN LUIS'
+  ];
+  return [...new Set([...base, ...extra])].filter(Boolean);
+}
+
+function normalizeParroquiaV99(v){
+  let raw=String(v||'').trim();
+  if(!raw) return '';
+
+  raw=raw.replace(/^\s*\d+\s*[-–]\s*/,'').trim();
+
+  const n=normParrV99(raw);
+  const hit=parroquiasListV99().find(p=>normParrV99(p)===n)
+    || parroquiasListV99().find(p=>{
+      const np=normParrV99(p);
+      return np && (n.includes(np) || np.includes(n));
+    });
+
+  return hit || raw.toUpperCase();
+}
+
+/* Busca una parroquia en cualquier valor visible o guardado, no solo en el input original info_KEY. */
+function findAnyParroquiaValueV99(){
+  const values=[];
+
+  // 1. Estado
+  try{
+    Object.values(state.info||{}).forEach(v=>values.push(v));
+  }catch(e){}
+
+  // 2. Todos los inputs/selects con valor
+  document.querySelectorAll('input, select, textarea').forEach(el=>{
+    const val=String(el.value||'').trim();
+    if(val) values.push(val);
+  });
+
+  // 3. Valores de solo lectura o spans si existieran
+  document.querySelectorAll('[data-parroquia], .parroquia, #parroquia, [id*="parroquia" i], [name*="parroquia" i]').forEach(el=>{
+    const val=String(el.value||el.textContent||'').trim();
+    if(val) values.push(val);
+  });
+
+  const list=parroquiasListV99().map(p=>({raw:p,n:normParrV99(p)}));
+
+  for(const v of values){
+    const nv=normParrV99(v);
+    if(!nv || nv.includes('SELECCIONE')) continue;
+
+    const exact=list.find(p=>p.n===nv);
+    if(exact) return exact.raw;
+
+    const partial=list.find(p=>p.n && (nv.includes(p.n) || p.n.includes(nv)));
+    if(partial) return partial.raw;
+  }
+
+  return '';
+}
+
+function parroquiaFieldV99(){
+  return (DATA.infoFields||[]).find(f=>normParrV99(f.label||'').includes('PARROQUIA')) || null;
+}
+
+function syncParroquiaV99(){
+  const f=parroquiaFieldV99();
+  if(!f) return findAnyParroquiaValueV99();
+
+  let val='';
+
+  const el=document.getElementById('info_'+f.key);
+  if(el && String(el.value||'').trim()){
+    val=el.value;
+  }
+
+  if(!val && state.info?.[f.key]){
+    val=state.info[f.key];
+  }
+
+  const any=findAnyParroquiaValueV99();
+  if(any) val=any;
+
+  val=normalizeParroquiaV99(val);
+
+  if(val){
+    if(!state.info) state.info={};
+    state.info[f.key]=val;
+    if(el) el.value=val;
+
+    const err=document.getElementById('err_'+f.key);
+    if(err){
+      err.textContent='';
+      err.style.display='none';
+    }
+    if(el) el.classList.remove('invalid');
+  }
+
+  return val;
+}
+
+/* Reemplaza validación de parroquia sin depender del campo original vacío. */
+const _validateInfoField_base_V99 = typeof validateInfoField === 'function' ? validateInfoField : null;
+validateInfoField = function(f, show=true){
+  if(normParrV99(f?.label||'').includes('PARROQUIA')){
+    const val=syncParroquiaV99();
+    const err=document.getElementById('err_'+f.key);
+    const el=document.getElementById('info_'+f.key);
+    const name=(typeof fieldDisplayNameV95==='function') ? fieldDisplayNameV95(f) : 'Parroquia';
+
+    const ok=!!val;
+    const message=ok ? '' : `${name}: campo obligatorio.`;
+
+    if(el) el.classList.toggle('invalid',!ok);
+    if(err){
+      err.textContent=message;
+      err.classList.toggle('v95-detail', !!message);
+      err.style.display=(!ok && show)?'block':'none';
+    }
+
+    return ok;
+  }
+
+  return _validateInfoField_base_V99 ? _validateInfoField_base_V99(f, show) : true;
+};
+
+/* Limpieza definitiva de errores de parroquia si ya existe cualquier parroquia en pantalla. */
+const _validationErrorsV70_base_V99 = typeof validationErrorsV70 === 'function' ? validationErrorsV70 : null;
+validationErrorsV70 = function(context='generar el PDF'){
+  syncParroquiaV99();
+
+  let errors=_validationErrorsV70_base_V99 ? _validationErrorsV70_base_V99(context) : [];
+  const parr=syncParroquiaV99();
+
+  if(parr){
+    errors=errors.filter(e=>{
+      const s=String(e||'').trim();
+      return !/^Parroquia\s*:\s*campo obligatorio\.?$/i.test(s)
+          && !/^Falta el campo:\s*Parroquia\.?$/i.test(s)
+          && !(s.toLowerCase().includes('parroquia') && s.toLowerCase().includes('obligatorio'));
+    });
+  }
+
+  return [...new Set(errors)];
+};
+
+/* Sincroniza luego de cualquier autocompletado o render. */
+if(typeof renderInfoForm === 'function'){
+  const _renderInfoForm_base_V99 = renderInfoForm;
+  renderInfoForm = function(){
+    const out=_renderInfoForm_base_V99();
+    setTimeout(()=>syncParroquiaV99(),0);
+    return out;
+  };
+}
+
+if(typeof setParroquiaV43 === 'function'){
+  const _setParroquiaV43_base_V99 = setParroquiaV43;
+  setParroquiaV43 = function(v){
+    const out=_setParroquiaV43_base_V99(v);
+    setTimeout(()=>syncParroquiaV99(),0);
+    return out;
+  };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>syncParroquiaV99(),700);
+  setTimeout(()=>syncParroquiaV99(),1500);
 });
 </script>
 
