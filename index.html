@@ -16933,5 +16933,103 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V109 SOBRE V108
+   Requisito 4. Certificado de Gravámenes Actualizado:
+   Agrega datos adicionales en Resultado / detalle:
+   - Ficha registral No.
+   - Certificado No.
+   - Fecha
+   ========================================================== */
+
+function normReqV109(v){
+  if(typeof normReqV94 === 'function') return normReqV94(v);
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function reqNumberV109(req){
+  if(typeof reqNumberV94 === 'function') return reqNumberV94(req);
+  const m=String(req?.texto||'').trim().match(/^(\d+)/);
+  return m ? Number(m[1]) : null;
+}
+
+function isReqGeneralV109(req){
+  if(typeof isReqGeneralV94 === 'function') return isReqGeneralV94(req);
+  return normReqV109(req?.grupo||'').includes('REQUISITOS GENERALES');
+}
+
+function isGravamenesReqV109(req){
+  const t=normReqV109(req?.texto || '');
+  return isReqGeneralV109(req) && (
+    reqNumberV109(req) === 4 ||
+    t.includes('CERTIFICADO DE GRAVAMEN') ||
+    t.includes('GRAVAMENES') ||
+    t.includes('GRAVÁMENES')
+  );
+}
+
+function gravamenesDetailLinesV109(req){
+  const d=state.requisitos?.[req.id]?.detalle || {};
+  const lines=[];
+
+  if(d.fichaRegistralGravamenes) lines.push('Ficha registral No.: '+d.fichaRegistralGravamenes);
+  if(d.certificadoGravamenes) lines.push('Certificado No.: '+d.certificadoGravamenes);
+  if(d.fechaGravamenes) lines.push('Fecha: '+fmtDate(d.fechaGravamenes));
+
+  return lines;
+}
+
+/* Conserva el comportamiento anterior y agrega detalle para Gravámenes. */
+const _reqDefaultDetailV94_base_V109 = typeof reqDefaultDetailV94 === 'function' ? reqDefaultDetailV94 : null;
+reqDefaultDetailV94 = function(req){
+  if(isGravamenesReqV109(req)){
+    const estado=(state.requisitos?.[req.id]?.estado || '').trim();
+    const lines=gravamenesDetailLinesV109(req);
+    return lines.join('\n') || estado || '';
+  }
+
+  return _reqDefaultDetailV94_base_V109 ? _reqDefaultDetailV94_base_V109(req) : ((state.requisitos?.[req.id]?.estado || '').trim());
+};
+
+/* Conserva Formulario 13, IPRUS y el estado normal, pero agrega inputs para Gravámenes. */
+const _reqDetailInputHtmlV94_base_V109 = typeof reqDetailInputHtmlV94 === 'function' ? reqDetailInputHtmlV94 : null;
+reqDetailInputHtmlV94 = function(req){
+  const val=typeof ensureReqObjV94 === 'function'
+    ? ensureReqObjV94(req.id)
+    : (state.requisitos[req.id] ||= {estado:'', observacion:'', detalle:{}});
+
+  if(!val.detalle) val.detalle={};
+  const d=val.detalle || {};
+
+  if(isGravamenesReqV109(req)){
+    return `<div class="req-detail-v94 req-detail-gravamenes-v109">
+      <label>Ficha registral No.</label>
+      <input data-req-detail="${esc(req.id)}" data-field="fichaRegistralGravamenes" value="${esc(d.fichaRegistralGravamenes||'')}" placeholder="Ficha registral No.">
+      <label>Certificado No.</label>
+      <input data-req-detail="${esc(req.id)}" data-field="certificadoGravamenes" value="${esc(d.certificadoGravamenes||'')}" placeholder="Certificado No.">
+      <label>Fecha</label>
+      <input type="date" data-req-detail="${esc(req.id)}" data-field="fechaGravamenes" value="${esc(d.fechaGravamenes||'')}">
+    </div>`;
+  }
+
+  return _reqDetailInputHtmlV94_base_V109 ? _reqDetailInputHtmlV94_base_V109(req) : `<span>${esc(val.estado || '')}</span>`;
+};
+
+/* Re-renderiza requisitos para que aparezcan los nuevos campos si la vista ya estaba cargada. */
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    if(typeof renderRequisitosForm === 'function') renderRequisitosForm(false);
+    if(typeof renderReport === 'function') renderReport();
+    if(typeof renderPreview === 'function') renderPreview();
+  },900);
+});
+</script>
+
 </body>
 </html>
