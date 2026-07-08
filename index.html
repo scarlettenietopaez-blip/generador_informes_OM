@@ -2378,6 +2378,49 @@ input,select,textarea{
 .manual-obs-images-v114 .manual-counter-v114{font-size:11px;font-weight:800;color:#0b2b4c;background:#eef4fb;border-radius:999px;padding:3px 8px;display:inline-block;width:max-content}
 </style>
 
+
+<style>
+/* V115 - usar un solo bloque de imágenes en Observación Manual */
+#manualObsImagesBox{
+  display:none!important;
+}
+#manualImagePreviewV53 .manual-gallery-v115{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(82px,1fr));
+  gap:8px;
+  margin-top:8px;
+}
+#manualImagePreviewV53 .manual-thumb-v115{
+  border:1px solid #d1dbe8;
+  background:#fff;
+  border-radius:8px;
+  padding:5px;
+}
+#manualImagePreviewV53 .manual-thumb-v115 img{
+  width:100%;
+  max-height:92px;
+  object-fit:contain;
+  display:block;
+  border-radius:6px;
+}
+#manualImagePreviewV53 .manual-thumb-v115 button{
+  width:100%;
+  margin-top:4px;
+  padding:4px 6px!important;
+  font-size:10px!important;
+}
+#manualImagePreviewV53 .manual-counter-v115{
+  display:inline-block;
+  margin-top:6px;
+  font-size:11px;
+  font-weight:900;
+  color:#0b2b4c;
+  background:#eef4fb;
+  border-radius:999px;
+  padding:3px 8px;
+}
+</style>
+
 </head>
 <body>
 
@@ -17949,6 +17992,251 @@ toggleManualObsPanel = function(){
   const p=document.getElementById('manualObsPanel');
   if(p && !p.classList.contains('collapsed')) renderManualObsImagesV114();
 };
+</script>
+
+
+<script>
+/* ==========================================================
+   V115 SOBRE V114
+   Corrección:
+   - Elimina el segundo bloque de imágenes en Observación Manual.
+   - Usa el bloque original de Imagen, pero ahora permite varias imágenes.
+   ========================================================== */
+
+function manualImgsV115(){
+  if(typeof manualObsImgsV114 === 'function') return manualObsImgsV114();
+  const arr=Array.isArray(window.manualObsDraftV114?.imagenes) ? window.manualObsDraftV114.imagenes : [];
+  return arr.filter(Boolean);
+}
+
+function syncManualImgsV115(arr){
+  if(typeof syncManualObsImgsV114 === 'function'){
+    syncManualObsImgsV114(arr);
+    return;
+  }
+  window.manualObsDraftV114 = window.manualObsDraftV114 || {};
+  window.manualObsDraftV114.imagenes = [...new Set((arr||[]).filter(Boolean))];
+}
+
+async function addManualObsImagesV115(fileList){
+  const files=[...(fileList||[])].filter(f=>f && f.type && f.type.startsWith('image/'));
+  if(!files.length){
+    if(typeof msg==='function') msg('No se encontraron imágenes para agregar.');
+    return;
+  }
+
+  const current=manualImgsV115();
+  const loaded=[];
+
+  for(const file of files){
+    try{
+      const data = typeof fileToImageDataV113 === 'function'
+        ? await fileToImageDataV113(file)
+        : await new Promise((resolve,reject)=>{
+            const r=new FileReader();
+            r.onload=()=>resolve(r.result);
+            r.onerror=()=>reject(r.error || new Error('No se pudo leer la imagen.'));
+            r.readAsDataURL(file);
+          });
+      if(data) loaded.push(data);
+    }catch(e){
+      console.warn('V115 imagen manual no cargada:', e);
+    }
+  }
+
+  syncManualImgsV115([...current, ...loaded]);
+  renderManualImagePreviewV53();
+
+  if(typeof msg==='function'){
+    msg(loaded.length===1 ? 'Imagen agregada a la observación manual.' : `${loaded.length} imágenes agregadas a la observación manual.`, true);
+  }
+}
+
+function pasteManualObsImagesV115(ev){
+  const items=[...(ev.clipboardData?.items || [])];
+  const files=items
+    .filter(item=>item.kind==='file' && item.type && item.type.startsWith('image/'))
+    .map(item=>item.getAsFile())
+    .filter(Boolean);
+
+  if(files.length){
+    ev.preventDefault();
+    addManualObsImagesV115(files);
+  }
+}
+
+function removeManualObsImageV115(i){
+  const arr=manualImgsV115();
+  arr.splice(i,1);
+  syncManualImgsV115(arr);
+  renderManualImagePreviewV53();
+}
+
+function clearManualImageV53(){
+  syncManualImgsV115([]);
+  renderManualImagePreviewV53();
+}
+
+function renderManualImagePreviewV53(){
+  const box=document.getElementById('manualImagePreviewV53');
+  if(!box) return;
+
+  const imgs=manualImgsV115();
+
+  if(!imgs.length){
+    box.innerHTML='';
+    return;
+  }
+
+  box.innerHTML=`<span class="manual-counter-v115">${imgs.length} imagen(es)</span>
+    <div class="manual-gallery-v115">${imgs.map((src,i)=>`
+      <div class="manual-thumb-v115">
+        <img src="${esc(src)}" alt="Imagen ${i+1}">
+        <button type="button" class="secondary mini-btn" onclick="removeManualObsImageV115(${i})">Quitar ${i+1}</button>
+      </div>`).join('')}</div>
+    <div class="buttons small-actions" style="margin-top:8px">
+      <button type="button" class="secondary" onclick="clearManualImageV53()">Quitar todas las imágenes</button>
+    </div>`;
+}
+
+function setManualImageV53(input){
+  addManualObsImagesV115(input?.files || []);
+  if(input) input.value='';
+}
+
+function pasteManualImageV53(ev){
+  pasteManualObsImagesV115(ev);
+}
+
+function patchManualImageOriginalV115(){
+  const extra=document.getElementById('manualObsImagesBox');
+  if(extra) extra.remove();
+
+  const preview=document.getElementById('manualImagePreviewV53');
+  if(!preview) return;
+
+  const tools=preview.closest('.image-tools-v53') || preview.parentElement;
+  if(!tools) return;
+
+  const input=tools.querySelector('input[type="file"]');
+  if(input){
+    input.setAttribute('multiple','multiple');
+    input.onchange=function(){
+      addManualObsImagesV115(this.files);
+      this.value='';
+    };
+  }
+
+  const paste=tools.querySelector('.paste-zone-v53, .paste-zone-v114, [contenteditable="true"]');
+  if(paste){
+    paste.textContent='Pegar una o varias capturas aquí';
+    paste.onpaste=function(ev){
+      pasteManualObsImagesV115(ev);
+    };
+  }
+
+  renderManualImagePreviewV53();
+}
+
+const _renderObservacionesForm_base_V115 = typeof renderObservacionesForm === 'function' ? renderObservacionesForm : null;
+if(_renderObservacionesForm_base_V115){
+  renderObservacionesForm = function(){
+    const out=_renderObservacionesForm_base_V115();
+    patchManualImageOriginalV115();
+    return out;
+  };
+}
+
+const _toggleManualObsPanel_base_V115 = typeof toggleManualObsPanel === 'function' ? toggleManualObsPanel : null;
+if(_toggleManualObsPanel_base_V115){
+  toggleManualObsPanel = function(){
+    const out=_toggleManualObsPanel_base_V115();
+    setTimeout(patchManualImageOriginalV115,50);
+    return out;
+  };
+}
+
+/* Guardar observación manual usando el único bloque de imagen original. */
+agregarObsManual = async function(){
+  if(typeof collectTop === 'function') collectTop();
+
+  const norma=typeof upper==='function'
+    ? upper(document.getElementById('manualNorma')?.value || '')
+    : String(document.getElementById('manualNorma')?.value || '').toUpperCase();
+
+  const obsRaw=typeof smartInputCase==='function'
+    ? smartInputCase((document.getElementById('manualObservacion')?.value || '').trim())
+    : String(document.getElementById('manualObservacion')?.value || '').trim();
+
+  const textoManual=typeof smartInputCase==='function'
+    ? smartInputCase((document.getElementById('manualTextoArticulo')?.value || '').trim())
+    : String(document.getElementById('manualTextoArticulo')?.value || '').trim();
+
+  if(!norma || !obsRaw){
+    msg('Para agregar una observación manual debe llenar Artículo y Observación específica.');
+    return;
+  }
+
+  const art = typeof findArticleByRefV55 === 'function'
+    ? findArticleByRefV55(norma)
+    : (typeof findNormativaArticuloV36 === 'function' ? findNormativaArticuloV36(norma) : null);
+
+  const texto = textoManual || (art
+    ? (typeof formatArticleTextV55 === 'function' ? formatArticleTextV55(art.Texto_Articulo || art.texto || '') : (art.Texto_Articulo || art.texto || ''))
+    : `No se encontró el artículo en la base normativa. Artículo ingresado: ${norma}.`);
+
+  const imagenes=manualImgsV115();
+
+  const item={
+    id:crypto.randomUUID(),
+    codigo:'MAN-'+Date.now(),
+    componente:'Manual',
+    tema:art?.Titulo || art?.titulo || '',
+    articulo:art ? (art.Articulo || art.articulo || norma) : norma,
+    texto,
+    observacion:obsRaw,
+    norma:art ? (art.Articulo || art.articulo || norma) : norma,
+    manual:true,
+    source:'obs',
+    ordenanza:!!art,
+    imagenes:[...imagenes],
+    imagen:imagenes[0] || '',
+    correccion:'',
+    documento:'',
+    nota:'',
+    egob:state.egob||'',
+    tecnico:state.tecnico||'',
+    tipoInforme:state.tipoInforme||'',
+    fechaRevision:state.fechaRevision||'',
+    createdAt:new Date().toISOString(),
+    updatedAt:new Date().toISOString(),
+    estado:'PENDIENTE DE ANÁLISIS'
+  };
+
+  state.obsSeleccionadas.push({...item});
+  if(db) await manualObsPut({...item});
+
+  ['manualNorma','manualObservacion','manualTextoArticulo'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){
+      el.value='';
+      el.dataset.userEdited='';
+    }
+  });
+
+  syncManualImgsV115([]);
+  renderManualImagePreviewV53();
+  renderObsSeleccionadas();
+  renderManualObsDB();
+  renderReport();
+  renderPreview();
+  msg('Observación manual agregada.', true);
+};
+
+window.addEventListener('load',()=>{
+  setTimeout(patchManualImageOriginalV115,900);
+  setTimeout(patchManualImageOriginalV115,1800);
+});
 </script>
 
 </body>
