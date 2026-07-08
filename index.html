@@ -2169,51 +2169,49 @@ input,select,textarea{
 
 
 <style>
-/* V110 - tabla pequeña dentro del requisito de sistemas públicos de soporte */
-.req-detail-soporte-v110{
-  display:block;
-  min-width:300px;
+/* V111 - Estudios complementarios dentro de Requisitos */
+.req-estudios-wrapper-v111{
+  min-width:520px;
+  max-width:100%;
 }
-.req-detail-soporte-v110 table{
+.req-estudios-wrapper-v111 .mini{
+  font-size:11px;
+  line-height:1.25;
+  margin-bottom:6px;
+  color:#475569;
+}
+.req-estudios-table-v111{
   width:100%;
   border-collapse:collapse;
-  font-size:11px;
+  table-layout:fixed;
 }
-.req-detail-soporte-v110 th,
-.req-detail-soporte-v110 td{
+.req-estudios-table-v111 th,
+.req-estudios-table-v111 td{
   border:1px solid #d7e0ee;
   padding:4px;
   vertical-align:top;
 }
-.req-detail-soporte-v110 th{
+.req-estudios-table-v111 th{
   background:#eef4fb;
   color:#0b2b4c;
   font-weight:900;
   text-align:center;
+  font-size:10.5px;
 }
-.req-detail-soporte-v110 input{
+.req-estudios-table-v111 input,
+.req-estudios-table-v111 textarea{
   width:100%;
-  min-height:28px;
-  font-size:11px!important;
-  padding:4px 6px!important;
   box-sizing:border-box;
+  font-size:11px!important;
+  padding:5px 6px!important;
+  min-height:28px;
 }
-.report .soporte-report-table-v110{
-  width:100%;
-  border-collapse:collapse;
-  font-size:11px;
-  line-height:1.15;
+.req-estudios-table-v111 textarea{
+  min-height:44px;
+  resize:vertical;
 }
-.report .soporte-report-table-v110 th,
-.report .soporte-report-table-v110 td{
-  border:1px solid #d0d7e2;
-  padding:3px 4px;
-  vertical-align:top;
-}
-.report .soporte-report-table-v110 th{
-  background:#eef4fb;
-  font-weight:900;
-  text-align:center;
+.req-compact-v94 td.req-estudios-cell-v111{
+  min-width:540px;
 }
 </style>
 
@@ -17084,20 +17082,19 @@ window.addEventListener('load',()=>{
 
 <script>
 /* ==========================================================
-   V110 SOBRE V109
-   Requisito 9:
-   Certificado de aprobación de planos y factibilidad de los
-   sistemas públicos de soporte emitidos por las dependencias competentes.
-
-   Agrega una tabla dentro de Resultado / detalle para:
-   - CNT: Informe N° y Fecha
-   - EERSA: Informe N° y Fecha
-   - RIOBAMBA EP: Informe N° y Fecha
+   V111 SOBRE V108/V109
+   Estudios Complementarios:
+   - Se mueve el formulario de Estudios Complementarios a la pestaña Requisitos.
+   - Se coloca dentro del requisito:
+     "9. Certificado de aprobación de planos y factibilidad de los sistemas públicos de soporte..."
+   - Ya no aparece en la pestaña Aprobatorio.
+   - La Vista del Informe se mantiene igual: sigue saliendo la sección
+     "Estudios complementarios" con la misma tabla de informe.
    ========================================================== */
 
-function normReqV110(v){
-  if(typeof normReqV109 === 'function') return normReqV109(v);
-  if(typeof normReqV94 === 'function') return normReqV94(v);
+function normReqV111(v){
+  const fn = typeof normReqV109 === 'function' ? normReqV109 : (typeof normReqV94 === 'function' ? normReqV94 : null);
+  if(fn) return fn(v);
   return String(v||'')
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .replace(/\s+/g,' ')
@@ -17105,21 +17102,21 @@ function normReqV110(v){
     .toUpperCase();
 }
 
-function reqNumberV110(req){
-  if(typeof reqNumberV109 === 'function') return reqNumberV109(req);
-  if(typeof reqNumberV94 === 'function') return reqNumberV94(req);
+function reqNumberV111(req){
+  const fn = typeof reqNumberV109 === 'function' ? reqNumberV109 : (typeof reqNumberV94 === 'function' ? reqNumberV94 : null);
+  if(fn) return fn(req);
   const m=String(req?.texto||'').trim().match(/^(\d+)/);
   return m ? Number(m[1]) : null;
 }
 
-function isReqGeneralV110(req){
-  if(typeof isReqGeneralV109 === 'function') return isReqGeneralV109(req);
-  if(typeof isReqGeneralV94 === 'function') return isReqGeneralV94(req);
-  return normReqV110(req?.grupo||'').includes('REQUISITOS GENERALES');
+function isReqGeneralV111(req){
+  const fn = typeof isReqGeneralV109 === 'function' ? isReqGeneralV109 : (typeof isReqGeneralV94 === 'function' ? isReqGeneralV94 : null);
+  if(fn) return fn(req);
+  return normReqV111(req?.grupo||'').includes('REQUISITOS GENERALES');
 }
 
-function isSistemasSoporteReqV110(req){
-  const t=normReqV110(req?.texto || '');
+function isSistemasSoporteReqV111(req){
+  const t=normReqV111(req?.texto || '');
 
   const byText =
     t.includes('CERTIFICADO') &&
@@ -17127,131 +17124,138 @@ function isSistemasSoporteReqV110(req){
     t.includes('PLANOS') &&
     t.includes('FACTIBILIDAD') &&
     t.includes('SISTEMAS') &&
-    (t.includes('SOPORTE') || t.includes('PUBLICOS') || t.includes('PÚBLICOS'));
+    (t.includes('SOPORTE') || t.includes('PUBLICOS') || t.includes('PÚBLICOS') || t.includes('PUBLICOS DE SOPORTE'));
 
-  return (isReqGeneralV110(req) && reqNumberV110(req) === 9) || byText;
+  return (isReqGeneralV111(req) && reqNumberV111(req) === 9) || byText;
 }
 
-function soporteRowsV110(){
-  return [
-    {key:'cnt', label:'CNT'},
-    {key:'eersa', label:'EERSA'},
-    {key:'riobambaEp', label:'RIOBAMBA EP'}
-  ];
+function initEstudiosComplementariosV111(){
+  if(typeof ensureAprobatorioData === 'function') ensureAprobatorioData();
+  if(!state.aprobatorio) state.aprobatorio={};
+  if(!Array.isArray(state.aprobatorio.estudios)) state.aprobatorio.estudios=[];
+
+  if(!state.aprobatorio.estudios.length){
+    state.aprobatorio.estudios=(DATA.estudios && DATA.estudios.length
+      ? DATA.estudios.map(r=>({
+          estudio:r.Estudio||r.estudio||'',
+          documento:r.Documento||r.documento||'',
+          fecha:r.Fecha||r.fecha||'',
+          evidencia:r.Evidencia||r.evidencia||''
+        }))
+      : ['EP-EMAPAR','EERSA','CNT','BOMBEROS'].map(x=>({
+          estudio:x,
+          documento:'',
+          fecha:'',
+          evidencia:''
+        }))
+    );
+  }
 }
 
-function soporteInformeFieldV110(key){ return key+'InformeSoporte'; }
-function soporteFechaFieldV110(key){ return key+'FechaSoporte'; }
+function renderEstudiosTableHtmlV111(){
+  initEstudiosComplementariosV111();
 
-function soporteHasDataV110(d){
-  return soporteRowsV110().some(r => String(d?.[soporteInformeFieldV110(r.key)] || '').trim() || String(d?.[soporteFechaFieldV110(r.key)] || '').trim());
+  return `<div class="req-estudios-wrapper-v111">
+    <div class="mini">Complete aquí la información de estudios complementarios. En la Vista del Informe se imprimirá en la sección “Estudios complementarios”, igual que antes.</div>
+    <table class="req-estudios-table-v111">
+      <thead>
+        <tr>
+          <th style="width:18%">ESTUDIO</th>
+          <th>DOCUMENTO / TRÁMITE</th>
+          <th style="width:15%">FECHA</th>
+          <th>EVIDENCIA</th>
+        </tr>
+      </thead>
+      <tbody>${state.aprobatorio.estudios.map((r,i)=>`<tr>
+        <td><input value="${esc(r.estudio||'')}" oninput="updEstudio(${i},'estudio',this)"></td>
+        <td><input value="${esc(r.documento||'')}" oninput="updEstudio(${i},'documento',this)"></td>
+        <td><input type="date" value="${esc(r.fecha||'')}" oninput="updEstudio(${i},'fecha',this)"></td>
+        <td><textarea class="evidencia-text" oninput="updEstudio(${i},'evidencia',this)">${esc(r.evidencia||'')}</textarea></td>
+      </tr>`).join('')}</tbody>
+    </table>
+  </div>`;
 }
 
-function soporteDetailTextV110(req){
-  const d=state.requisitos?.[req.id]?.detalle || {};
-  if(!soporteHasDataV110(d)) return '';
-
-  return soporteRowsV110().map(r=>{
-    const informe=d[soporteInformeFieldV110(r.key)] || '';
-    const fecha=d[soporteFechaFieldV110(r.key)] || '';
-    const parts=[];
-    if(informe) parts.push('Informe N°: '+informe);
-    if(fecha) parts.push('Fecha: '+fmtDate(fecha));
-    return r.label + (parts.length ? ' - ' + parts.join(' | ') : '');
-  }).join('\n');
-}
-
-function soporteDetailReportHtmlV110(req){
-  const d=state.requisitos?.[req.id]?.detalle || {};
-  if(!soporteHasDataV110(d)){
-    return esc((state.requisitos?.[req.id]?.estado || '').trim());
+/* Compatibilidad: si alguna función llama renderEstudiosTabla, ahora renderiza
+   solo si existe un contenedor válido en Requisitos. */
+renderEstudiosTabla = function(){
+  initEstudiosComplementariosV111();
+  const reqBox=document.getElementById('estudiosTablaReqV111');
+  if(reqBox){
+    reqBox.innerHTML=renderEstudiosTableHtmlV111();
+    return;
   }
 
-  return `<table class="soporte-report-table-v110">
-    <thead><tr><th>Dependencia</th><th>Informe N°</th><th>Fecha</th></tr></thead>
-    <tbody>${soporteRowsV110().map(r=>{
-      const informe=d[soporteInformeFieldV110(r.key)] || '';
-      const fecha=d[soporteFechaFieldV110(r.key)] || '';
-      return `<tr><td>${esc(r.label)}</td><td>${esc(informe)}</td><td>${esc(fecha ? fmtDate(fecha) : '')}</td></tr>`;
-    }).join('')}</tbody>
-  </table>`;
-}
-
-/* Detalle textual para compatibilidad con funciones anteriores. */
-const _reqDefaultDetailV94_base_V110 = typeof reqDefaultDetailV94 === 'function' ? reqDefaultDetailV94 : null;
-reqDefaultDetailV94 = function(req){
-  if(isSistemasSoporteReqV110(req)){
-    const estado=(state.requisitos?.[req.id]?.estado || '').trim();
-    return soporteDetailTextV110(req) || estado || '';
+  const old=document.getElementById('estudiosTabla');
+  if(old){
+    old.innerHTML='';
   }
-
-  return _reqDefaultDetailV94_base_V110 ? _reqDefaultDetailV94_base_V110(req) : ((state.requisitos?.[req.id]?.estado || '').trim());
 };
 
-/* Inputs dentro de la celda Resultado / detalle. */
-const _reqDetailInputHtmlV94_base_V110 = typeof reqDetailInputHtmlV94 === 'function' ? reqDetailInputHtmlV94 : null;
+const _reqDetailInputHtmlV94_base_V111 = typeof reqDetailInputHtmlV94 === 'function' ? reqDetailInputHtmlV94 : null;
 reqDetailInputHtmlV94 = function(req){
-  const val=typeof ensureReqObjV94 === 'function'
-    ? ensureReqObjV94(req.id)
-    : (state.requisitos[req.id] ||= {estado:'', observacion:'', detalle:{}});
-
-  if(!val.detalle) val.detalle={};
-  const d=val.detalle || {};
-
-  if(isSistemasSoporteReqV110(req)){
-    return `<div class="req-detail-soporte-v110">
-      <table>
-        <thead><tr><th>Dependencia</th><th>Informe N°</th><th>Fecha</th></tr></thead>
-        <tbody>${soporteRowsV110().map(r=>{
-          const infField=soporteInformeFieldV110(r.key);
-          const fechaField=soporteFechaFieldV110(r.key);
-          return `<tr>
-            <td><strong>${esc(r.label)}</strong></td>
-            <td><input data-req-detail="${esc(req.id)}" data-field="${infField}" value="${esc(d[infField]||'')}" placeholder="Informe N°"></td>
-            <td><input type="date" data-req-detail="${esc(req.id)}" data-field="${fechaField}" value="${esc(d[fechaField]||'')}"></td>
-          </tr>`;
-        }).join('')}</tbody>
-      </table>
-    </div>`;
+  if(isSistemasSoporteReqV111(req)){
+    initEstudiosComplementariosV111();
+    return `<div id="estudiosTablaReqV111">${renderEstudiosTableHtmlV111()}</div>`;
   }
 
-  return _reqDetailInputHtmlV94_base_V110 ? _reqDetailInputHtmlV94_base_V110(req) : `<span>${esc(val.estado || '')}</span>`;
+  return _reqDetailInputHtmlV94_base_V111 ? _reqDetailInputHtmlV94_base_V111(req) : '';
 };
 
-/* HTML para Resultado / detalle en la Vista del Informe. */
-function reqReportDetailHtmlV110(req){
-  if(isSistemasSoporteReqV110(req)){
-    return soporteDetailReportHtmlV110(req);
+/* El requisito 9 no debe imprimir otra tabla en Resultado/detalle,
+   porque la Vista del Informe mantiene la sección Estudios complementarios. */
+const _reqDefaultDetailV94_base_V111 = typeof reqDefaultDetailV94 === 'function' ? reqDefaultDetailV94 : null;
+reqDefaultDetailV94 = function(req){
+  if(isSistemasSoporteReqV111(req)){
+    return (state.requisitos?.[req.id]?.estado || '').trim();
   }
+  return _reqDefaultDetailV94_base_V111 ? _reqDefaultDetailV94_base_V111(req) : ((state.requisitos?.[req.id]?.estado || '').trim());
+};
 
-  const detail=typeof reqDefaultDetailV94 === 'function'
-    ? reqDefaultDetailV94(req)
-    : ((state.requisitos?.[req.id]?.estado || '').trim());
+function removeEstudiosFromAprobatorioTabV111(){
+  const old=document.getElementById('estudiosTabla');
+  if(!old) return;
 
-  return esc(detail || '');
+  const prev=old.previousElementSibling;
+  if(prev && prev.classList && prev.classList.contains('section-title') && /ESTUDIOS\s+COMPLEMENTARIOS/i.test(prev.textContent||'')){
+    prev.remove();
+  }
+  old.remove();
 }
 
-/* Sobrescribe la tabla de requisitos para permitir mini tabla HTML dentro de la celda.
-   Mantiene la eliminación de columna Nro. de v105. */
-reqTable = function(reqs, mode){
-  if(!reqs.length) return '<p>No se registran requisitos para esta sección.</p>';
+/* Aprobatorio mantiene Anteproyecto, Consideraciones estructurales y Conclusión técnica,
+   pero ya no muestra Estudios Complementarios en el formulario. */
+const _renderAprobatorioForm_base_V111 = typeof renderAprobatorioForm === 'function' ? renderAprobatorioForm : null;
+renderAprobatorioForm = function(){
+  if(_renderAprobatorioForm_base_V111) _renderAprobatorioForm_base_V111();
+  initEstudiosComplementariosV111();
+  removeEstudiosFromAprobatorioTabV111();
+};
 
-  return `<table class="req-report-v94"><thead><tr>
-    <th>Requisito</th>
-    <th>Resultado / detalle</th>
-    ${mode === 'obs' ? '<th>Corrección requerida</th>' : ''}
-  </tr></thead><tbody>${reqs.map((r)=>{
-    const v = state.requisitos[r.id] || {};
-    return `<tr>
-      <td>${esc(stripReqNumber(r.texto))}</td>
-      <td class="req-detail-report-v94">${reqReportDetailHtmlV110(r)}</td>
-      ${mode === 'obs' ? `<td>${esc(v.observacion || r.correccionDefault || '')}</td>` : ''}
-    </tr>`;
-  }).join('')}</tbody></table>`;
+/* Refuerzo: después de renderizar requisitos, la tabla queda dentro del requisito 9. */
+const _renderRequisitosForm_base_V111 = typeof renderRequisitosForm === 'function' ? renderRequisitosForm : null;
+renderRequisitosForm = function(rebuild=true){
+  if(_renderRequisitosForm_base_V111) _renderRequisitosForm_base_V111(rebuild);
+
+  const reqBox=document.getElementById('estudiosTablaReqV111');
+  if(reqBox) reqBox.innerHTML=renderEstudiosTableHtmlV111();
+
+  // Dar ancho suficiente a la celda que contiene la tabla.
+  const box=reqBox?.closest('td');
+  if(box) box.classList.add('req-estudios-cell-v111');
+};
+
+/* El informe se ve igual: solo aseguramos que existan los datos base. */
+const _estudiosReport_base_V111 = typeof estudiosReport === 'function' ? estudiosReport : null;
+estudiosReport = function(){
+  initEstudiosComplementariosV111();
+  return _estudiosReport_base_V111 ? _estudiosReport_base_V111() : '<p>No se registran estudios complementarios.</p>';
 };
 
 window.addEventListener('load',()=>{
   setTimeout(()=>{
+    initEstudiosComplementariosV111();
+    removeEstudiosFromAprobatorioTabV111();
     if(typeof renderRequisitosForm === 'function') renderRequisitosForm(false);
     if(typeof renderReport === 'function') renderReport();
     if(typeof renderPreview === 'function') renderPreview();
