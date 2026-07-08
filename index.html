@@ -2167,6 +2167,56 @@ input,select,textarea{
 }
 </style>
 
+
+<style>
+/* V110 - tabla pequeña dentro del requisito de sistemas públicos de soporte */
+.req-detail-soporte-v110{
+  display:block;
+  min-width:300px;
+}
+.req-detail-soporte-v110 table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:11px;
+}
+.req-detail-soporte-v110 th,
+.req-detail-soporte-v110 td{
+  border:1px solid #d7e0ee;
+  padding:4px;
+  vertical-align:top;
+}
+.req-detail-soporte-v110 th{
+  background:#eef4fb;
+  color:#0b2b4c;
+  font-weight:900;
+  text-align:center;
+}
+.req-detail-soporte-v110 input{
+  width:100%;
+  min-height:28px;
+  font-size:11px!important;
+  padding:4px 6px!important;
+  box-sizing:border-box;
+}
+.report .soporte-report-table-v110{
+  width:100%;
+  border-collapse:collapse;
+  font-size:11px;
+  line-height:1.15;
+}
+.report .soporte-report-table-v110 th,
+.report .soporte-report-table-v110 td{
+  border:1px solid #d0d7e2;
+  padding:3px 4px;
+  vertical-align:top;
+}
+.report .soporte-report-table-v110 th{
+  background:#eef4fb;
+  font-weight:900;
+  text-align:center;
+}
+</style>
+
 </head>
 <body>
 
@@ -17022,6 +17072,184 @@ reqDetailInputHtmlV94 = function(req){
 };
 
 /* Re-renderiza requisitos para que aparezcan los nuevos campos si la vista ya estaba cargada. */
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    if(typeof renderRequisitosForm === 'function') renderRequisitosForm(false);
+    if(typeof renderReport === 'function') renderReport();
+    if(typeof renderPreview === 'function') renderPreview();
+  },900);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V110 SOBRE V109
+   Requisito 9:
+   Certificado de aprobación de planos y factibilidad de los
+   sistemas públicos de soporte emitidos por las dependencias competentes.
+
+   Agrega una tabla dentro de Resultado / detalle para:
+   - CNT: Informe N° y Fecha
+   - EERSA: Informe N° y Fecha
+   - RIOBAMBA EP: Informe N° y Fecha
+   ========================================================== */
+
+function normReqV110(v){
+  if(typeof normReqV109 === 'function') return normReqV109(v);
+  if(typeof normReqV94 === 'function') return normReqV94(v);
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function reqNumberV110(req){
+  if(typeof reqNumberV109 === 'function') return reqNumberV109(req);
+  if(typeof reqNumberV94 === 'function') return reqNumberV94(req);
+  const m=String(req?.texto||'').trim().match(/^(\d+)/);
+  return m ? Number(m[1]) : null;
+}
+
+function isReqGeneralV110(req){
+  if(typeof isReqGeneralV109 === 'function') return isReqGeneralV109(req);
+  if(typeof isReqGeneralV94 === 'function') return isReqGeneralV94(req);
+  return normReqV110(req?.grupo||'').includes('REQUISITOS GENERALES');
+}
+
+function isSistemasSoporteReqV110(req){
+  const t=normReqV110(req?.texto || '');
+
+  const byText =
+    t.includes('CERTIFICADO') &&
+    (t.includes('APROBACION') || t.includes('APROBADO') || t.includes('APROBACIÓN')) &&
+    t.includes('PLANOS') &&
+    t.includes('FACTIBILIDAD') &&
+    t.includes('SISTEMAS') &&
+    (t.includes('SOPORTE') || t.includes('PUBLICOS') || t.includes('PÚBLICOS'));
+
+  return (isReqGeneralV110(req) && reqNumberV110(req) === 9) || byText;
+}
+
+function soporteRowsV110(){
+  return [
+    {key:'cnt', label:'CNT'},
+    {key:'eersa', label:'EERSA'},
+    {key:'riobambaEp', label:'RIOBAMBA EP'}
+  ];
+}
+
+function soporteInformeFieldV110(key){ return key+'InformeSoporte'; }
+function soporteFechaFieldV110(key){ return key+'FechaSoporte'; }
+
+function soporteHasDataV110(d){
+  return soporteRowsV110().some(r => String(d?.[soporteInformeFieldV110(r.key)] || '').trim() || String(d?.[soporteFechaFieldV110(r.key)] || '').trim());
+}
+
+function soporteDetailTextV110(req){
+  const d=state.requisitos?.[req.id]?.detalle || {};
+  if(!soporteHasDataV110(d)) return '';
+
+  return soporteRowsV110().map(r=>{
+    const informe=d[soporteInformeFieldV110(r.key)] || '';
+    const fecha=d[soporteFechaFieldV110(r.key)] || '';
+    const parts=[];
+    if(informe) parts.push('Informe N°: '+informe);
+    if(fecha) parts.push('Fecha: '+fmtDate(fecha));
+    return r.label + (parts.length ? ' - ' + parts.join(' | ') : '');
+  }).join('\n');
+}
+
+function soporteDetailReportHtmlV110(req){
+  const d=state.requisitos?.[req.id]?.detalle || {};
+  if(!soporteHasDataV110(d)){
+    return esc((state.requisitos?.[req.id]?.estado || '').trim());
+  }
+
+  return `<table class="soporte-report-table-v110">
+    <thead><tr><th>Dependencia</th><th>Informe N°</th><th>Fecha</th></tr></thead>
+    <tbody>${soporteRowsV110().map(r=>{
+      const informe=d[soporteInformeFieldV110(r.key)] || '';
+      const fecha=d[soporteFechaFieldV110(r.key)] || '';
+      return `<tr><td>${esc(r.label)}</td><td>${esc(informe)}</td><td>${esc(fecha ? fmtDate(fecha) : '')}</td></tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+/* Detalle textual para compatibilidad con funciones anteriores. */
+const _reqDefaultDetailV94_base_V110 = typeof reqDefaultDetailV94 === 'function' ? reqDefaultDetailV94 : null;
+reqDefaultDetailV94 = function(req){
+  if(isSistemasSoporteReqV110(req)){
+    const estado=(state.requisitos?.[req.id]?.estado || '').trim();
+    return soporteDetailTextV110(req) || estado || '';
+  }
+
+  return _reqDefaultDetailV94_base_V110 ? _reqDefaultDetailV94_base_V110(req) : ((state.requisitos?.[req.id]?.estado || '').trim());
+};
+
+/* Inputs dentro de la celda Resultado / detalle. */
+const _reqDetailInputHtmlV94_base_V110 = typeof reqDetailInputHtmlV94 === 'function' ? reqDetailInputHtmlV94 : null;
+reqDetailInputHtmlV94 = function(req){
+  const val=typeof ensureReqObjV94 === 'function'
+    ? ensureReqObjV94(req.id)
+    : (state.requisitos[req.id] ||= {estado:'', observacion:'', detalle:{}});
+
+  if(!val.detalle) val.detalle={};
+  const d=val.detalle || {};
+
+  if(isSistemasSoporteReqV110(req)){
+    return `<div class="req-detail-soporte-v110">
+      <table>
+        <thead><tr><th>Dependencia</th><th>Informe N°</th><th>Fecha</th></tr></thead>
+        <tbody>${soporteRowsV110().map(r=>{
+          const infField=soporteInformeFieldV110(r.key);
+          const fechaField=soporteFechaFieldV110(r.key);
+          return `<tr>
+            <td><strong>${esc(r.label)}</strong></td>
+            <td><input data-req-detail="${esc(req.id)}" data-field="${infField}" value="${esc(d[infField]||'')}" placeholder="Informe N°"></td>
+            <td><input type="date" data-req-detail="${esc(req.id)}" data-field="${fechaField}" value="${esc(d[fechaField]||'')}"></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>`;
+  }
+
+  return _reqDetailInputHtmlV94_base_V110 ? _reqDetailInputHtmlV94_base_V110(req) : `<span>${esc(val.estado || '')}</span>`;
+};
+
+/* HTML para Resultado / detalle en la Vista del Informe. */
+function reqReportDetailHtmlV110(req){
+  if(isSistemasSoporteReqV110(req)){
+    return soporteDetailReportHtmlV110(req);
+  }
+
+  const detail=typeof reqDefaultDetailV94 === 'function'
+    ? reqDefaultDetailV94(req)
+    : ((state.requisitos?.[req.id]?.estado || '').trim());
+
+  return esc(detail || '');
+}
+
+/* Sobrescribe la tabla de requisitos para permitir mini tabla HTML dentro de la celda.
+   Mantiene la eliminación de columna Nro. de v105. */
+reqTable = function(reqs, mode){
+  if(!reqs.length) return '<p>No se registran requisitos para esta sección.</p>';
+
+  return `<table class="req-report-v94"><thead><tr>
+    <th>Requisito</th>
+    <th>Resultado / detalle</th>
+    ${mode === 'obs' ? '<th>Corrección requerida</th>' : ''}
+  </tr></thead><tbody>${reqs.map((r)=>{
+    const v = state.requisitos[r.id] || {};
+    return `<tr>
+      <td>${esc(stripReqNumber(r.texto))}</td>
+      <td class="req-detail-report-v94">${reqReportDetailHtmlV110(r)}</td>
+      ${mode === 'obs' ? `<td>${esc(v.observacion || r.correccionDefault || '')}</td>` : ''}
+    </tr>`;
+  }).join('')}</tbody></table>`;
+};
+
 window.addEventListener('load',()=>{
   setTimeout(()=>{
     if(typeof renderRequisitosForm === 'function') renderRequisitosForm(false);
