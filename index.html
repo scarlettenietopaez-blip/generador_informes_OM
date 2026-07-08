@@ -2215,6 +2215,67 @@ input,select,textarea{
 }
 </style>
 
+
+<style>
+/* V112 - Requisito 9 separado para no deformar la tabla general */
+.req-separado-v112{
+  margin:10px 0 16px;
+  border:1px solid #cbd7e6;
+  border-radius:10px;
+  overflow:hidden;
+  background:#fff;
+}
+.req-separado-v112-title{
+  background:#eef4fb;
+  color:#0b2b4c;
+  font-weight:900;
+  padding:8px 10px;
+  border-left:4px solid #b91c1c;
+}
+.req-table-v112{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+}
+.req-table-v112 th,
+.req-table-v112 td{
+  border:1px solid #cbd7e6;
+  padding:7px;
+  vertical-align:top;
+}
+.req-table-v112 th{
+  background:#e8eef6;
+  color:#002b4f;
+  font-size:12px;
+  font-weight:900;
+  text-align:left;
+}
+.req-table-v112 .center{
+  text-align:center;
+}
+.req-table-v112 textarea{
+  width:100%;
+  min-height:54px;
+}
+.req-table-normal-v112{
+  table-layout:fixed;
+}
+.req-table-normal-v112 th:nth-child(1){width:28%!important}
+.req-table-normal-v112 th:nth-child(2){width:7%!important}
+.req-table-normal-v112 th:nth-child(3){width:8%!important}
+.req-table-normal-v112 th:nth-child(4){width:18%!important}
+.req-table-normal-v112 th:nth-child(5){width:20%!important}
+.req-table-normal-v112 th:nth-child(6){width:10%!important}
+.req-table-req9-v112 th.req9-req{width:20%}
+.req-table-req9-v112 th.req9-check{width:6%}
+.req-table-req9-v112 th.req9-detail{width:48%}
+.req-table-req9-v112 th.req9-obs{width:14%}
+.req-table-req9-v112 th.req9-adj{width:8%}
+.req-table-req9-v112 .req-estudios-wrapper-v111{
+  min-width:0!important;
+}
+</style>
+
 </head>
 <body>
 
@@ -17256,6 +17317,158 @@ window.addEventListener('load',()=>{
   setTimeout(()=>{
     initEstudiosComplementariosV111();
     removeEstudiosFromAprobatorioTabV111();
+    if(typeof renderRequisitosForm === 'function') renderRequisitosForm(false);
+    if(typeof renderReport === 'function') renderReport();
+    if(typeof renderPreview === 'function') renderPreview();
+  },900);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V112 SOBRE V111
+   Requisitos:
+   - El requisito 9 se separa en una tabla propia debajo del grupo.
+   - Esto evita que la tabla de Estudios Complementarios agrande la columna
+     Resultado / detalle y reduzca el ancho de las demás filas.
+   - Solo cambia el formulario. La Vista del Informe se mantiene igual.
+   ========================================================== */
+
+function reqIsNineSeparatedV112(req){
+  return typeof isSistemasSoporteReqV111 === 'function' && isSistemasSoporteReqV111(req);
+}
+
+function renderReqRowV112(req, showNA, forceNA){
+  const val=state.requisitos[req.id]||{estado:'', observacion:'', detalle:{}};
+  const opts=(req.opciones&&req.opciones.length?req.opciones:['Cumple','No Cumple']);
+  const hasNA=forceNA || opts.includes('No Aplica');
+
+  return `<tr>
+    <td>${esc(req.texto)}</td>
+    <td class="center"><input type="checkbox" data-req-id="${esc(req.id)}" value="Cumple" ${val.estado==='Cumple'?'checked':''} onchange="setReqEstado('${esc(req.id)}','Cumple',this.checked)"></td>
+    <td class="center"><input type="checkbox" data-req-id="${esc(req.id)}" value="No Cumple" ${val.estado==='No Cumple'?'checked':''} onchange="setReqEstado('${esc(req.id)}','No Cumple',this.checked)"></td>
+    ${showNA?`<td class="center">${hasNA?`<input type="checkbox" data-req-id="${esc(req.id)}" value="No Aplica" ${val.estado==='No Aplica'?'checked':''} onchange="setReqEstado('${esc(req.id)}','No Aplica',this.checked)">`:''}</td>`:''}
+    <td>${reqDetailInputHtmlV94(req)}</td>
+    <td><textarea id="req_obs_${req.id}" placeholder="Solo si no cumple" style="display:${val.estado==='No Cumple'?'block':'none'}">${esc(val.observacion||'')}</textarea></td>
+    <td>${typeof reqAdjuntoCellV55 === 'function' ? reqAdjuntoCellV55(req.id) : ''}</td>
+  </tr>`;
+}
+
+function bindReqObsV112(reqs){
+  reqs.forEach(req=>{
+    const obs=document.getElementById(`req_obs_${req.id}`);
+    if(obs && obs.dataset.boundV112!=='1'){
+      obs.dataset.boundV112='1';
+      obs.addEventListener('input',()=>{
+        if(typeof shouldForceUpper === 'function' && shouldForceUpper()) normalizeUpperInput(obs);
+        if(!state.requisitos[req.id]) state.requisitos[req.id]={};
+        state.requisitos[req.id].observacion=obs.value;
+        if(typeof renderObsSeleccionadas === 'function') renderObsSeleccionadas();
+        if(typeof renderReport === 'function') renderReport();
+        if(typeof renderPreview === 'function') renderPreview();
+      });
+    }
+  });
+}
+
+function renderReqTableNormalV112(rows, showNA, forceNA){
+  if(!rows.length) return '';
+
+  return `<table class="req-compact req-compact-v55 req-compact-v94 req-table-normal-v112">
+    <thead>
+      <tr>
+        <th>Requisito</th>
+        <th>Cumple</th>
+        <th>No cumple</th>
+        ${showNA?'<th style="width:8%">No aplica</th>':''}
+        <th>Resultado / detalle</th>
+        <th>Observación para el usuario</th>
+        <th class="adjunto">Adjunto</th>
+      </tr>
+    </thead>
+    <tbody>${rows.map(req=>renderReqRowV112(req, showNA, forceNA)).join('')}</tbody>
+  </table>`;
+}
+
+function renderReq9SeparadoV112(req, showNA, forceNA){
+  if(!req) return '';
+
+  return `<div class="req-separado-v112">
+    <div class="req-separado-v112-title">Requisito 9 - Sistemas públicos de soporte</div>
+    <table class="req-table-v112 req-table-req9-v112">
+      <thead>
+        <tr>
+          <th class="req9-req">Requisito</th>
+          <th class="req9-check">Cumple</th>
+          <th class="req9-check">No cumple</th>
+          ${showNA?'<th class="req9-check">No aplica</th>':''}
+          <th class="req9-detail">Resultado / detalle</th>
+          <th class="req9-obs">Observación para el usuario</th>
+          <th class="req9-adj">Adjunto</th>
+        </tr>
+      </thead>
+      <tbody>${renderReqRowV112(req, showNA, forceNA)}</tbody>
+    </table>
+  </div>`;
+}
+
+/* Render completo de Requisitos con el requisito 9 separado. */
+renderRequisitosForm = function(rebuild=true){
+  if(typeof ensureV55State === 'function') ensureV55State();
+
+  const box=document.getElementById('requisitosForm');
+  if(!box) return;
+
+  const reqs=DATA.requisitos.filter(shouldShowReq);
+  const cond=(numVal(infoValue('ALTURA EDIFICACIÓN'))>2 || numVal(infoValue('Área Bruta'))>400);
+
+  let html=`<div class="field"><label class="check-line"><input type="checkbox" id="toggleComplementarios" ${state.mostrarComplementarios?'checked':''}> Mostrar requisitos complementarios cuando apliquen</label></div>`;
+
+  const groups=[...new Set(reqs.map(r=>r.grupo))];
+
+  groups.forEach(grupo=>{
+    const rows=reqs.filter(r=>r.grupo===grupo);
+    const forceNA=typeof isReqMasDe2V55==='function'
+      ? isReqMasDe2V55(grupo)
+      : (upper(grupo||'').includes('MÁS DE 2') || upper(grupo||'').includes('MAS DE 2') || upper(grupo||'').includes('400'));
+
+    const showNA=forceNA || rows.some(r=>(r.opciones||[]).includes('No Aplica'));
+    const req9=rows.find(reqIsNineSeparatedV112);
+    const normalRows=rows.filter(r=>!reqIsNineSeparatedV112(r));
+
+    html+=`<div class="section-title">${esc(grupo)}</div>`;
+    html+=renderReqTableNormalV112(normalRows, showNA, forceNA);
+    html+=renderReq9SeparadoV112(req9, showNA, forceNA);
+  });
+
+  html+=`<div class="note-box">Condición automática: ALTURA EDIFICACIÓN = ${esc(infoValue('ALTURA EDIFICACIÓN')||'0')} PISOS / ÁREA BRUTA = ${esc(infoValue('Área Bruta')||'0')} M². ${cond?'SE ACTIVAN':'NO SE ACTIVAN'} LOS REQUISITOS DE MÁS DE 2 PISOS O 400 M².</div>`;
+
+  box.innerHTML=html;
+
+  const tog=document.getElementById('toggleComplementarios');
+  if(tog){
+    tog.addEventListener('change',e=>{
+      state.mostrarComplementarios=e.target.checked;
+      renderRequisitosForm();
+      if(typeof renderObsSeleccionadas === 'function') renderObsSeleccionadas();
+      if(typeof renderReport === 'function') renderReport();
+      if(typeof renderPreview === 'function') renderPreview();
+    });
+  }
+
+  bindReqObsV112(reqs);
+
+  if(typeof bindReqDetailInputsV94 === 'function') bindReqDetailInputsV94();
+
+  const reqBox=document.getElementById('estudiosTablaReqV111');
+  if(reqBox && typeof renderEstudiosTableHtmlV111 === 'function'){
+    reqBox.innerHTML=renderEstudiosTableHtmlV111();
+  }
+};
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
     if(typeof renderRequisitosForm === 'function') renderRequisitosForm(false);
     if(typeof renderReport === 'function') renderReport();
     if(typeof renderPreview === 'function') renderPreview();
