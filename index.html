@@ -2364,6 +2364,20 @@ input,select,textarea{
 }
 </style>
 
+
+<style>
+.manual-obs-images-v114{margin-top:8px;border:1px dashed #b9c8d8;background:#f8fbff;border-radius:10px;padding:10px}
+.manual-obs-images-v114 .manual-img-tools{display:flex;flex-direction:column;gap:8px;max-width:420px}
+.manual-obs-images-v114 input[type="file"]{font-size:12px}
+.manual-obs-images-v114 .paste-zone-v114{border:1.5px dashed #8aa4c2;background:#fff;border-radius:10px;padding:10px;min-height:42px;font-size:12px;line-height:1.3;color:#0b2b4c;text-align:center}
+.manual-obs-images-v114 .paste-zone-v114:focus{outline:2px solid rgba(11,92,171,.18);border-color:#0b5cab}
+.manual-obs-images-v114 .manual-gallery-v114{display:grid;grid-template-columns:repeat(auto-fit,minmax(82px,1fr));gap:8px;margin-top:10px}
+.manual-obs-images-v114 .manual-thumb-v114{border:1px solid #d1dbe8;background:#fff;border-radius:8px;padding:5px}
+.manual-obs-images-v114 .manual-thumb-v114 img{width:100%;max-height:92px;object-fit:contain;display:block;border-radius:6px}
+.manual-obs-images-v114 .manual-thumb-v114 button{width:100%;margin-top:4px;padding:4px 6px!important;font-size:10px!important}
+.manual-obs-images-v114 .manual-counter-v114{font-size:11px;font-weight:800;color:#0b2b4c;background:#eef4fb;border-radius:999px;padding:3px 8px;display:inline-block;width:max-content}
+</style>
+
 </head>
 <body>
 
@@ -17819,6 +17833,122 @@ window.addEventListener('load',()=>{
     if(typeof renderPreview==='function') renderPreview();
   },900);
 });
+</script>
+
+
+<script>
+/* V114 - observación manual con varias imágenes */
+window.manualObsDraftV114 = window.manualObsDraftV114 || {imagenes:[]};
+
+function manualObsImgsV114(){
+  const arr = Array.isArray(window.manualObsDraftV114?.imagenes) ? window.manualObsDraftV114.imagenes : [];
+  return arr.filter(Boolean);
+}
+function syncManualObsImgsV114(arr){
+  window.manualObsDraftV114 = window.manualObsDraftV114 || {};
+  window.manualObsDraftV114.imagenes = [...new Set((arr||[]).filter(x=>String(x||'').trim()))];
+}
+function renderManualObsImagesV114(){
+  const box=document.getElementById('manualObsImagesBox');
+  if(!box) return;
+  const imgs=manualObsImgsV114();
+  box.innerHTML = `
+    <div class="manual-obs-images-v114">
+      <div class="field"><label>Imagen</label></div>
+      <div class="manual-img-tools">
+        <input type="file" accept="image/*" multiple onchange="addManualObsImagesV114(this.files); this.value=''">
+        <div class="paste-zone-v114" contenteditable="true" onpaste="pasteManualObsImagesV114(event)">Pegar una o varias capturas aquí</div>
+        ${imgs.length?`<span class="manual-counter-v114">${imgs.length} imagen(es)</span>`:''}
+      </div>
+      ${imgs.length?`<div class="manual-gallery-v114">${imgs.map((src,i)=>`
+        <div class="manual-thumb-v114">
+          <img src="${esc(src)}" alt="Imagen ${i+1}">
+          <button type="button" class="secondary mini-btn" onclick="removeManualObsImageV114(${i})">Quitar ${i+1}</button>
+        </div>`).join('')}</div>
+        <div class="buttons small-actions" style="margin-top:8px"><button type="button" class="secondary" onclick="clearManualObsImagesV114()">Quitar todas las imágenes</button></div>`:''}
+    </div>`;
+}
+async function addManualObsImagesV114(fileList){
+  const files=[...(fileList||[])].filter(f=>f && f.type && f.type.startsWith('image/'));
+  if(!files.length){ if(typeof msg==='function') msg('No se encontraron imágenes para agregar.'); return; }
+  const current=manualObsImgsV114();
+  const loaded=[];
+  for(const file of files){
+    try{
+      if(typeof fileToImageDataV113==='function'){
+        const data=await fileToImageDataV113(file);
+        if(data) loaded.push(data);
+      }else{
+        const data = await new Promise((resolve,reject)=>{
+          const r=new FileReader();
+          r.onload=()=>resolve(r.result);
+          r.onerror=()=>reject(r.error||new Error('No se pudo leer la imagen.'));
+          r.readAsDataURL(file);
+        });
+        if(data) loaded.push(data);
+      }
+    }catch(e){ console.warn('V114 imagen manual no cargada', e); }
+  }
+  syncManualObsImgsV114([...current, ...loaded]);
+  renderManualObsImagesV114();
+  if(typeof msg==='function') msg(loaded.length===1 ? 'Imagen agregada a la observación manual.' : `${loaded.length} imágenes agregadas a la observación manual.`, true);
+}
+function pasteManualObsImagesV114(ev){
+  const items=[...(ev.clipboardData?.items || [])];
+  const files=items.filter(item=>item.kind==='file' && item.type && item.type.startsWith('image/')).map(item=>item.getAsFile()).filter(Boolean);
+  if(files.length){ ev.preventDefault(); addManualObsImagesV114(files); }
+}
+function removeManualObsImageV114(index){
+  const arr=manualObsImgsV114();
+  arr.splice(index,1);
+  syncManualObsImgsV114(arr);
+  renderManualObsImagesV114();
+}
+function clearManualObsImagesV114(){
+  syncManualObsImgsV114([]);
+  renderManualObsImagesV114();
+}
+
+const renderObservacionesFormV114_prev = renderObservacionesForm;
+renderObservacionesForm = function(){
+  renderObservacionesFormV114_prev();
+  const panel=document.getElementById('manualObsPanel');
+  if(panel && !document.getElementById('manualObsImagesBox')){
+    const mini = panel.querySelector('.mini');
+    const holder=document.createElement('div');
+    holder.id='manualObsImagesBox';
+    if(mini) panel.insertBefore(holder, mini);
+    else panel.appendChild(holder);
+  }
+  renderManualObsImagesV114();
+};
+
+const agregarObsManualV114_prev = agregarObsManual;
+agregarObsManual = async function(){
+  collectTop && collectTop();
+  const norma=upper(document.getElementById('manualNorma')?.value||'');
+  const obsRaw=upper(document.getElementById('manualObservacion')?.value||'');
+  if(!norma){ msg('Para agregar una observación manual debe colocar el artículo.'); return; }
+  const art=typeof findNormativaArticuloV36==='function' ? findNormativaArticuloV36(norma) : null;
+  const texto=art ? `${art.norma ? art.norma+', ' : ''}${art.articulo ? 'Artículo '+art.articulo+'. ' : ''}${art.texto}` : `No se encontró el artículo en la base normativa. Artículo ingresado: ${norma}.`;
+  const observacion=obsRaw || (art ? (art.titulo || texto.slice(0,180)) : `Revisar cumplimiento del ${norma}`);
+  const imagenes = manualObsImgsV114();
+  const item={id:crypto.randomUUID(), codigo:'MAN-'+Date.now(), componente:'Manual', tema:art?.titulo||'', observacion, texto, norma:art?`${art.norma||'Ordenanza 016-2023'} - Art. ${art.articulo||norma}`:norma, correccion:'', documento:'', nota:'', manual:true, egob:state.egob||'', tecnico:state.tecnico||'', tipoInforme:state.tipoInforme||'', fechaRevision:state.fechaRevision||'', createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(), estado:'PENDIENTE DE ANÁLISIS', imagenes:[...imagenes], imagen:imagenes[0]||''};
+  state.obsSeleccionadas.push({...item});
+  if(db) await manualObsPut({...item});
+  ['manualNorma','manualObservacion'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  syncManualObsImgsV114([]);
+  renderManualObsImagesV114();
+  renderObsSeleccionadas(); renderManualObsDB(); renderReport(); renderPreview();
+  msg(art?'Observación manual agregada con texto técnico de la base normativa.':'Observación agregada, pero el artículo no existe aún en la base normativa.', !!art);
+};
+
+const toggleManualObsPanelV114_prev = toggleManualObsPanel;
+toggleManualObsPanel = function(){
+  toggleManualObsPanelV114_prev();
+  const p=document.getElementById('manualObsPanel');
+  if(p && !p.classList.contains('collapsed')) renderManualObsImagesV114();
+};
 </script>
 
 </body>
