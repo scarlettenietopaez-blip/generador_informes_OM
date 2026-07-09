@@ -18577,5 +18577,124 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V117 SOBRE V116
+   Segunda Observación:
+   - El registro ya no se guarda ni se muestra como:
+     "2do Informe de Observaciones · Informe con Observaciones".
+   - Ahora queda:
+     "#eGOB - 2do Informe con Observaciones".
+   ========================================================== */
+
+function egobBaseV117(){
+  const current=String(state.egob || document.getElementById('egob')?.value || '').trim();
+  return String(state.egobBaseV116 || current)
+    .replace(/\s+-\s+2do\s+Informe\s+de\s+Observaciones\s*$/i,'')
+    .replace(/\s+-\s+2do\s+Informe\s+con\s+Observaciones\s*$/i,'')
+    .trim();
+}
+
+/* Sobrescribe la función de v116 para que el nombre guardado sea limpio. */
+egobBaseV116 = function(){
+  return egobBaseV117();
+};
+
+egobSegundoInformeLabelV116 = function(){
+  const base=egobBaseV117();
+  return base ? `${base} - 2do Informe con Observaciones` : '2do Informe con Observaciones';
+};
+
+function cleanSavedEgobTitleV117(egob){
+  return String(egob||'')
+    .replace(/\s+-\s+2do\s+Informe\s+de\s+Observaciones\s*$/i,' - 2do Informe con Observaciones')
+    .replace(/\s+-\s+2do\s+Informe\s+con\s+Observaciones\s*$/i,' - 2do Informe con Observaciones')
+    .trim();
+}
+
+function savedTitleV117(x){
+  const egob=cleanSavedEgobTitleV117(x.egob||'');
+  const isSegundo = !!x.segundaObservacionV116 || /2do\s+Informe\s+(de|con)\s+Observaciones/i.test(String(x.egob||''));
+
+  if(isSegundo){
+    return `eGOB ${egob}`;
+  }
+
+  return `eGOB ${egob} · ${x.tipoInforme||''}`;
+}
+
+/* Ajusta la lista de guardados para que no duplique el tipo de informe
+   en los segundos informes de observaciones. */
+renderSavedList = async function(){
+  if(!db) return;
+
+  dbAll().then(arr=>{
+    arr=(arr||[]).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
+
+    const content = arr.length ? arr.map(x=>{
+      const title=savedTitleV117(x);
+      const key=String(x.egob||'');
+      return `<div class="saved-item">
+        <strong>${esc(title)}</strong>
+        <span class="mini">Técnico: ${esc(x.tecnico||'')}<br>Actualizado: ${esc((x.updatedAt||'').replace('T',' ').slice(0,16))}</span>
+        <div class="buttons">
+          <button class="secondary" onclick="cargarFormulario('${esc(key)}')">Abrir</button>
+          <button onclick="cargarFormulario('${esc(key)}').then(()=>{ if(state.tipoInforme==='Informe Técnico Aprobatorio') copiarInformeAprobatorio(); else imprimirInforme(); })">${x.tipoInforme==='Informe Técnico Aprobatorio'?'📋':'PDF'}</button>
+          <button class="danger" onclick="eliminarFormulario('${esc(key)}')">Eliminar</button>
+        </div>
+      </div>`;
+    }).join('') : '<p class="mini">Aún no hay formularios guardados en este navegador.</p>';
+
+    const a=document.getElementById('guardadosLista');
+    if(a) a.innerHTML=content;
+
+    const b=document.getElementById('guardadosListaSide');
+    if(b) b.innerHTML=content;
+  });
+};
+
+/* Si se guarda un segundo informe nuevo, se fuerza el nombre limpio. */
+const _guardarSegundoInformeObservaciones_base_V117 = typeof guardarSegundoInformeObservacionesV116 === 'function' ? guardarSegundoInformeObservacionesV116 : null;
+if(_guardarSegundoInformeObservaciones_base_V117){
+  guardarSegundoInformeObservacionesV116 = async function(showMessage=false){
+    const ok=await _guardarSegundoInformeObservaciones_base_V117(showMessage);
+
+    try{
+      const base=egobBaseV117();
+      const clean=egobSegundoInformeLabelV116();
+      const old=`${base} - 2do Informe de Observaciones`;
+
+      if(db && base && clean){
+        const oldObj=await dbGet(old);
+        const cleanObj=await dbGet(clean);
+
+        if(oldObj && !cleanObj){
+          oldObj.egob=clean;
+          oldObj.egobBaseV116=base;
+          oldObj.segundaObservacionV116=true;
+          oldObj.tipoInforme='Informe con Observaciones';
+          oldObj.updatedAt=new Date().toISOString();
+          await dbPut(oldObj);
+          await dbDelete(old);
+        }
+      }
+
+      if(typeof renderSavedList==='function') renderSavedList();
+    }catch(e){
+      console.warn('V117 limpieza nombre segundo informe:', e);
+    }
+
+    return ok;
+  };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    if(typeof renderSavedList==='function') renderSavedList();
+  },900);
+});
+</script>
+
 </body>
 </html>
