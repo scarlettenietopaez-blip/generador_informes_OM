@@ -2421,6 +2421,15 @@ input,select,textarea{
 }
 </style>
 
+
+<style>
+/* V116 - ajustes anteproyecto / segunda observación */
+.v116-readonly-favorable{
+  background:#f8fafc!important;
+  font-weight:900!important;
+}
+</style>
+
 </head>
 <body>
 
@@ -18236,6 +18245,335 @@ agregarObsManual = async function(){
 window.addEventListener('load',()=>{
   setTimeout(patchManualImageOriginalV115,900);
   setTimeout(patchManualImageOriginalV115,1800);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V116 SOBRE V115
+
+   1) Criterio técnico en Anteproyecto y Estructural:
+      solo FAVORABLE.
+
+   2) Anteproyecto > Proyectista:
+      usa datalist de profesionales arquitectos.
+
+   3) Segunda observación:
+      - Al activar, calcula 5 días hábiles.
+      - Guarda un registro adicional:
+        "#eGOB - 2do Informe de Observaciones".
+      - En conclusiones cambia a:
+        "Con la documentación requerida presentarse hasta el día, dd/mm/aaaa(5 días hábiles)."
+   ========================================================== */
+
+function normV116(v){
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function profesionalesArquitectosV116(){
+  const list=(DATA.profesionales||[]).filter(p=>{
+    if(!p || !p.nombre) return false;
+    if(typeof esArquitectoV39 === 'function') return esArquitectoV39(p);
+    const t=normV116(p.titulo || p.Titulo || p.TITULO || '');
+    return t.includes('ARQUITECT');
+  });
+
+  // Si la base no tiene título cargado, usar todos los profesionales como respaldo.
+  return list.length ? list : (DATA.profesionales||[]).filter(p=>p && p.nombre);
+}
+
+function findArquitectoV116(nombre){
+  const n=normV116(nombre);
+  if(!n) return null;
+  const lista=profesionalesArquitectosV116();
+  return lista.find(p=>normV116(p.nombre)===n)
+    || lista.find(p=>normV116(p.nombre).includes(n) || n.includes(normV116(p.nombre)))
+    || null;
+}
+
+function setOnlyFavorableV116(selectId, stateObj, stateKey){
+  const el=document.getElementById(selectId);
+  if(!el) return;
+
+  el.innerHTML='<option value="FAVORABLE">FAVORABLE</option>';
+  el.value='FAVORABLE';
+  el.classList.add('v116-readonly-favorable');
+
+  if(stateObj && stateKey){
+    stateObj[stateKey]='FAVORABLE';
+  }
+
+  if(el.dataset.v116Patched!=='1'){
+    el.dataset.v116Patched='1';
+    el.addEventListener('change',()=>{
+      el.value='FAVORABLE';
+      if(stateObj && stateKey) stateObj[stateKey]='FAVORABLE';
+      if(typeof renderReport==='function') renderReport();
+      if(typeof renderPreview==='function') renderPreview();
+    });
+  }
+}
+
+function ensureArquitectosDatalistV116(){
+  let dl=document.getElementById('listaArquitectosProyectistasV116');
+  if(!dl){
+    dl=document.createElement('datalist');
+    dl.id='listaArquitectosProyectistasV116';
+    document.body.appendChild(dl);
+  }
+
+  const arr=profesionalesArquitectosV116();
+  dl.innerHTML=arr.map(p=>{
+    const title=p.titulo || p.Titulo || p.TITULO || '';
+    const sen=p.registroSenescyt || '';
+    return `<option value="${esc(p.nombre)}">${esc(title ? title+' · ' : '')}${esc(sen)}</option>`;
+  }).join('');
+}
+
+function patchAnteproyectoArquitectosV116(){
+  ensureAprobatorioData();
+  ensureArquitectosDatalistV116();
+
+  const input=document.getElementById('antCalculista');
+  if(!input) return;
+
+  input.setAttribute('list','listaArquitectosProyectistasV116');
+  input.setAttribute('placeholder','PROYECTISTA ARQUITECTO');
+
+  if(input.dataset.v116Arquitectos!=='1'){
+    input.dataset.v116Arquitectos='1';
+
+    const fill=()=>{
+      const p=findArquitectoV116(input.value);
+      if(!p) return;
+
+      state.aprobatorio.anteproyecto.calculista=p.nombre;
+      input.value=p.nombre;
+
+      const sen=formatSenescyt(p.registroSenescyt||'');
+      if(sen){
+        state.aprobatorio.anteproyecto.senescyt=sen;
+        const senEl=document.getElementById('antSenescyt');
+        if(senEl) senEl.value=sen;
+      }
+
+      if(typeof renderReport==='function') renderReport();
+      if(typeof renderPreview==='function') renderPreview();
+    };
+
+    input.addEventListener('change',fill);
+    input.addEventListener('blur',fill);
+  }
+}
+
+function patchCriteriosFavorablesV116(){
+  ensureAprobatorioData();
+
+  if(state.aprobatorio?.anteproyecto){
+    setOnlyFavorableV116('antCriterio', state.aprobatorio.anteproyecto, 'criterio');
+  }
+
+  if(state.aprobatorio?.estructural){
+    setOnlyFavorableV116('estCriterio', state.aprobatorio.estructural, 'criterio');
+  }
+
+  patchAnteproyectoArquitectosV116();
+}
+
+const _renderAprobatorioForm_base_V116 = typeof renderAprobatorioForm === 'function' ? renderAprobatorioForm : null;
+if(_renderAprobatorioForm_base_V116){
+  renderAprobatorioForm = function(){
+    const out=_renderAprobatorioForm_base_V116();
+    setTimeout(patchCriteriosFavorablesV116,0);
+    return out;
+  };
+}
+
+const _anteproyectoReport_base_V116 = typeof anteproyectoReport === 'function' ? anteproyectoReport : null;
+if(_anteproyectoReport_base_V116){
+  anteproyectoReport = function(){
+    ensureAprobatorioData();
+    if(state.aprobatorio?.anteproyecto) state.aprobatorio.anteproyecto.criterio='FAVORABLE';
+    return _anteproyectoReport_base_V116();
+  };
+}
+
+const _aprobatorioStructuralTable_base_V116 = typeof aprobatorioStructuralTable === 'function' ? aprobatorioStructuralTable : null;
+if(_aprobatorioStructuralTable_base_V116){
+  aprobatorioStructuralTable = function(){
+    ensureAprobatorioData();
+    if(state.aprobatorio?.estructural) state.aprobatorio.estructural.criterio='FAVORABLE';
+    return _aprobatorioStructuralTable_base_V116();
+  };
+}
+
+/* Segunda observación */
+
+function egobBaseV116(){
+  const current=String(state.egob || document.getElementById('egob')?.value || '').trim();
+  return String(state.egobBaseV116 || current).replace(/\s+-\s+2do Informe de Observaciones\s*$/i,'').trim();
+}
+
+function egobSegundoInformeLabelV116(){
+  const base=egobBaseV116();
+  return base ? `${base} - 2do Informe de Observaciones` : '2do Informe de Observaciones';
+}
+
+function fechaSegundaObservacionV116(){
+  const base=state.fechaRevision || document.getElementById('fechaRevision')?.value || (typeof today==='function' ? today() : '');
+  if(base && typeof addBusinessDays === 'function') return addBusinessDays(base,5);
+  return state.fechaSubsanacion || document.getElementById('fechaSubsanacion')?.value || '';
+}
+
+async function guardarSegundoInformeObservacionesV116(showMessage=false){
+  try{
+    if(typeof collectTop === 'function') collectTop();
+
+    const base=egobBaseV116();
+    if(!base){
+      if(showMessage && typeof msg==='function') msg('Debe colocar el Nro. eGOB antes de generar la Segunda Observación.');
+      return false;
+    }
+
+    const label=egobSegundoInformeLabelV116();
+    const fecha5=fechaSegundaObservacionV116();
+
+    const fs=document.getElementById('fechaSubsanacion');
+    if(fs) fs.value=fecha5;
+
+    state.fechaSubsanacion=fecha5;
+    state.fechaSubsanacionCincoDias=true;
+    state.fechaSubsanacionManual=true;
+
+    const clone=JSON.parse(JSON.stringify(state));
+    clone.egob=label;
+    clone.egobBaseV116=base;
+    clone.tipoInforme='Informe con Observaciones';
+    clone.fechaSubsanacion=fecha5;
+    clone.fechaSubsanacionCincoDias=true;
+    clone.fechaSubsanacionManual=true;
+    clone.segundaObservacionV116=true;
+    clone.updatedAt=new Date().toISOString();
+    if(!clone.createdAt) clone.createdAt=clone.updatedAt;
+
+    if(typeof dbPut === 'function'){
+      await dbPut(clone);
+      if(typeof renderSavedList === 'function') renderSavedList();
+      if(showMessage && typeof msg==='function') msg(`Se guardó el nuevo registro: ${label}`, true);
+      return true;
+    }
+  }catch(e){
+    console.warn('V116 guardar segunda observación:', e);
+    if(showMessage && typeof msg==='function') msg('No se pudo guardar automáticamente la Segunda Observación.');
+  }
+  return false;
+}
+
+function patchSegundaObservacionV116(){
+  const cb=document.getElementById('calc5DiasSubsanacionV55');
+  if(!cb || cb.dataset.v116Patched==='1') return;
+
+  cb.dataset.v116Patched='1';
+  cb.addEventListener('change',async()=>{
+    if(!cb.checked) return;
+
+    const fecha5=fechaSegundaObservacionV116();
+    const fs=document.getElementById('fechaSubsanacion');
+    if(fs) fs.value=fecha5;
+
+    state.fechaSubsanacion=fecha5;
+    state.fechaSubsanacionCincoDias=true;
+    state.fechaSubsanacionManual=true;
+
+    await guardarSegundoInformeObservacionesV116(true);
+
+    if(typeof renderReport==='function') renderReport();
+    if(typeof renderPreview==='function') renderPreview();
+  });
+}
+
+const _insertSubsanacion5DiasV55_base_V116 = typeof insertSubsanacion5DiasV55 === 'function' ? insertSubsanacion5DiasV55 : null;
+if(_insertSubsanacion5DiasV55_base_V116){
+  insertSubsanacion5DiasV55 = function(){
+    _insertSubsanacion5DiasV55_base_V116();
+    patchSegundaObservacionV116();
+  };
+}
+
+const _guardarFormulario_base_V116 = typeof guardarFormulario === 'function' ? guardarFormulario : null;
+if(_guardarFormulario_base_V116){
+  guardarFormulario = async function(showMessage=true){
+    const ok=await _guardarFormulario_base_V116(showMessage);
+    if(ok && state.tipoInforme==='Informe con Observaciones' && state.fechaSubsanacionCincoDias){
+      await guardarSegundoInformeObservacionesV116(false);
+    }
+    return ok;
+  };
+}
+
+function aplicarTextoCincoDiasV116(html){
+  let out=String(html||'');
+
+  if(!state.fechaSubsanacionCincoDias) return out;
+
+  const fecha = typeof fechaSubsanacionFinalV93 === 'function'
+    ? fechaSubsanacionFinalV93()
+    : (state.fechaSubsanacion ? fmtDate(state.fechaSubsanacion) : '');
+
+  if(fecha){
+    out=out.replace(
+      /Con la documentación requerida presentarse hasta el día,\s*[^<.\n]+?\s*\(\s*10\s*días\s*hábiles\s*\)\s*\./gi,
+      `Con la documentación requerida presentarse hasta el día, ${fecha}(5 días hábiles).`
+    );
+  }
+
+  out=out
+    .replace(/\(\s*10\s*días\s*hábiles\s*\)/gi,'(5 días hábiles)')
+    .replace(/\(\s*10\s*dias\s*habiles\s*\)/gi,'(5 días hábiles)');
+
+  return out;
+}
+
+const _formatConclusionText_base_V116 = typeof formatConclusionText === 'function' ? formatConclusionText : null;
+if(_formatConclusionText_base_V116){
+  formatConclusionText = function(text){
+    const out=_formatConclusionText_base_V116(text);
+    return aplicarTextoCincoDiasV116(out);
+  };
+}
+
+if(typeof renderInformeObservaciones === 'function'){
+  const _renderInformeObservaciones_base_V116 = renderInformeObservaciones;
+  renderInformeObservaciones = function(){
+    return aplicarTextoCincoDiasV116(_renderInformeObservaciones_base_V116());
+  };
+}
+
+const _renderReport_base_V116 = typeof renderReport === 'function' ? renderReport : null;
+if(_renderReport_base_V116){
+  renderReport = function(){
+    const out=_renderReport_base_V116();
+    const reportEl=document.getElementById('report');
+    if(reportEl && state.tipoInforme==='Informe con Observaciones'){
+      reportEl.innerHTML=aplicarTextoCincoDiasV116(reportEl.innerHTML);
+    }
+    return aplicarTextoCincoDiasV116(out);
+  };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    patchCriteriosFavorablesV116();
+    if(typeof insertSubsanacion5DiasV55 === 'function') insertSubsanacion5DiasV55();
+    patchSegundaObservacionV116();
+    if(typeof renderReport === 'function') renderReport();
+    if(typeof renderPreview === 'function') renderPreview();
+  },900);
 });
 </script>
 
