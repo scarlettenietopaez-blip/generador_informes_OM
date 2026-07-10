@@ -18794,5 +18794,309 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V119 SOBRE V118
+   Guardado reformulado de informes de observaciones:
+
+   - Si "Segunda observación" está DESACTIVADO:
+     guarda el registro como:
+     #eGOB - Informe con Observaciones
+
+   - Si "Segunda observación" está ACTIVADO:
+     guarda un NUEVO registro como:
+     #eGOB - 2do Informe con Observaciones
+
+   No se guarda el informe de observaciones solo como #eGOB.
+   ========================================================== */
+
+function obsBaseEgobV119(value){
+  return String(value || '')
+    .replace(/\s+-\s+2do\s+Informe\s+de\s+Observaciones\s*$/i,'')
+    .replace(/\s+-\s+2do\s+Informe\s+con\s+Observaciones\s*$/i,'')
+    .replace(/\s+-\s+Informe\s+con\s+Observaciones\s*$/i,'')
+    .trim();
+}
+
+function obsSegundoActivoV119(){
+  const cb=document.getElementById('calc5DiasSubsanacionV55');
+  if(cb) return !!cb.checked;
+  return !!state.fechaSubsanacionCincoDias;
+}
+
+function obsPrimerKeyV119(base){
+  return `${base} - Informe con Observaciones`;
+}
+
+function obsSegundoKeyV119(base){
+  return `${base} - 2do Informe con Observaciones`;
+}
+
+function obsCurrentSaveKeyV119(){
+  const base=obsBaseEgobV119(state.egob || document.getElementById('egob')?.value || state.egobBaseV116 || '');
+  if(!base) return '';
+  return obsSegundoActivoV119() ? obsSegundoKeyV119(base) : obsPrimerKeyV119(base);
+}
+
+function setInfoEgobBaseV119(obj, base){
+  try{
+    const f=(DATA.infoFields||[]).find(x=>String(x.label||'').toUpperCase().includes('TRÁMITE EGOB') || String(x.label||'').toUpperCase().includes('TRAMITE EGOB'));
+    if(f && obj.info) obj.info[f.key]=base;
+  }catch(e){}
+}
+
+async function migrateOldObservationKeysV119(base, targetKey){
+  if(!db || !base || !targetKey) return;
+
+  const oldKeys=[
+    base,
+    `${base} - 2do Informe de Observaciones`
+  ].filter(k=>k && k!==targetKey);
+
+  for(const oldKey of oldKeys){
+    try{
+      const oldObj=await dbGet(oldKey);
+      if(!oldObj) continue;
+
+      // No borrar el primer informe cuando se está guardando el segundo.
+      if(targetKey===obsSegundoKeyV119(base) && oldKey===base){
+        const firstExists=await dbGet(obsPrimerKeyV119(base));
+        if(!firstExists && oldObj.tipoInforme==='Informe con Observaciones'){
+          const first=JSON.parse(JSON.stringify(oldObj));
+          first.egob=obsPrimerKeyV119(base);
+          first.egobBaseV119=base;
+          first.egobBaseV116=base;
+          first.primeraObservacionV119=true;
+          first.segundaObservacionV116=false;
+          first.fechaSubsanacionCincoDias=false;
+          first.tipoInforme='Informe con Observaciones';
+          setInfoEgobBaseV119(first, base);
+          await dbPut(first);
+        }
+      }else{
+        await dbDelete(oldKey);
+      }
+    }catch(e){
+      console.warn('V119 migración llave antigua:', oldKey, e);
+    }
+  }
+}
+
+async function guardarObservacionesConNombreV119(showMessage=true){
+  if(typeof collectTop === 'function') collectTop();
+
+  const base=obsBaseEgobV119(state.egob || document.getElementById('egob')?.value || state.egobBaseV116 || '');
+  if(!base){
+    if(typeof msg==='function') msg('Debe colocar el Nro. eGOB principal.');
+    return false;
+  }
+
+  state.egobBaseV116=base;
+  state.egobBaseV119=base;
+  state.tipoInforme='Informe con Observaciones';
+
+  const segundo=obsSegundoActivoV119();
+
+  if(segundo){
+    const fecha5 = typeof fechaSegundaObservacionV116 === 'function'
+      ? fechaSegundaObservacionV116()
+      : (typeof addBusinessDays === 'function' ? addBusinessDays(state.fechaRevision || today(),5) : state.fechaSubsanacion);
+
+    const fs=document.getElementById('fechaSubsanacion');
+    if(fs) fs.value=fecha5;
+
+    state.fechaSubsanacion=fecha5;
+    state.fechaSubsanacionCincoDias=true;
+    state.fechaSubsanacionManual=true;
+  }else{
+    state.fechaSubsanacionCincoDias=false;
+  }
+
+  const key=segundo ? obsSegundoKeyV119(base) : obsPrimerKeyV119(base);
+
+  const clone=JSON.parse(JSON.stringify(state));
+  clone.egob=key;
+  clone.egobBaseV116=base;
+  clone.egobBaseV119=base;
+  clone.tipoInforme='Informe con Observaciones';
+  clone.segundaObservacionV116=segundo;
+  clone.primeraObservacionV119=!segundo;
+  clone.updatedAt=new Date().toISOString();
+  if(!clone.createdAt) clone.createdAt=clone.updatedAt;
+  setInfoEgobBaseV119(clone, base);
+
+  await dbPut(clone);
+  await migrateOldObservationKeysV119(base, key);
+
+  if(typeof renderSavedList === 'function') renderSavedList();
+
+  if(showMessage && typeof msg==='function'){
+    msg(`Formulario guardado correctamente como ${key}`, true);
+  }
+
+  return true;
+}
+
+/* Reemplaza la función de guardado de segunda observación de v116/v117. */
+guardarSegundoInformeObservacionesV116 = async function(showMessage=false){
+  const cb=document.getElementById('calc5DiasSubsanacionV55');
+  if(cb) cb.checked=true;
+  state.fechaSubsanacionCincoDias=true;
+  return guardarObservacionesConNombreV119(showMessage);
+};
+
+/* Guardar principal:
+   Observaciones usa la nueva regla.
+   Aprobatorio / Desistimiento conservan el comportamiento anterior. */
+const _guardarFormulario_noObs_base_V119 = typeof guardarFormulario === 'function' ? guardarFormulario : null;
+guardarFormulario = async function(showMessage=true){
+  if(typeof collectTop === 'function') collectTop();
+
+  const tipo=document.getElementById('tipoInforme')?.value || state.tipoInforme || '';
+  state.tipoInforme=tipo;
+
+  if(tipo === 'Informe con Observaciones'){
+    if(typeof validateTop === 'function' && !validateTop()) return false;
+    return guardarObservacionesConNombreV119(showMessage);
+  }
+
+  return _guardarFormulario_noObs_base_V119 ? _guardarFormulario_noObs_base_V119(showMessage) : false;
+};
+
+function savedTitleV119(x){
+  const raw=String(x.egob||'').trim();
+  const base=obsBaseEgobV119(raw);
+  const tipo=String(x.tipoInforme||'').trim();
+
+  if(/2do\s+Informe\s+(de|con)\s+Observaciones/i.test(raw) || x.segundaObservacionV116){
+    return `eGOB ${base} - 2do Informe con Observaciones`;
+  }
+
+  if(/Informe\s+con\s+Observaciones/i.test(raw) || tipo==='Informe con Observaciones'){
+    return `eGOB ${base} - Informe con Observaciones`;
+  }
+
+  if(tipo){
+    return `eGOB ${raw} - ${tipo}`;
+  }
+
+  return `eGOB ${raw}`;
+}
+
+renderSavedList = async function(){
+  if(!db) return;
+
+  dbAll().then(arr=>{
+    arr=(arr||[]).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
+
+    const content = arr.length ? arr.map(x=>{
+      const key=String(x.egob||'');
+      const title=savedTitleV119(x);
+
+      return `<div class="saved-item">
+        <strong>${esc(title)}</strong>
+        <span class="mini">Técnico: ${esc(x.tecnico||'')}<br>Actualizado: ${esc((x.updatedAt||'').replace('T',' ').slice(0,16))}</span>
+        <div class="buttons">
+          <button class="secondary" onclick="cargarFormulario('${esc(key)}')">Abrir</button>
+          <button onclick="cargarFormulario('${esc(key)}').then(()=>{ if(state.tipoInforme==='Informe Técnico Aprobatorio') copiarInformeAprobatorio(); else imprimirInforme(); })">${x.tipoInforme==='Informe Técnico Aprobatorio'?'📋':'PDF'}</button>
+          <button class="danger" onclick="eliminarFormulario('${esc(key)}')">Eliminar</button>
+        </div>
+      </div>`;
+    }).join('') : '<p class="mini">Aún no hay formularios guardados en este navegador.</p>';
+
+    const a=document.getElementById('guardadosLista');
+    if(a) a.innerHTML=content;
+
+    const b=document.getElementById('guardadosListaSide');
+    if(b) b.innerHTML=content;
+  });
+};
+
+/* Al cargar un registro con nombre largo, el formulario muestra solo el eGOB base,
+   pero conserva internamente la llave del registro. */
+const _cargarFormulario_base_V119 = typeof cargarFormulario === 'function' ? cargarFormulario : null;
+if(_cargarFormulario_base_V119){
+  cargarFormulario = async function(egob){
+    const obj=await dbGet(egob);
+    if(!obj){
+      if(typeof msg==='function') msg('No se encontró un formulario guardado con ese eGOB.');
+      return;
+    }
+
+    const rawKey=String(obj.egob||egob||'');
+    const base=obsBaseEgobV119(rawKey);
+    const isObs=String(obj.tipoInforme||'')==='Informe con Observaciones' || /Informe\s+con\s+Observaciones/i.test(rawKey);
+
+    if(isObs && base){
+      obj.egobBaseV116=base;
+      obj.egobBaseV119=base;
+      obj._savedKeyV119=rawKey;
+      obj.egob=base;
+      setInfoEgobBaseV119(obj, base);
+    }
+
+    state=Object.assign(defaultState(),obj);
+    applyStateToUI();
+
+    const cb=document.getElementById('calc5DiasSubsanacionV55');
+    if(cb && isObs){
+      cb.checked=!!obj.segundaObservacionV116 || /2do\s+Informe\s+(de|con)\s+Observaciones/i.test(rawKey);
+      state.fechaSubsanacionCincoDias=cb.checked;
+    }
+
+    if(typeof msg==='function') msg('Formulario cargado: '+savedTitleV119({egob:rawKey,tipoInforme:obj.tipoInforme,segundaObservacionV116:obj.segundaObservacionV116}), true);
+    if(typeof showTab==='function') showTab('tab-info');
+  };
+}
+
+/* Checkbox Segunda Observación:
+   al activarlo guarda el segundo registro con la nueva regla. */
+function patchSegundaObservacionV119(){
+  const cb=document.getElementById('calc5DiasSubsanacionV55');
+  if(!cb || cb.dataset.v119Patched==='1') return;
+
+  cb.dataset.v119Patched='1';
+  cb.addEventListener('change',async()=>{
+    if(typeof collectTop === 'function') collectTop();
+
+    if(cb.checked){
+      state.fechaSubsanacionCincoDias=true;
+      const fecha5=typeof fechaSegundaObservacionV116==='function'
+        ? fechaSegundaObservacionV116()
+        : (typeof addBusinessDays==='function' ? addBusinessDays(state.fechaRevision || today(),5) : state.fechaSubsanacion);
+
+      const fs=document.getElementById('fechaSubsanacion');
+      if(fs) fs.value=fecha5;
+
+      state.fechaSubsanacion=fecha5;
+      state.fechaSubsanacionManual=true;
+
+      await guardarObservacionesConNombreV119(true);
+    }else{
+      state.fechaSubsanacionCincoDias=false;
+      if(typeof addBusinessDays==='function'){
+        const val=addBusinessDays(state.fechaRevision || today(),10);
+        const fs=document.getElementById('fechaSubsanacion');
+        if(fs) fs.value=val;
+        state.fechaSubsanacion=val;
+        state.fechaSubsanacionManual=false;
+      }
+    }
+
+    if(typeof renderReport === 'function') renderReport();
+    if(typeof renderPreview === 'function') renderPreview();
+  });
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    patchSegundaObservacionV119();
+    if(typeof renderSavedList==='function') renderSavedList();
+  },900);
+  setTimeout(patchSegundaObservacionV119,1800);
+});
+</script>
+
 </body>
 </html>
