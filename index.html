@@ -18696,5 +18696,103 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V118 SOBRE V117
+   Lista de guardados:
+   - Primer informe de observaciones se muestra como:
+     eGOB 1234567 - Informe con Observaciones
+   - Segundo informe se mantiene como:
+     eGOB 1234567 - 2do Informe con Observaciones
+   ========================================================== */
+
+function savedIsSegundoObsV118(x){
+  return !!x.segundaObservacionV116 ||
+    /2do\s+Informe\s+(de|con)\s+Observaciones/i.test(String(x.egob||''));
+}
+
+function cleanEgobSavedV118(egob){
+  return String(egob||'')
+    .replace(/\s+-\s+2do\s+Informe\s+de\s+Observaciones\s*$/i,'')
+    .replace(/\s+-\s+2do\s+Informe\s+con\s+Observaciones\s*$/i,'')
+    .replace(/\s+-\s+Informe\s+con\s+Observaciones\s*$/i,'')
+    .trim();
+}
+
+function savedTitleV118(x){
+  const raw=String(x.egob||'').trim();
+  const base=cleanEgobSavedV118(raw);
+  const tipo=String(x.tipoInforme||'').trim();
+
+  if(savedIsSegundoObsV118(x)){
+    return `eGOB ${base} - 2do Informe con Observaciones`;
+  }
+
+  if(tipo === 'Informe Técnico Aprobatorio'){
+    return `eGOB ${base} - Informe Técnico Aprobatorio`;
+  }
+
+  if(tipo === 'Informe con Observaciones' || !tipo){
+    return `eGOB ${base} - Informe con Observaciones`;
+  }
+
+  return `eGOB ${base} - ${tipo}`;
+}
+
+renderSavedList = async function(){
+  if(!db) return;
+
+  dbAll().then(arr=>{
+    arr=(arr||[]).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
+
+    const content = arr.length ? arr.map(x=>{
+      const key=String(x.egob||'');
+      const title=savedTitleV118(x);
+
+      return `<div class="saved-item">
+        <strong>${esc(title)}</strong>
+        <span class="mini">Técnico: ${esc(x.tecnico||'')}<br>Actualizado: ${esc((x.updatedAt||'').replace('T',' ').slice(0,16))}</span>
+        <div class="buttons">
+          <button class="secondary" onclick="cargarFormulario('${esc(key)}')">Abrir</button>
+          <button onclick="cargarFormulario('${esc(key)}').then(()=>{ if(state.tipoInforme==='Informe Técnico Aprobatorio') copiarInformeAprobatorio(); else imprimirInforme(); })">${x.tipoInforme==='Informe Técnico Aprobatorio'?'📋':'PDF'}</button>
+          <button class="danger" onclick="eliminarFormulario('${esc(key)}')">Eliminar</button>
+        </div>
+      </div>`;
+    }).join('') : '<p class="mini">Aún no hay formularios guardados en este navegador.</p>';
+
+    const a=document.getElementById('guardadosLista');
+    if(a) a.innerHTML=content;
+
+    const b=document.getElementById('guardadosListaSide');
+    if(b) b.innerHTML=content;
+  });
+};
+
+const _guardarFormulario_base_V118 = typeof guardarFormulario === 'function' ? guardarFormulario : null;
+if(_guardarFormulario_base_V118){
+  guardarFormulario = async function(showMessage=true){
+    if(typeof collectTop === 'function') collectTop();
+
+    const selectTipo=document.getElementById('tipoInforme')?.value || '';
+    if(selectTipo) state.tipoInforme=selectTipo;
+
+    if(!state.tipoInforme && state.egob && !savedIsSegundoObsV118(state)){
+      state.tipoInforme='Informe con Observaciones';
+    }
+
+    const ok=await _guardarFormulario_base_V118(showMessage);
+    if(typeof renderSavedList === 'function') renderSavedList();
+    return ok;
+  };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    if(typeof renderSavedList==='function') renderSavedList();
+  },900);
+});
+</script>
+
 </body>
 </html>
