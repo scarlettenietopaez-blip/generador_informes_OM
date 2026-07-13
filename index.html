@@ -19098,5 +19098,142 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script>
+/* ==========================================================
+   V119B SOBRE V119
+   Registro SENESCYT:
+   Ahora permite también el formato 0000-00-0000000.
+
+   Formatos válidos:
+   - 0000-0000-0000000
+   - 0000-00-000000
+   - 0000-00-0000000
+   ========================================================== */
+
+function senescytIsNewShortLongV119B(raw,digits){
+  const v=String(raw||'').trim();
+
+  // Si el usuario pega/escribe con guiones y el segundo grupo tiene 2 dígitos,
+  // se respeta el formato 4-2-7.
+  if(/^\d{0,4}-\d{0,2}-\d{0,7}$/.test(v)) return true;
+
+  // Si son exactamente 13 dígitos sin guiones, corresponde a 4-2-7.
+  return String(digits||'').length===13;
+}
+
+function formatSenescyt(v){
+  const raw=String(v||'');
+  const d=onlyDigits(raw,15);
+
+  // Nuevo formato permitido: 0000-00-0000000
+  if(senescytIsNewShortLongV119B(raw,d)){
+    let out=d.slice(0,4);
+    if(d.length>4) out+='-'+d.slice(4,6);
+    if(d.length>6) out+='-'+d.slice(6,13);
+    return out;
+  }
+
+  // Formato largo: 0000-0000-0000000
+  if(d.length>13){
+    let out=d.slice(0,4);
+    if(d.length>4) out+='-'+d.slice(4,8);
+    if(d.length>8) out+='-'+d.slice(8,15);
+    return out;
+  }
+
+  // Formato corto anterior: 0000-00-000000
+  let out=d.slice(0,4);
+  if(d.length>4) out+='-'+d.slice(4,6);
+  if(d.length>6) out+='-'+d.slice(6,12);
+  return out;
+}
+
+function isValidSenescytV119B(value){
+  const v=String(value||'').trim();
+  return /^\d{4}-\d{4}-\d{7}$/.test(v)     // 0000-0000-0000000
+      || /^\d{4}-\d{2}-\d{6}$/.test(v)     // 0000-00-000000
+      || /^\d{4}-\d{2}-\d{7}$/.test(v);    // 0000-00-0000000
+}
+
+const _validateInfoField_base_V119B = typeof validateInfoField === 'function' ? validateInfoField : null;
+validateInfoField = function(f, show=true){
+  const meta=fieldMeta(f);
+
+  if(!meta.isSenescyt){
+    return _validateInfoField_base_V119B ? _validateInfoField_base_V119B(f, show) : true;
+  }
+
+  const err=document.getElementById('err_'+f.key);
+  const el=document.getElementById('info_'+f.key);
+  if(!err || !el) return true;
+
+  const name = typeof fieldDisplayNameV95 === 'function' ? fieldDisplayNameV95(f) : (f.label || 'Registro SENESCYT');
+  let value=String(el.value||'').trim();
+
+  if(value){
+    value=formatSenescyt(value);
+    el.value=value;
+    state.info[f.key]=value;
+  }
+
+  let ok=true;
+  let message='';
+
+  if(meta.required && !value){
+    ok=false;
+    message=`${name}: campo obligatorio.`;
+  }else if(value && !isValidSenescytV119B(value)){
+    ok=false;
+    message=`${name}: formato requerido 0000-0000-0000000, 0000-00-000000 o 0000-00-0000000.`;
+  }
+
+  el.classList.toggle('invalid',!ok);
+  err.textContent=message;
+  err.classList.toggle('v95-detail', !!message);
+  err.style.display=(!ok && show)?'block':'none';
+
+  return ok;
+};
+
+/* Refuerzo para campos SENESCYT fuera de Información General, como estructural. */
+function patchSenescytInputsV119B(){
+  document.querySelectorAll('input').forEach(el=>{
+    const id=String(el.id||'');
+    const ph=String(el.placeholder||'');
+    const label=String(el.closest('.field')?.querySelector('label')?.textContent || '');
+    const txt=(id+' '+ph+' '+label).toUpperCase();
+    if(!txt.includes('SENESCYT')) return;
+    if(el.dataset.senescytV119B==='1') return;
+    el.dataset.senescytV119B='1';
+    el.addEventListener('input',()=>{ el.value=formatSenescyt(el.value); });
+    el.addEventListener('blur',()=>{ el.value=formatSenescyt(el.value); });
+  });
+}
+
+const _renderInfoForm_base_senescyt_V119B = typeof renderInfoForm === 'function' ? renderInfoForm : null;
+if(_renderInfoForm_base_senescyt_V119B){
+  renderInfoForm = function(){
+    const out=_renderInfoForm_base_senescyt_V119B();
+    setTimeout(patchSenescytInputsV119B,0);
+    return out;
+  };
+}
+
+const _renderAprobatorioForm_base_senescyt_V119B = typeof renderAprobatorioForm === 'function' ? renderAprobatorioForm : null;
+if(_renderAprobatorioForm_base_senescyt_V119B){
+  renderAprobatorioForm = function(){
+    const out=_renderAprobatorioForm_base_senescyt_V119B();
+    setTimeout(patchSenescytInputsV119B,0);
+    return out;
+  };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(patchSenescytInputsV119B,700);
+  setTimeout(patchSenescytInputsV119B,1500);
+});
+</script>
+
 </body>
 </html>
