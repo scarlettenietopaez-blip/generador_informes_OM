@@ -1,10 +1,8 @@
 ﻿ID_Bloque;Motivo;Titulo;Texto_Base;Mostrar
-DES_TIT_001;Observaciones no Subsanadas;Título;INFORME TÉCNICO DE DESISTIMIENTO DE OBRA MAYOR;Sí
-DES_CON_001;Observaciones no Subsanadas;Conclusión base;Por las conclusiones antes expuestas se emite criterio técnico NO FAVORABLE,;Sí
-DES_TIT_002;Observaciones Parcialmente Subsanadas;Título;INFORME TÉCNICO NO FAVORABLE DE DESISTIMIENTO;Sí
-DES_CON_002;Observaciones Parcialmente Subsanadas;Conclusión base;Por las conclusiones antes expuestas se emite criterio técnico NO FAVORABLE,;Sí
-DES_TIT_003;Por Petición del Administrado;Título;INFORME TÉCNICO DE DESISTIMIENTO;Sí
-DES_BLG_003;Por Petición del Administrado;Base legal petición administrado;"CODIGO ORGANICO ADMINISTRATIVO
+DES_TIT_001;Observaciones No Subsanadas/Parcialmente Subsanadas;Título;INFORME TÉCNICO NO FAVORABLE DE DESISTIMIENTO;Sí
+DES_CON_001;Observaciones No Subsanadas/Parcialmente Subsanadas;Conclusión base;Por las conclusiones antes expuestas se emite criterio técnico NO FAVORABLE,;Sí
+DES_TIT_003;Petición del Administrado;Título;INFORME TÉCNICO DE DESISTIMIENTO;Sí
+DES_BLG_003;Petición del Administrado;Base legal petición administrado;"CÓDIGO ORGÁNICO ADMINISTRATIVO
 Art. 211.- Desistimiento. La persona interesada puede desistir del procedimiento cuando no esté prohibido por la ley. Debe indicarse expresamente si se trata de un desistimiento total o parcial. Si no se precisa, se considera que se trata de un desistimiento total. En los casos de desistimiento, la persona interesada no puede volver a plantear, igual pretensión, en otro procedimiento con el mismo objeto y causa. El desistimiento puede realizarse por cualquier medio que permita su constancia en cualquier momento antes de que se notifique el acto administrativo. Solo afecta a aquellos que lo soliciten. En el supuesto de realizarse de forma verbal, se formaliza con la comparecencia de la persona interesada ante el servidor público encargado de la instrucción del asunto, quien, conjuntamente con aquella, suscribirá la respectiva diligencia. En los procedimientos iniciados de oficio, la administración pública podrá ordenar el archivo en los supuestos y con los requisitos previstos en la ley.";Sí
-DES_CON_003;Por Petición del Administrado;Conclusión;En base al Artículo 211 del COA, por Petición del Administrado se procede con el Desistimiento del Trámite.;Sí
-DES_REC_003;Por Petición del Administrado;Recomendación;Se recomienda remitir el presente trámite para la emisión de la Resolución Administrativa correspondiente.;Sí
+DES_CON_003;Petición del Administrado;Conclusión;En base al Artículo 211 del COA, por Petición del Administrado se procede con el Desistimiento del Trámite.;Sí
+DES_REC_003;Petición del Administrado;Recomendación;Se recomienda remitir el presente trámite para la emisión de la Resolución Administrativa correspondiente.;Sí
