@@ -2430,6 +2430,26 @@ input,select,textarea{
 }
 </style>
 
+
+<style>
+/* V119C - Corrección clave catastral antigua */
+.clave-antigua-input-v119c{
+  margin-top:8px!important;
+}
+.clave-antigua-input-v119c.hidden-v119c{
+  display:none!important;
+}
+.clave-antigua-v119c-active{
+  background:#fff7ed!important;
+  border:1px solid #fed7aa!important;
+  border-radius:12px!important;
+  padding:8px!important;
+}
+.clave-antigua-v119c-active .inline-check{
+  color:#9a3412!important;
+}
+</style>
+
 </head>
 <body>
 
@@ -19232,6 +19252,281 @@ if(_renderAprobatorioForm_base_senescyt_V119B){
 window.addEventListener('load',()=>{
   setTimeout(patchSenescytInputsV119B,700);
   setTimeout(patchSenescytInputsV119B,1500);
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   V119C SOBRE V119B
+   Corrección:
+   - Botón/check "Usar clave catastral antigua" vuelve a funcionar.
+   - El campo de clave antigua se muestra/oculta sin romper el formulario.
+   - La clave antigua se sincroniza con el campo oculto CLAVE CATASTRAL.
+   ========================================================== */
+
+function ensureCatastralOldStateV119C(){
+  if(typeof ensureV37State === 'function') ensureV37State();
+  if(!state.catastral) state.catastral={};
+  if(typeof state.catastral.claveAntiguaActiva === 'undefined') state.catastral.claveAntiguaActiva=false;
+  if(typeof state.catastral.claveAntigua === 'undefined') state.catastral.claveAntigua='';
+}
+
+function claveFieldV119C(){
+  try{
+    return (DATA.infoFields||[]).find(f=>{
+      const lab=String(f.label||'')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        .replace(/\s+/g,' ')
+        .trim()
+        .toUpperCase();
+      return lab.includes('CLAVE CATASTRAL');
+    }) || null;
+  }catch(e){
+    return null;
+  }
+}
+
+function buildClaveV119C(){
+  ensureCatastralOldStateV119C();
+  const c=state.catastral;
+
+  if(c.claveAntiguaActiva){
+    return String(c.claveAntigua||'').trim();
+  }
+
+  if(typeof buildClaveFromPartsV37 === 'function'){
+    try{
+      const tmpActive=c.claveAntiguaActiva;
+      c.claveAntiguaActiva=false;
+      const v=buildClaveFromPartsV37();
+      c.claveAntiguaActiva=tmpActive;
+      return v;
+    }catch(e){}
+  }
+
+  return [c.prov||'06',c.cant||'01',c.parro||'',c.zona||'',c.sect||'',c.polg||'',c.pred||'']
+    .map(x=>String(x||'').trim())
+    .join('');
+}
+
+function syncClaveInputV119C(f=null){
+  ensureCatastralOldStateV119C();
+  const field=f || claveFieldV119C();
+  const clave=buildClaveV119C();
+
+  if(field && state.info){
+    state.info[field.key]=clave;
+  }
+
+  const main=field ? document.getElementById('info_'+field.key) : document.querySelector('input[id^="info_"][type="hidden"]');
+  if(main) main.value=clave;
+
+  const prev=document.getElementById('catClavePreview');
+  if(prev) prev.value=clave;
+
+  return clave;
+}
+
+/* Sobrescribe la función usada por versiones anteriores para que sea segura. */
+syncClaveInputV37 = function(f){
+  return syncClaveInputV119C(f);
+};
+
+function setCatastralPartsDisabledV119C(disabled){
+  ['catProv','catCant','catParro','catZona','catSect','catPolg','catPred'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.disabled=!!disabled;
+  });
+
+  const btn=document.querySelector('.catastral-search');
+  if(btn) btn.disabled=!!disabled;
+}
+
+function toggleClaveAntiguaUIV119C(){
+  ensureCatastralOldStateV119C();
+
+  const active=!!state.catastral.claveAntiguaActiva;
+  const panel=document.querySelector('.catastral-panel-v49,.catastral-panel-v46,.catastral-panel');
+  if(panel) panel.classList.toggle('clave-antigua-v119c-active', active);
+
+  setCatastralPartsDisabledV119C(active);
+
+  const wrap=document.getElementById('claveAntiguaWrapV119C') || document.querySelector('.clave-antigua-input-v38,.clave-antigua-input-v119c');
+  if(wrap){
+    wrap.classList.toggle('hidden-v119c', !active);
+    wrap.style.display=active ? 'block' : 'none';
+  }
+
+  const old=document.getElementById('claveAntiguaTextV37');
+  if(old){
+    old.disabled=!active;
+    if(active) setTimeout(()=>old.focus(),0);
+  }
+
+  syncClaveInputV119C();
+}
+
+const _catastralPanelHtmlV36_base_V119C = typeof catastralPanelHtmlV36 === 'function' ? catastralPanelHtmlV36 : null;
+if(_catastralPanelHtmlV36_base_V119C){
+  catastralPanelHtmlV36 = function(f,val){
+    ensureCatastralOldStateV119C();
+
+    let html=_catastralPanelHtmlV36_base_V119C(f,val);
+    const active=!!state.catastral.claveAntiguaActiva;
+    const oldVal=state.catastral.claveAntigua || '';
+
+    // Si la versión anterior no dibujó el input porque el check estaba apagado,
+    // lo insertamos siempre para poder mostrarlo sin depender de renderizados.
+    if(!/id=["']claveAntiguaTextV37["']/.test(html)){
+      const inputHtml=`<div id="claveAntiguaWrapV119C" class="field clave-antigua-input-v119c ${active?'':'hidden-v119c'}" style="margin-top:8px;display:${active?'block':'none'}">
+        <label>Clave catastral antigua</label>
+        <input id="claveAntiguaTextV37" value="${esc(oldVal)}" placeholder="Ingrese la clave antigua en texto libre" ${active?'':'disabled'}>
+      </div>`;
+
+      html=html.replace(/(<div class=["']catastral-info-v49["']|<div class=["']catastral-extra-v46["']|<div class=["']row["'] style=["']margin-top:10px["'])/i, inputHtml+'$1');
+    }else{
+      html=html.replace(/class=["']field clave-antigua-input-v38["']/g, 'id="claveAntiguaWrapV119C" class="field clave-antigua-input-v38 clave-antigua-input-v119c"');
+    }
+
+    return html;
+  };
+}
+
+bindCatastralPanelV36 = function(f){
+  ensureCatastralOldStateV119C();
+
+  const tog=document.getElementById('toggleClaveAntiguaV37');
+  if(tog && tog.dataset.v119cBound!=='1'){
+    tog.dataset.v119cBound='1';
+    tog.checked=!!state.catastral.claveAntiguaActiva;
+
+    tog.addEventListener('change',()=>{
+      state.catastral.claveAntiguaActiva=!!tog.checked;
+      toggleClaveAntiguaUIV119C();
+      if(typeof renderReport === 'function') renderReport();
+      if(typeof renderPreview === 'function') renderPreview();
+    });
+  }
+
+  const old=document.getElementById('claveAntiguaTextV37');
+  if(old && old.dataset.v119cBound!=='1'){
+    old.dataset.v119cBound='1';
+    old.value=state.catastral.claveAntigua || '';
+
+    old.addEventListener('input',()=>{
+      state.catastral.claveAntigua=old.value;
+      syncClaveInputV119C(f);
+      if(typeof renderReport === 'function') renderReport();
+      if(typeof renderPreview === 'function') renderPreview();
+    });
+
+    old.addEventListener('blur',()=>{
+      state.catastral.claveAntigua=old.value.trim();
+      old.value=state.catastral.claveAntigua;
+      syncClaveInputV119C(f);
+      if(typeof renderReport === 'function') renderReport();
+      if(typeof renderPreview === 'function') renderPreview();
+    });
+  }
+
+  const parro=document.getElementById('catParro');
+  const zona=document.getElementById('catZona');
+
+  if(parro && parro.dataset.v119cBound!=='1'){
+    parro.dataset.v119cBound='1';
+    parro.addEventListener('change',()=>{
+      state.catastral.parro=parro.value;
+      state.catastral.zona='';
+      if(typeof updateParroquiaFromClaveV46 === 'function') updateParroquiaFromClaveV46();
+      syncClaveInputV119C(f);
+      if(typeof renderInfoForm === 'function') renderInfoForm();
+      if(typeof renderReport === 'function') renderReport();
+      if(typeof renderPreview === 'function') renderPreview();
+    });
+  }
+
+  if(zona && zona.dataset.v119cBound!=='1'){
+    zona.dataset.v119cBound='1';
+    zona.addEventListener('change',()=>{
+      state.catastral.zona=zona.value;
+      if(typeof updateParroquiaFromClaveV46 === 'function') updateParroquiaFromClaveV46();
+      syncClaveInputV119C(f);
+      if(typeof renderInfoForm === 'function') renderInfoForm();
+      if(typeof renderReport === 'function') renderReport();
+      if(typeof renderPreview === 'function') renderPreview();
+    });
+  }
+
+  ['Prov','Cant','Sect','Polg','Pred'].forEach(k=>{
+    const el=document.getElementById('cat'+k);
+    if(!el || el.dataset.v119cBound==='1') return;
+
+    el.dataset.v119cBound='1';
+    el.addEventListener('input',()=>{
+      const prop=k.toLowerCase();
+      el.value=onlyDigits(el.value);
+      state.catastral[prop]=el.value;
+      if(typeof updateParroquiaFromClaveV46 === 'function') updateParroquiaFromClaveV46();
+      syncClaveInputV119C(f);
+      if(typeof renderReport === 'function') renderReport();
+      if(typeof renderPreview === 'function') renderPreview();
+    });
+  });
+
+  toggleClaveAntiguaUIV119C();
+  syncClaveInputV119C(f);
+};
+
+const _renderInfoForm_base_V119C = typeof renderInfoForm === 'function' ? renderInfoForm : null;
+if(_renderInfoForm_base_V119C){
+  renderInfoForm = function(){
+    const out=_renderInfoForm_base_V119C();
+    setTimeout(()=>{
+      const f=claveFieldV119C();
+      if(f && typeof bindCatastralPanelV36 === 'function') bindCatastralPanelV36(f);
+      toggleClaveAntiguaUIV119C();
+    },0);
+    return out;
+  };
+}
+
+/* Delegación de emergencia por si algún render reemplaza el checkbox sin binding. */
+document.addEventListener('change',ev=>{
+  const el=ev.target;
+  if(!el || el.id!=='toggleClaveAntiguaV37') return;
+
+  ensureCatastralOldStateV119C();
+  state.catastral.claveAntiguaActiva=!!el.checked;
+  toggleClaveAntiguaUIV119C();
+
+  if(typeof renderReport === 'function') renderReport();
+  if(typeof renderPreview === 'function') renderPreview();
+});
+
+document.addEventListener('input',ev=>{
+  const el=ev.target;
+  if(!el || el.id!=='claveAntiguaTextV37') return;
+
+  ensureCatastralOldStateV119C();
+  state.catastral.claveAntigua=el.value;
+  syncClaveInputV119C();
+
+  if(typeof renderReport === 'function') renderReport();
+  if(typeof renderPreview === 'function') renderPreview();
+});
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    const f=claveFieldV119C();
+    if(f && typeof bindCatastralPanelV36 === 'function') bindCatastralPanelV36(f);
+    toggleClaveAntiguaUIV119C();
+  },900);
+  setTimeout(()=>{
+    const f=claveFieldV119C();
+    if(f && typeof bindCatastralPanelV36 === 'function') bindCatastralPanelV36(f);
+    toggleClaveAntiguaUIV119C();
+  },1800);
 });
 </script>
 
