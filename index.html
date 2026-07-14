@@ -23247,7 +23247,12 @@ renderInformeAprobatorio=function(){
   html+=`<h2>${n++}. Información general</h2>${typeof reportInfoGeneralAprobatorio==='function'?reportInfoGeneralAprobatorio():''}`;
   html+=`<h2>${n++}. Detalle del anteproyecto</h2>${detalle?`<p>${typeof nl2br==='function'?nl2br(detalle):esc(detalle)}</p>`:''}${typeof reqTable==='function'&&typeof requisitosPorEstado==='function'?reqTable(requisitosPorEstado('Cumple'),'apr'):''}`;
   html+=`<h2>${n++}. Base técnico - legal</h2>${anteproyectoBaseLegalV134()}`;
-  html+=`<h2>${n++}. Factibilidades</h2>${factibilidadesReportV134()}`;
+  const requiereFactibilidadesAnteproyectoV148 =
+    numVal(infoValue('ALTURA EDIFICACIÓN')) > 2 ||
+    numVal(infoValue('Área Bruta')) > 400;
+  if(requiereFactibilidadesAnteproyectoV148){
+    html+=`<h2>${n++}. Factibilidades</h2>${factibilidadesReportV134()}`;
+  }
   html+=`<h2>${n++}. Conclusión técnica</h2><p>En concordancia con la Ordenanza No. 016-2023 de Actualización del Código Urbano, <strong>Artículo 84, Contenido de la Propuesta Técnica de Anteproyectos de Edificación</strong>, se concluye emitir el presente <strong>INFORME TÉCNICO FAVORABLE</strong>, de conformidad con el siguiente detalle:</p>${typeof conclusionReport==='function'?conclusionReport():''}`;
   if(typeof notaAprobatorioReportV66==='function') html+=notaAprobatorioReportV66();
   if(con2) html+=`<p class="anteproyecto-conclusion-final-v138">${typeof nl2br==='function'?nl2br(con2):esc(con2)}</p>`;
@@ -25722,5 +25727,8 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<!-- V148: En Anteproyecto, la sección Factibilidades del informe aprobatorio
+     se muestra únicamente cuando ALTURA EDIFICACIÓN > 2 o Área Bruta > 400 m². -->
 </body>
 </html>
