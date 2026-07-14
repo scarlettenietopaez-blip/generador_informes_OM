@@ -23247,10 +23247,11 @@ renderInformeAprobatorio=function(){
   html+=`<h2>${n++}. Información general</h2>${typeof reportInfoGeneralAprobatorio==='function'?reportInfoGeneralAprobatorio():''}`;
   html+=`<h2>${n++}. Detalle del anteproyecto</h2>${detalle?`<p>${typeof nl2br==='function'?nl2br(detalle):esc(detalle)}</p>`:''}${typeof reqTable==='function'&&typeof requisitosPorEstado==='function'?reqTable(requisitosPorEstado('Cumple'),'apr'):''}`;
   html+=`<h2>${n++}. Base técnico - legal</h2>${anteproyectoBaseLegalV134()}`;
-  const requiereFactibilidadesAnteproyectoV148 =
-    numVal(infoValue('ALTURA EDIFICACIÓN')) > 2 ||
-    numVal(infoValue('Área Bruta')) > 400;
-  if(requiereFactibilidadesAnteproyectoV148){
+  const requiereFactibilidadesAnteproyectoV149Informe =
+    typeof requiereFactibilidadesAnteproyectoV149==='function'
+      ? requiereFactibilidadesAnteproyectoV149()
+      : (numVal(infoValue('ALTURA EDIFICACIÓN')) > 2 || numVal(infoValue('Área Bruta')) > 400);
+  if(requiereFactibilidadesAnteproyectoV149Informe){
     html+=`<h2>${n++}. Factibilidades</h2>${factibilidadesReportV134()}`;
   }
   html+=`<h2>${n++}. Conclusión técnica</h2><p>En concordancia con la Ordenanza No. 016-2023 de Actualización del Código Urbano, <strong>Artículo 84, Contenido de la Propuesta Técnica de Anteproyectos de Edificación</strong>, se concluye emitir el presente <strong>INFORME TÉCNICO FAVORABLE</strong>, de conformidad con el siguiente detalle:</p>${typeof conclusionReport==='function'?conclusionReport():''}`;
@@ -25730,5 +25731,204 @@ window.addEventListener('load',()=>{
 
 <!-- V148: En Anteproyecto, la sección Factibilidades del informe aprobatorio
      se muestra únicamente cuando ALTURA EDIFICACIÓN > 2 o Área Bruta > 400 m². -->
+
+
+<style>
+/* ==========================================================
+   V149 SOBRE V148
+   Anteproyecto: requisito condicional de factibilidades con
+   tabla visible únicamente cuando PISOS > 2 o ÁREA BRUTA > 400.
+   ========================================================== */
+.req-fact-ante-v149 .req-table-v112{
+  width:100%!important;
+  table-layout:fixed!important;
+}
+.req-fact-ante-v149 .req9-req{width:23%!important}
+.req-fact-ante-v149 .req9-check{width:5%!important;text-align:center!important}
+.req-fact-ante-v149 .req9-detail{width:46%!important}
+.req-fact-ante-v149 .req9-obs{width:12%!important}
+.req-fact-ante-v149 .req9-adj{width:9%!important}
+.req-fact-ante-v149 td.req9-detail{
+  padding:8px!important;
+  min-width:0!important;
+  overflow:visible!important;
+}
+.req-fact-ante-v149 .req-factibilidades-v134{
+  width:100%!important;
+  max-width:none!important;
+  overflow:visible!important;
+}
+.req-fact-ante-v149 .req-factibilidades-table-v134{
+  width:100%!important;
+  min-width:0!important;
+  table-layout:fixed!important;
+}
+.req-fact-ante-v149 .req-factibilidades-table-v134 th:nth-child(1){width:15%!important}
+.req-fact-ante-v149 .req-factibilidades-table-v134 th:nth-child(2){width:29%!important}
+.req-fact-ante-v149 .req-factibilidades-table-v134 th:nth-child(3){width:18%!important}
+.req-fact-ante-v149 .req-factibilidades-table-v134 th:nth-child(4){width:38%!important}
+.req-fact-ante-v149 .req-factibilidades-table-v134 input,
+.req-fact-ante-v149 .req-factibilidades-table-v134 textarea{
+  width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+}
+@media(max-width:1100px){
+  .req-fact-ante-v149{
+    overflow-x:auto!important;
+  }
+  .req-fact-ante-v149 .req-table-v112{
+    min-width:920px!important;
+  }
+}
+</style>
+
+<script>
+/* ==========================================================
+   V149 SOBRE V148
+   Regla única para Anteproyecto:
+   - PISOS > 2 O ÁREA BRUTA > 400 m²: muestra AP_REQ_009 con
+     tabla EMAPAR/EERSA/CNT y la sección FACTIBILIDADES del informe.
+   - Caso contrario: oculta por completo el requisito y la sección.
+   ========================================================== */
+function requiereFactibilidadesAnteproyectoV149(){
+  const pisos=typeof numVal==='function'
+    ? numVal(typeof infoValue==='function'?infoValue('ALTURA EDIFICACIÓN'):0)
+    : Number(typeof infoValue==='function'?infoValue('ALTURA EDIFICACIÓN'):0)||0;
+  const area=typeof numVal==='function'
+    ? numVal(typeof infoValue==='function'?infoValue('Área Bruta'):0)
+    : Number(typeof infoValue==='function'?infoValue('Área Bruta'):0)||0;
+  return pisos>2 || area>400;
+}
+
+function isGrupoMas2AnteV149(grupo){
+  const text=String(grupo||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toUpperCase();
+  return text.includes('MAS DE 2') || text.includes('400 M2') || text.includes('400 M²');
+}
+
+function isFactibilidadAnteReqV149(req){
+  return String(req?.id||'').trim()==='AP_REQ_009' ||
+    (isGrupoMas2AnteV149(req?.grupo) && /FACTIBILIDAD|FACTIBILIDADES/i.test(String(req?.texto||'')));
+}
+
+function renderFactibilidadAnteReqV149(req,showNA=true){
+  if(!req) return '';
+  if(typeof ensureAnteFactibilidadesV134==='function') ensureAnteFactibilidadesV134();
+  const val=state.requisitos?.[req.id]||{estado:'',observacion:'',detalle:{}};
+  const tabla=typeof renderAnteFactibilidadesTableV134==='function'
+    ? renderAnteFactibilidadesTableV134()
+    : '';
+  return `<div class="req-separado-v112 req-fact-ante-v149">
+    <div class="req-separado-v112-title">Requisito 1 - Factibilidades de servicios</div>
+    <table class="req-table-v112 req-table-req9-v112">
+      <thead><tr>
+        <th class="req9-req">Requisito</th>
+        <th class="req9-check">Cumple</th>
+        <th class="req9-check">No cumple</th>
+        ${showNA?'<th class="req9-check">No aplica</th>':''}
+        <th class="req9-detail">Resultado / detalle</th>
+        <th class="req9-obs">Observación para el usuario</th>
+        <th class="req9-adj">Adjunto</th>
+      </tr></thead>
+      <tbody><tr>
+        <td>${esc(req.texto||'')}</td>
+        <td class="center"><input type="checkbox" data-req-id="${esc(req.id)}" value="Cumple" ${val.estado==='Cumple'?'checked':''} onchange="setReqEstado('${esc(req.id)}','Cumple',this.checked)"></td>
+        <td class="center"><input type="checkbox" data-req-id="${esc(req.id)}" value="No Cumple" ${val.estado==='No Cumple'?'checked':''} onchange="setReqEstado('${esc(req.id)}','No Cumple',this.checked)"></td>
+        ${showNA?`<td class="center"><input type="checkbox" data-req-id="${esc(req.id)}" value="No Aplica" ${val.estado==='No Aplica'?'checked':''} onchange="setReqEstado('${esc(req.id)}','No Aplica',this.checked)"></td>`:''}
+        <td class="req9-detail">${tabla}</td>
+        <td><textarea id="req_obs_${esc(req.id)}" placeholder="Solo si no cumple" style="display:${val.estado==='No Cumple'?'block':'none'}">${esc(val.observacion||'')}</textarea></td>
+        <td>${typeof reqAdjuntoCellV55==='function'?reqAdjuntoCellV55(req.id):''}</td>
+      </tr></tbody>
+    </table>
+  </div>`;
+}
+
+const _renderRequisitosForm_base_V149=typeof renderRequisitosForm==='function'
+  ? renderRequisitosForm : null;
+renderRequisitosForm=function(rebuild=true){
+  const ante=typeof isAnteproyectoV123==='function' && isAnteproyectoV123();
+  if(!ante){
+    return _renderRequisitosForm_base_V149
+      ? _renderRequisitosForm_base_V149(rebuild)
+      : undefined;
+  }
+
+  if(typeof ensureV55State==='function') ensureV55State();
+  const box=document.getElementById('requisitosForm');
+  if(!box) return;
+
+  const cond=requiereFactibilidadesAnteproyectoV149();
+  const all=Array.isArray(DATA.requisitos)?DATA.requisitos:[];
+  const reqs=all.filter(req=>{
+    if(isGrupoMas2AnteV149(req?.grupo)) return cond;
+    return typeof shouldShowReq==='function' ? shouldShowReq(req) : true;
+  });
+
+  let html=`<div class="field"><label class="check-line"><input type="checkbox" id="toggleComplementarios" ${state.mostrarComplementarios?'checked':''}> Mostrar requisitos complementarios cuando apliquen</label></div>`;
+  const groups=[...new Set(reqs.map(r=>r.grupo))];
+
+  groups.forEach(grupo=>{
+    const rows=reqs.filter(r=>r.grupo===grupo);
+    if(isGrupoMas2AnteV149(grupo)){
+      const req=rows.find(isFactibilidadAnteReqV149) || rows[0];
+      if(req){
+        html+=`<div class="section-title">${esc(grupo)}</div>`;
+        html+=renderFactibilidadAnteReqV149(req,true);
+      }
+      return;
+    }
+
+    const forceNA=typeof isReqMasDe2V55==='function'
+      ? isReqMasDe2V55(grupo)
+      : false;
+    const showNA=forceNA || rows.some(r=>(r.opciones||[]).includes('No Aplica'));
+    html+=`<div class="section-title">${esc(grupo)}</div>`;
+    if(typeof renderReqTableNormalV112==='function'){
+      html+=renderReqTableNormalV112(rows,showNA,forceNA);
+    }
+  });
+
+  html+=`<div class="note-box">Condición automática: ALTURA EDIFICACIÓN = ${esc(typeof infoValue==='function'?(infoValue('ALTURA EDIFICACIÓN')||'0'):'0')} PISOS / ÁREA BRUTA = ${esc(typeof infoValue==='function'?(infoValue('Área Bruta')||'0'):'0')} M². ${cond?'SE ACTIVA':'NO SE ACTIVA'} EL REQUISITO DE FACTIBILIDADES.</div>`;
+  box.innerHTML=html;
+
+  const tog=document.getElementById('toggleComplementarios');
+  if(tog) tog.addEventListener('change',e=>{
+    state.mostrarComplementarios=e.target.checked;
+    renderRequisitosForm(false);
+    if(typeof renderObsSeleccionadas==='function') renderObsSeleccionadas();
+    if(typeof renderReport==='function') renderReport();
+    if(typeof renderPreview==='function') renderPreview();
+  });
+
+  if(typeof bindReqObsV112==='function') bindReqObsV112(reqs);
+  if(typeof bindReqDetailInputsV94==='function') bindReqDetailInputsV94();
+};
+
+/* Refuerzo para que cambios en Área Bruta o Pisos actualicen de inmediato
+   el requisito y la sección del informe, sin depender de una recarga. */
+function refrescarCondicionFactibilidadesAnteV149(){
+  if(!(typeof isAnteproyectoV123==='function' && isAnteproyectoV123())) return;
+  if(typeof renderRequisitosForm==='function') renderRequisitosForm(false);
+  if(typeof renderReport==='function') renderReport();
+  if(typeof renderPreview==='function') renderPreview();
+}
+
+document.addEventListener('input',e=>{
+  const target=e.target;
+  if(!target || !target.id || !target.id.startsWith('info_')) return;
+  const label=String(target.closest('.field')?.querySelector('label')?.textContent||'');
+  if(/ÁREA\s+BRUTA|AREA\s+BRUTA|ALTURA\s+EDIFICACI[ÓO]N/i.test(label)){
+    clearTimeout(window.__factAnteTimerV149);
+    window.__factAnteTimerV149=setTimeout(refrescarCondicionFactibilidadesAnteV149,120);
+  }
+});
+
+window.addEventListener('load',()=>{
+  setTimeout(refrescarCondicionFactibilidadesAnteV149,1900);
+});
+</script>
+
 </body>
 </html>
