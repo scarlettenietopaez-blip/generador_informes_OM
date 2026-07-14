@@ -1,0 +1,3 @@
+id;orden;nombre;descripcion;activo
+obra_mayor_definitivo;1;Obra Mayor Definitivo;Informes para revisión de proyecto técnico definitivo de obra mayor;SI
+anteproyecto_edificacion;2;Anteproyecto de Edificación;Informes para observaciones, aprobación y desistimiento de anteproyectos de edificación;SI
