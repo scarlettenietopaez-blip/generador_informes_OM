@@ -27045,159 +27045,7 @@ function buildClipboardPayloadV154(){
     th,td{border:1px solid #000;padding:4px 5px;font-family:Arial,Helvetica,sans-serif;font-size:8.5pt;line-height:1.2;vertical-align:top;}
     th,.apr-info-label,.apr-info-section,.label-cell,.study-cell{font-weight:900!important;}
   `;
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${css}</style></head><body>${clone.outerHTML}
-
-<style>
-/* ==========================================================
-   V158 SOBRE V157
-   - Títulos de sección ligeramente más pequeños (10 pt).
-   - La vista conserva el formato actual de las tablas.
-   ========================================================== */
-html body #report.report .report-section-title-v157,
-html body .report .report-section-title-v157,
-html body #report.report .report-section-title-v157 span,
-html body #report.report .report-section-title-v157 b,
-html body #report.report .report-section-title-v157 strong,
-html body .report .report-section-title-v157 span,
-html body .report .report-section-title-v157 b,
-html body .report .report-section-title-v157 strong{
-  font-size:10pt!important;
-  line-height:1.12!important;
-}
-</style>
-
-<script>
-/* ==========================================================
-   V158 SOBRE V157
-   Los títulos nacen en 10 pt y la copia enriquecida elimina
-   únicamente los fondos blancos. Así el fondo institucional
-   de eGOB queda visible, mientras los grises se conservan.
-   ========================================================== */
-function buildReportHeadingV157(text,index){
-  const heading=document.createElement('div');
-  heading.className='report-section-title-v157';
-  heading.dataset.reportHeadingV157='1';
-  heading.setAttribute('style',[
-    'display:block','width:100%','box-sizing:border-box',
-    'margin:12px 0 7px','padding:0 0 3px 0',
-    'border:0','border-bottom:1px solid #222222',
-    'border-radius:0','background:transparent','box-shadow:none',
-    'color:#111111','font-family:Arial,Helvetica,sans-serif',
-    'font-size:10pt','font-style:normal','font-weight:bold',
-    'line-height:1.12','text-align:left','text-transform:uppercase',
-    'mso-bidi-font-weight:bold'
-  ].join(';')+';');
-
-  const span=document.createElement('span');
-  span.setAttribute('style','font-family:Arial,Helvetica,sans-serif;font-size:10pt;font-style:normal;font-weight:bold!important;line-height:1.12;color:#111111;mso-bidi-font-weight:bold;');
-  const bold=document.createElement('b');
-  bold.setAttribute('style','font-family:Arial,Helvetica,sans-serif;font-size:10pt;font-weight:bold!important;color:#111111;mso-bidi-font-weight:bold;');
-  const strong=document.createElement('strong');
-  strong.setAttribute('style','font-family:Arial,Helvetica,sans-serif;font-size:10pt;font-weight:bold!important;color:#111111;mso-bidi-font-weight:bold;');
-  strong.textContent=`${index+1}. ${text}`;
-  bold.appendChild(strong);
-  span.appendChild(bold);
-  heading.appendChild(span);
-  return heading;
-}
-
-function applyHeadingSizeV158(root=document.getElementById('report')){
-  if(!root) return;
-  root.querySelectorAll('.report-section-title-v157,.report-section-title-v157 span,.report-section-title-v157 b,.report-section-title-v157 strong').forEach(el=>{
-    el.style.setProperty('font-size','10pt','important');
-    el.style.setProperty('line-height','1.12','important');
-    el.style.setProperty('font-weight','bold','important');
-  });
-}
-
-function isWhiteColorV158(value){
-  const v=String(value||'').replace(/\s+/g,'').toLowerCase();
-  return v==='#fff'||v==='#ffffff'||v==='white'||v==='rgb(255,255,255)'||v==='rgba(255,255,255,1)';
-}
-
-function isShadedReportCellV158(cell){
-  return !!cell?.matches?.('th,.apr-info-label,.apr-info-section,.label-cell,.study-cell');
-}
-
-function makeCopiedWhiteBackgroundsTransparentV158(root){
-  if(!root) return root;
-
-  /* Quita fondos blancos heredados del contenedor y las tablas. */
-  [root,...root.querySelectorAll('*')].forEach(el=>{
-    if(!el?.style) return;
-    if(isWhiteColorV158(el.style.backgroundColor)) el.style.removeProperty('background-color');
-    if(isWhiteColorV158(el.style.background)) el.style.removeProperty('background');
-  });
-
-  root.style.setProperty('background','transparent','important');
-  root.style.setProperty('background-color','transparent','important');
-
-  root.querySelectorAll('table,tbody,thead,tfoot,tr').forEach(el=>{
-    el.style.setProperty('background','transparent','important');
-    el.style.setProperty('background-color','transparent','important');
-    el.removeAttribute('bgcolor');
-  });
-
-  root.querySelectorAll('th,td').forEach(cell=>{
-    if(isShadedReportCellV158(cell)){
-      const bg=cell.classList.contains('apr-info-section')?'#cfcfcf':
-        cell.classList.contains('label-cell')?'#eeeeee':
-        cell.classList.contains('study-cell')?'#f3f3f3':'#d9d9d9';
-      cell.setAttribute('bgcolor',bg);
-      cell.style.setProperty('background',bg,'important');
-      cell.style.setProperty('background-color',bg,'important');
-    }else{
-      cell.removeAttribute('bgcolor');
-      cell.style.setProperty('background','transparent','important');
-      cell.style.setProperty('background-color','transparent','important');
-    }
-    cell.style.setProperty('border','1px solid #000000','important');
-  });
-  return root;
-}
-
-/* Reemplazo final del contenido HTML copiado. La vista no cambia de fondo. */
-buildClipboardPayloadV154=function(){
-  if(typeof renderReport==='function') renderReport();
-  const live=document.getElementById('report');
-  if(!live) throw new Error('No se encontró la Vista del Informe.');
-
-  const clone=live.cloneNode(true);
-  clone.innerHTML=formatReportSectionHeadingsV157(clone.innerHTML);
-  if(typeof removeAnteproyectoMainTitleV154==='function') removeAnteproyectoMainTitleV154(clone);
-  if(typeof decorateReportForRichCopyV154==='function') decorateReportForRichCopyV154(clone);
-  applyHeadingSizeV158(clone);
-  makeCopiedWhiteBackgroundsTransparentV158(clone);
-
-  const css=`
-    html,body{font-family:Arial,Helvetica,sans-serif;font-size:9pt;line-height:1.3;color:#111;background:transparent!important;}
-    .report{background:transparent!important;}
-    .report-section-title-v157{display:block;width:100%;box-sizing:border-box;margin:12px 0 7px;padding:0 0 3px;border-bottom:1px solid #222;font-family:Arial,Helvetica,sans-serif;font-size:10pt;line-height:1.12;font-weight:bold!important;color:#111;text-transform:uppercase;mso-bidi-font-weight:bold;background:transparent!important;}
-    .report-section-title-v157 span,.report-section-title-v157 b,.report-section-title-v157 strong{font-family:Arial,Helvetica,sans-serif;font-size:10pt;font-weight:bold!important;color:#111;mso-bidi-font-weight:bold;background:transparent!important;}
-    table,tbody,thead,tfoot,tr{width:100%;border-collapse:collapse;border-spacing:0;background:transparent!important;mso-table-lspace:0pt;mso-table-rspace:0pt;}
-    th,td{border:1px solid #000;padding:4px 5px;font-family:Arial,Helvetica,sans-serif;font-size:8.5pt;line-height:1.2;vertical-align:top;background:transparent;}
-    th,.apr-info-label{background:#d9d9d9!important;font-weight:bold!important;}
-    .apr-info-section{background:#cfcfcf!important;font-weight:bold!important;}
-    .label-cell{background:#eeeeee!important;font-weight:bold!important;}
-    .study-cell{background:#f3f3f3!important;font-weight:bold!important;}
-  `;
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${css}</style></head><body>${clone.outerHTML}</body></html>`;
-  const plain=(clone.innerText||clone.textContent||'').trim();
-  return {html,plain};
-};
-
-window.addEventListener('load',()=>{
-  setTimeout(()=>applyHeadingSizeV158(),400);
-  setTimeout(()=>applyHeadingSizeV158(),1200);
-});
-document.addEventListener('click',event=>{
-  if(event.target?.closest?.('.tab-btn,[data-tab="tab-vista"],#tab-vista')){
-    setTimeout(()=>applyHeadingSizeV158(),0);
-  }
-});
-</script>
-
-</body></html>`;
   const plain=(clone.innerText||clone.textContent||'').trim();
   return {html,plain};
 }
@@ -27750,6 +27598,184 @@ window.addEventListener('load',()=>{
   setTimeout(()=>applyReportSectionHeadingsV157(),300);
   setTimeout(()=>applyReportSectionHeadingsV157(),1000);
   setTimeout(()=>applyReportSectionHeadingsV157(),2000);
+});
+</script>
+
+
+<style>
+/* ==========================================================
+   V159 SOBRE V157
+   - Títulos de sección a 9 pt en todos los informes.
+   - Conserva el sombreado gris de las celdas de etiqueta.
+   - En la copia elimina únicamente los fondos blancos de las
+     celdas de datos y de los elementos de texto, evitando la
+     mancha blanca sobre el fondo institucional de eGOB.
+   ========================================================== */
+html body #report.report .report-section-title-v157,
+html body .report .report-section-title-v157,
+html body #report.report .report-section-title-v157 span,
+html body #report.report .report-section-title-v157 b,
+html body #report.report .report-section-title-v157 strong,
+html body .report .report-section-title-v157 span,
+html body .report .report-section-title-v157 b,
+html body .report .report-section-title-v157 strong{
+  font-size:9pt!important;
+  font-weight:900!important;
+  line-height:1.12!important;
+}
+</style>
+
+<script>
+/* ==========================================================
+   V159 SOBRE V157
+   Corrección específica de tamaño y copia enriquecida.
+   ========================================================== */
+function buildReportHeadingV157(text,index){
+  const heading=document.createElement('div');
+  heading.className='report-section-title-v157';
+  heading.dataset.reportHeadingV157='1';
+  heading.setAttribute('style',[
+    'display:block','width:100%','box-sizing:border-box',
+    'margin:12px 0 7px','padding:0 0 3px 0',
+    'border:0','border-bottom:1px solid #222222',
+    'border-radius:0','background:transparent','box-shadow:none',
+    'color:#111111','font-family:Arial,Helvetica,sans-serif',
+    'font-size:9pt','font-style:normal','font-weight:900',
+    'line-height:1.12','text-align:left','text-transform:uppercase',
+    'mso-bidi-font-weight:bold'
+  ].join(';')+';');
+
+  const span=document.createElement('span');
+  span.setAttribute('style','font-family:Arial,Helvetica,sans-serif;font-size:9pt;font-style:normal;font-weight:900!important;line-height:1.12;color:#111111;background:transparent!important;mso-bidi-font-weight:bold;');
+  const bold=document.createElement('b');
+  bold.setAttribute('style','font-family:Arial,Helvetica,sans-serif;font-size:9pt;font-weight:900!important;color:#111111;background:transparent!important;mso-bidi-font-weight:bold;');
+  const strong=document.createElement('strong');
+  strong.setAttribute('style','font-family:Arial,Helvetica,sans-serif;font-size:9pt;font-weight:900!important;color:#111111;background:transparent!important;mso-bidi-font-weight:bold;');
+  strong.textContent=`${index+1}. ${text}`;
+  bold.appendChild(strong);
+  span.appendChild(bold);
+  heading.appendChild(span);
+  return heading;
+}
+
+function applyHeadingSizeV159(root=document.getElementById('report')){
+  if(!root) return;
+  root.querySelectorAll('.report-section-title-v157,.report-section-title-v157 span,.report-section-title-v157 b,.report-section-title-v157 strong').forEach(el=>{
+    el.style.setProperty('font-size','9pt','important');
+    el.style.setProperty('font-weight','900','important');
+    el.style.setProperty('line-height','1.12','important');
+    el.style.setProperty('background','transparent','important');
+    el.style.setProperty('background-color','transparent','important');
+  });
+}
+
+function isWhiteBackgroundV159(value){
+  const normalized=String(value||'').replace(/\s+/g,'').toLowerCase();
+  return !normalized || [
+    '#fff','#ffffff','white','rgb(255,255,255)','rgba(255,255,255,1)'
+  ].includes(normalized);
+}
+
+function isGrayLabelCellV159(cell){
+  if(!cell) return false;
+  if(typeof isReportLabelCellV154==='function' && isReportLabelCellV154(cell)) return true;
+  return cell.matches('th,.apr-info-label,.apr-info-section,.label-cell,.study-cell');
+}
+
+function sanitizeCopiedBackgroundsV159(root){
+  if(!root) return root;
+
+  /* El contenedor y la estructura de la tabla deben dejar ver el fondo de eGOB. */
+  [root,...root.querySelectorAll('table,thead,tbody,tfoot,tr')].forEach(el=>{
+    el.style.setProperty('background','transparent','important');
+    el.style.setProperty('background-color','transparent','important');
+    el.removeAttribute('bgcolor');
+  });
+
+  root.querySelectorAll('th,td').forEach(cell=>{
+    if(isGrayLabelCellV159(cell)){
+      const bg=typeof reportCellBackgroundV153==='function'
+        ? reportCellBackgroundV153(cell)
+        : '#d9d9d9';
+      cell.setAttribute('bgcolor',bg);
+      cell.style.setProperty('background',bg,'important');
+      cell.style.setProperty('background-color',bg,'important');
+      cell.style.setProperty('font-weight','900','important');
+    }else{
+      /* Solo las celdas de datos blancas pasan a transparentes. */
+      const current=cell.style.backgroundColor||cell.style.background||cell.getAttribute('bgcolor')||'';
+      if(isWhiteBackgroundV159(current)){
+        cell.removeAttribute('bgcolor');
+        cell.style.setProperty('background','transparent','important');
+        cell.style.setProperty('background-color','transparent','important');
+      }
+    }
+    cell.style.removeProperty('mso-shading');
+  });
+
+  /* Quita resaltados blancos adheridos al texto, no el gris de la celda. */
+  root.querySelectorAll('span,b,strong,p,div,li').forEach(el=>{
+    if(el.classList.contains('report-section-title-v157')) return;
+    el.style.setProperty('background','transparent','important');
+    el.style.setProperty('background-color','transparent','important');
+    el.style.setProperty('text-shadow','none','important');
+    el.style.setProperty('box-shadow','none','important');
+    el.removeAttribute('bgcolor');
+  });
+  return root;
+}
+
+function buildClipboardPayloadV154(){
+  if(typeof renderReport==='function') renderReport();
+  const live=document.getElementById('report');
+  if(!live) throw new Error('No se encontró la Vista del Informe.');
+
+  const clone=live.cloneNode(true);
+  clone.innerHTML=formatReportSectionHeadingsV157(clone.innerHTML);
+  if(typeof removeAnteproyectoMainTitleV154==='function') removeAnteproyectoMainTitleV154(clone);
+  if(typeof decorateReportForRichCopyV154==='function') decorateReportForRichCopyV154(clone);
+  applyHeadingSizeV159(clone);
+  sanitizeCopiedBackgroundsV159(clone);
+
+  const css=`
+    html,body{font-family:Arial,Helvetica,sans-serif;font-size:9pt;line-height:1.3;color:#111;background:transparent!important;}
+    .report{background:transparent!important;}
+    .report-section-title-v157{display:block;width:100%;box-sizing:border-box;margin:12px 0 7px;padding:0 0 3px;border-bottom:1px solid #222;font-family:Arial,Helvetica,sans-serif;font-size:9pt;line-height:1.12;font-weight:900!important;color:#111;text-transform:uppercase;background:transparent!important;mso-bidi-font-weight:bold;}
+    .report-section-title-v157 span,.report-section-title-v157 b,.report-section-title-v157 strong{font-family:Arial,Helvetica,sans-serif;font-size:9pt;font-weight:900!important;color:#111;background:transparent!important;mso-bidi-font-weight:bold;}
+    table,thead,tbody,tfoot,tr{width:100%;border-collapse:collapse;border-spacing:0;background:transparent!important;mso-table-lspace:0pt;mso-table-rspace:0pt;}
+    th,td{border:1px solid #000;padding:4px 5px;font-family:Arial,Helvetica,sans-serif;font-size:8.5pt;line-height:1.2;vertical-align:top;}
+    th,.apr-info-label,.apr-info-section,.label-cell,.study-cell{font-weight:900!important;}
+    span,b,strong,p,div,li{background:transparent!important;text-shadow:none!important;box-shadow:none!important;}
+  `;
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${css}</style></head><body>${clone.outerHTML}</body></html>`;
+  const plain=(clone.innerText||clone.textContent||'').trim();
+  return {html,plain};
+}
+
+if(typeof renderReport==='function'){
+  const _renderReport_base_V159=renderReport;
+  renderReport=function(...args){
+    const out=_renderReport_base_V159.apply(this,args);
+    applyHeadingSizeV159();
+    return out;
+  };
+}
+if(typeof renderPreview==='function'){
+  const _renderPreview_base_V159=renderPreview;
+  renderPreview=function(...args){
+    const out=_renderPreview_base_V159.apply(this,args);
+    applyHeadingSizeV159();
+    return out;
+  };
+}
+window.addEventListener('load',()=>{
+  setTimeout(()=>applyHeadingSizeV159(),350);
+  setTimeout(()=>applyHeadingSizeV159(),1200);
+});
+document.addEventListener('click',event=>{
+  if(event.target?.closest?.('.tab-btn,[data-tab="tab-vista"],#tab-vista')){
+    setTimeout(()=>applyHeadingSizeV159(),0);
+  }
 });
 </script>
 
