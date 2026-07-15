@@ -27107,5 +27107,112 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+
+<style>
+/* ==========================================================
+   V155 SOBRE V154
+   Negrita visible y persistente en títulos numerados de sección.
+   No modifica tamaños, márgenes ni tablas.
+   ========================================================== */
+html body #report.report h2,
+html body .report h2,
+html body #report.report h2 b,
+html body .report h2 b,
+html body #report.report h2 strong,
+html body .report h2 strong{
+  font-weight:700!important;
+  font-family:Arial,Helvetica,sans-serif!important;
+}
+</style>
+
+<script>
+/* ==========================================================
+   V155 SOBRE V154
+   Usa simultáneamente <b> y <strong> para que la negrita se
+   conserve en la Vista del Informe y al pegar en eGOB/Word.
+   ========================================================== */
+function ensureBoldHeadingV155(h){
+  if(!h) return;
+  const text=String(h.textContent||'').trim();
+  if(!text) return;
+
+  h.style.setProperty('font-family','Arial,Helvetica,sans-serif','important');
+  h.style.setProperty('font-size','11pt','important');
+  h.style.setProperty('line-height','1.15','important');
+  h.style.setProperty('font-weight','700','important');
+  h.style.setProperty('color','#111111','important');
+  h.style.setProperty('border-bottom','1px solid #222222','important');
+
+  const existing=h.querySelector(':scope > b[data-v155="1"]');
+  if(existing && String(existing.textContent||'').trim()===text){
+    existing.style.setProperty('font-weight','700','important');
+    const strongExisting=existing.querySelector('strong');
+    if(strongExisting) strongExisting.style.setProperty('font-weight','700','important');
+    return;
+  }
+
+  const bold=document.createElement('b');
+  bold.setAttribute('data-v155','1');
+  bold.setAttribute('style','font-family:Arial,Helvetica,sans-serif;font-size:11pt;line-height:1.15;font-weight:700!important;color:#111111;');
+
+  const strong=document.createElement('strong');
+  strong.setAttribute('style','font-weight:700!important;');
+  strong.textContent=text;
+  bold.appendChild(strong);
+
+  h.innerHTML='';
+  h.appendChild(bold);
+}
+
+/* Sustituye la función anterior para que todas las rutas de copia
+   enriquecida usen también la etiqueta <b>. */
+ensureStrongHeadingV154=ensureBoldHeadingV155;
+
+function applyBoldReportHeadingsV155(root=document.getElementById('report')){
+  if(!root) return;
+  root.querySelectorAll('h2').forEach(ensureBoldHeadingV155);
+}
+
+if(typeof renderReport==='function'){
+  const _renderReport_base_V155=renderReport;
+  renderReport=function(...args){
+    const out=_renderReport_base_V155.apply(this,args);
+    applyBoldReportHeadingsV155();
+    return out;
+  };
+}
+
+if(typeof renderPreview==='function'){
+  const _renderPreview_base_V155=renderPreview;
+  renderPreview=function(...args){
+    const out=_renderPreview_base_V155.apply(this,args);
+    applyBoldReportHeadingsV155();
+    return out;
+  };
+}
+
+/* Refuerzo ante reconstrucciones asíncronas de la vista. */
+window.addEventListener('load',()=>{
+  setTimeout(applyBoldReportHeadingsV155,300);
+  setTimeout(applyBoldReportHeadingsV155,1000);
+  setTimeout(applyBoldReportHeadingsV155,2000);
+
+  const report=document.getElementById('report');
+  if(report && typeof MutationObserver!=='undefined'){
+    let pending=false;
+    const observer=new MutationObserver(()=>{
+      if(pending) return;
+      pending=true;
+      requestAnimationFrame(()=>{
+        pending=false;
+        applyBoldReportHeadingsV155(report);
+      });
+    });
+    observer.observe(report,{childList:true,subtree:true});
+  }
+});
+</script>
+
 </body>
 </html>
