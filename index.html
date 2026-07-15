@@ -26392,5 +26392,203 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+
+<style>
+/* ==========================================================
+   V152 SOBRE V151
+   Encabezados uniformes para TODOS los informes, incluido
+   Anteproyecto de Edificación.
+   ========================================================== */
+html body #report.report h2,
+html body .report h2{
+  display:block!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+  margin:18px 0 10px!important;
+  padding:0 0 5px 0!important;
+  border:0!important;
+  border-bottom:1px solid #222!important;
+  border-radius:0!important;
+  background:none!important;
+  box-shadow:none!important;
+  color:#111!important;
+  font-family:Arial,Helvetica,sans-serif!important;
+  font-size:14px!important;
+  font-weight:700!important;
+  line-height:1.2!important;
+  text-align:left!important;
+  text-transform:uppercase!important;
+}
+@media print{
+  html body #report.report h2,
+  html body .report h2{
+    margin:14px 0 8px!important;
+    padding-bottom:4px!important;
+    border-bottom:1px solid #000!important;
+    color:#000!important;
+    break-after:avoid!important;
+    page-break-after:avoid!important;
+  }
+}
+</style>
+
+<script>
+/* ==========================================================
+   V152 SOBRE V151
+   1. Lee realmente la Base Legal desde el CSV de Anteproyecto.
+   2. Soporta CSV separado por punto y coma, valores entre comillas
+      y textos multilínea.
+   3. Aplica numeración y línea a los encabezados después de cada
+      reconstrucción del informe.
+   ========================================================== */
+function parseSemicolonCsvV152(raw){
+  const rows=[];
+  let row=[];
+  let value='';
+  let quoted=false;
+  const text=String(raw||'').replace(/^\uFEFF/,'');
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(ch==='"'){
+      if(quoted && text[i+1]==='"'){
+        value+='"';
+        i++;
+      }else{
+        quoted=!quoted;
+      }
+    }else if(ch===';' && !quoted){
+      row.push(value);
+      value='';
+    }else if((ch==='\n' || ch==='\r') && !quoted){
+      if(ch==='\r' && text[i+1]==='\n') i++;
+      row.push(value);
+      if(row.some(cell=>String(cell).trim()!=='')) rows.push(row);
+      row=[];
+      value='';
+    }else{
+      value+=ch;
+    }
+  }
+  row.push(value);
+  if(row.some(cell=>String(cell).trim()!=='')) rows.push(row);
+  return rows;
+}
+
+async function loadAnteproyectoConfigV152(force=false){
+  const store=window.__ANTEPROYECTO_CONFIG_V138__ = window.__ANTEPROYECTO_CONFIG_V138__ || {
+    loaded:false,loading:false,values:{}
+  };
+  if(store.loading) return store.values;
+  if(store.loaded && !force) return store.values;
+  store.loading=true;
+  try{
+    const url=`data/anteproyecto_edificacion_config.csv?v=152&t=${Date.now()}`;
+    const response=await fetch(url,{cache:'no-store'});
+    if(!response.ok) throw new Error(`HTTP ${response.status}`);
+    const rows=parseSemicolonCsvV152(await response.text());
+    const values={...store.values};
+    rows.slice(1).forEach(cols=>{
+      const key=String(cols[0]||'').trim();
+      const val=cols.slice(1).join(';').trim().replace(/\\n/g,'\n');
+      if(key) values[key]=val;
+    });
+    store.values=values;
+    store.loaded=true;
+  }catch(error){
+    console.warn('V152: no se pudo cargar la configuración de Anteproyecto.',error);
+  }finally{
+    store.loading=false;
+  }
+  return store.values;
+}
+
+/* Reemplaza la función anterior para que las futuras ediciones del CSV
+   sí modifiquen la Base Legal visible del informe. */
+loadAnteproyectoConfigV138=loadAnteproyectoConfigV152;
+
+anteproyectoBaseLegalV134=function(){
+  const cfg=window.__ANTEPROYECTO_CONFIG_V138__?.values||{};
+  const titulo=String(
+    cfg.BASE_LEGAL_TITULO||
+    'Del Procedimiento Administrativo para la Aprobación de Anteproyectos de Edificación'
+  ).trim();
+  const seccion=String(
+    cfg.BASE_LEGAL_SECCION||
+    'SECCIÓN TERCERA Aprobación Urbanística de Anteproyectos de Edificación (Artículos 81 - 84)'
+  ).trim();
+
+  const base=[
+    'ORDENANZA 016-2023 de Actualización del Código Urbano, publicada en el Registro Oficial No. 885, Edición Especial del 23 de mayo de 2023.',
+    titulo,
+    seccion,
+    'CAPÍTULO III NORMAS GENERALES DE ARQUITECTURA',
+    'SECCIÓN PRIMERA Dimensiones de Locales (Artículos 201 - 209)',
+    'SECCIÓN SEGUNDA Iluminación y Ventilación de Locales (Artículos 210 - 223)',
+    'SECCIÓN TERCERA Circulación en las edificaciones (Artículos 224 - 231)',
+    'SECCIÓN CUARTA Accesos y Salidas (Artículos 232 - 240)',
+    'SECCIÓN QUINTA Ascensores y Elevadores (Artículos 241 - 256)',
+    'CAPÍTULO IV NORMAS POR TIPO DE EDIFICACIÓN'
+  ].join('\n');
+
+  if(typeof formatBaseTecnicoLegalAprobatorio==='function'){
+    return formatBaseTecnicoLegalAprobatorio(base);
+  }
+  const dynamic=typeof baseLegalAprobatorioConUsoV63==='function'
+    ? baseLegalAprobatorioConUsoV63(base)
+    : base;
+  return `<div class="legal-block"><p>${typeof nl2br==='function'?nl2br(dynamic):dynamic}</p></div>`;
+};
+
+function formatAllReportHeadingsV152(html){
+  const template=document.createElement('template');
+  template.innerHTML=String(html||'');
+  const headings=[...template.content.querySelectorAll('h2')];
+  headings.forEach((heading,index)=>{
+    const clean=String(heading.textContent||'')
+      .replace(/^\s*\d+\s*[\.\)\-:]?\s*/,'')
+      .trim();
+    if(!clean) return;
+    heading.textContent=`${index+1}. ${clean.toLocaleUpperCase('es-EC')}`;
+    heading.classList.add('report-section-heading-v152');
+  });
+  return template.innerHTML;
+}
+
+function applyAllReportHeadingsV152(){
+  const root=document.getElementById('report');
+  if(!root) return '';
+  const formatted=formatAllReportHeadingsV152(root.innerHTML);
+  if(root.innerHTML!==formatted) root.innerHTML=formatted;
+  return formatted;
+}
+
+if(typeof renderReport==='function'){
+  const _renderReport_base_V152=renderReport;
+  renderReport=function(...args){
+    const out=_renderReport_base_V152.apply(this,args);
+    return applyAllReportHeadingsV152() || formatAllReportHeadingsV152(out);
+  };
+}
+
+if(typeof renderPreview==='function'){
+  const _renderPreview_base_V152=renderPreview;
+  renderPreview=function(...args){
+    const out=_renderPreview_base_V152.apply(this,args);
+    applyAllReportHeadingsV152();
+    return out;
+  };
+}
+
+window.addEventListener('load',()=>{
+  loadAnteproyectoConfigV152(true).then(()=>{
+    if(typeof renderReport==='function') renderReport();
+    if(typeof renderPreview==='function') renderPreview();
+    applyAllReportHeadingsV152();
+  });
+  setTimeout(applyAllReportHeadingsV152,1800);
+});
+</script>
+
 </body>
 </html>
