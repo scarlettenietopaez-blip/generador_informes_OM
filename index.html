@@ -23230,7 +23230,7 @@ renderInformeAprobatorio=function(){
 
   ensureAnteFactibilidadesV134();
   const t=DATA.plantillaAprobatorio||[];
-  const title='INFORME TÉCNICO APROBATORIO ANTEPROYECTO DE EDIFICACIÓN';
+  const title='';
   const incumplidos=typeof requisitosPorEstado==='function' ? requisitosPorEstado('No Cumple') : [];
   const alertReq=incumplidos.length
     ? `<div class="apr-alert">ALERTA: Existen ${incumplidos.length} requisito(s) marcado(s) como NO CUMPLE. Revise la pestaña Requisitos antes de emitir el informe técnico aprobatorio.</div>`
@@ -26889,6 +26889,221 @@ copiarInformeAprobatorio=function(){
 window.addEventListener('load',()=>{
   setTimeout(applyLiveReportFormattingV153,900);
   setTimeout(applyLiveReportFormattingV153,1900);
+});
+</script>
+
+
+<style>
+/* ==========================================================
+   V154 SOBRE V153
+   Refuerzo de negritas y sombreado en vista/copia enriquecida.
+   ========================================================== */
+html body #report.report h2,
+html body .report h2,
+html body #report.report h2 > strong,
+html body .report h2 > strong{
+  font-weight:900!important;
+}
+html body #report.report th,
+html body #report.report .apr-info-label,
+html body #report.report .apr-info-section,
+html body #report.report .label-cell,
+html body #report.report .study-cell,
+html body .report th,
+html body .report .apr-info-label,
+html body .report .apr-info-section,
+html body .report .label-cell,
+html body .report .study-cell{
+  font-weight:900!important;
+}
+</style>
+
+<script>
+/* ==========================================================
+   V154 SOBRE V153
+   - Títulos de sección con etiqueta <strong> real.
+   - Fondos de celdas con atributo bgcolor para Word/eGOB.
+   - HTML completo en el portapapeles para conservar formato.
+   - El aprobatorio de Anteproyecto no muestra título principal.
+   ========================================================== */
+function ensureStrongHeadingV154(h){
+  if(!h) return;
+  const text=String(h.textContent||'').trim();
+  if(!text) return;
+  const strong=document.createElement('strong');
+  strong.textContent=text;
+  strong.setAttribute('style','font-family:Arial,Helvetica,sans-serif;font-size:11pt;line-height:1.15;font-weight:900!important;color:#111111;');
+  h.innerHTML='';
+  h.appendChild(strong);
+  h.style.setProperty('font-weight','900','important');
+}
+
+function isReportLabelCellV154(cell){
+  return cell.matches('th,.apr-info-label,.apr-info-section,.label-cell,.study-cell,.bold,.desc-bold,.doc-title');
+}
+
+function decorateReportForRichCopyV154(root){
+  if(!root) return root;
+  if(typeof applyInlineReportFormattingV153==='function') applyInlineReportFormattingV153(root);
+
+  root.querySelectorAll('h2').forEach(h=>{
+    ensureStrongHeadingV154(h);
+    h.style.setProperty('font-weight','900','important');
+    h.style.setProperty('font-size','11pt','important');
+    h.style.setProperty('border-bottom','1px solid #222222','important');
+  });
+
+  root.querySelectorAll('table').forEach(table=>{
+    table.setAttribute('border','1');
+    table.setAttribute('cellspacing','0');
+    table.setAttribute('cellpadding','0');
+    table.setAttribute('style',`${table.getAttribute('style')||''};border-collapse:collapse!important;border:1px solid #000000!important;mso-table-lspace:0pt;mso-table-rspace:0pt;background:#ffffff!important;`);
+  });
+
+  root.querySelectorAll('th,td').forEach(cell=>{
+    const bg=typeof reportCellBackgroundV153==='function'
+      ? reportCellBackgroundV153(cell)
+      : (cell.matches('th')?'#d9d9d9':'#ffffff');
+    cell.setAttribute('bgcolor',bg);
+    cell.style.setProperty('background-color',bg,'important');
+    cell.style.setProperty('background',bg,'important');
+    cell.style.setProperty('border','1px solid #000000','important');
+    cell.style.setProperty('border-radius','0','important');
+    cell.style.setProperty('mso-border-alt','solid windowtext .5pt');
+    cell.style.setProperty('mso-pattern','auto');
+    cell.style.setProperty('mso-shading','windowtext');
+
+    if(isReportLabelCellV154(cell)){
+      cell.style.setProperty('font-weight','900','important');
+      if(!cell.querySelector(':scope > strong[data-v154="1"]')){
+        const wrapper=document.createElement('strong');
+        wrapper.dataset.v154='1';
+        wrapper.setAttribute('style','font-weight:900!important;color:#111111;');
+        while(cell.firstChild) wrapper.appendChild(cell.firstChild);
+        cell.appendChild(wrapper);
+      }
+    }
+  });
+
+  root.querySelectorAll('strong,b').forEach(el=>{
+    el.style.setProperty('font-weight','900','important');
+  });
+
+  return root;
+}
+
+function removeAnteproyectoMainTitleV154(root){
+  if(!root || !(typeof isAnteproyectoV123==='function' && isAnteproyectoV123())) return;
+  if(state?.tipoInforme!=='Informe Técnico Aprobatorio') return;
+  root.querySelectorAll('.head,.sub').forEach(el=>{
+    if(/INFORME\s+T[ÉE]CNICO\s+APROBATORIO\s+ANTEPROYECTO\s+DE\s+EDIFICACI[ÓO]N/i.test(el.textContent||'')){
+      const head=el.closest('.head')||el;
+      head.remove();
+    }
+  });
+}
+
+function applyLiveReportFormattingV154(){
+  const root=document.getElementById('report');
+  if(!root) return '';
+  removeAnteproyectoMainTitleV154(root);
+  decorateReportForRichCopyV154(root);
+  return root.innerHTML;
+}
+
+if(typeof renderReport==='function'){
+  const _renderReport_base_V154=renderReport;
+  renderReport=function(...args){
+    const out=_renderReport_base_V154.apply(this,args);
+    return applyLiveReportFormattingV154()||out;
+  };
+}
+
+if(typeof renderPreview==='function'){
+  const _renderPreview_base_V154=renderPreview;
+  renderPreview=function(...args){
+    const out=_renderPreview_base_V154.apply(this,args);
+    applyLiveReportFormattingV154();
+    return out;
+  };
+}
+
+function buildClipboardPayloadV154(){
+  if(typeof renderReport==='function') renderReport();
+  const live=document.getElementById('report');
+  if(!live) throw new Error('No se encontró la Vista del Informe.');
+
+  const clone=live.cloneNode(true);
+  removeAnteproyectoMainTitleV154(clone);
+  decorateReportForRichCopyV154(clone);
+
+  const css=`
+    body{font-family:Arial,Helvetica,sans-serif;font-size:9pt;line-height:1.3;color:#111;background:#fff;}
+    h2{font-family:Arial,Helvetica,sans-serif;font-size:11pt;line-height:1.15;font-weight:900;margin:14px 0 7px;padding:0 0 4px;border-bottom:1px solid #222;text-transform:uppercase;}
+    h2 strong{font-weight:900!important;}
+    table{width:100%;border-collapse:collapse;border:1px solid #000;background:#fff;mso-table-lspace:0pt;mso-table-rspace:0pt;}
+    th,td{border:1px solid #000;padding:4px 5px;font-family:Arial,Helvetica,sans-serif;font-size:8.5pt;line-height:1.2;vertical-align:top;}
+    th,.apr-info-label,.apr-info-section,.label-cell,.study-cell{font-weight:900!important;}
+  `;
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${css}</style></head><body>${clone.outerHTML}</body></html>`;
+  const plain=(clone.innerText||clone.textContent||'').trim();
+  return {html,plain};
+}
+
+copiarInformeActualV70=async function(){
+  collectTop();
+  if(typeof isCopyEnabledReportV70==='function' && !isCopyEnabledReportV70()){
+    showDetailedErrorV70('No se puede copiar este informe.',[
+      'El botón Copiar está habilitado únicamente para Informe Técnico Aprobatorio e Informe de Desistimiento.'
+    ]);
+    return;
+  }
+  const errors=typeof validationErrorsV70==='function'?validationErrorsV70('copiar el informe'):[];
+  if(errors.length){
+    showDetailedErrorV70('No se pudo copiar el informe.',errors);
+    return;
+  }
+
+  let payload;
+  try{ payload=buildClipboardPayloadV154(); }
+  catch(error){
+    showDetailedErrorV70('No se pudo preparar el informe para copiar.',[error.message||String(error)]);
+    return;
+  }
+
+  try{
+    if(!navigator.clipboard || !window.ClipboardItem || !window.isSecureContext){
+      throw new Error('Portapapeles enriquecido moderno no disponible.');
+    }
+    await navigator.clipboard.write([new ClipboardItem({
+      'text/html':new Blob([payload.html],{type:'text/html'}),
+      'text/plain':new Blob([payload.plain],{type:'text/plain'})
+    })]);
+    msg('Informe copiado con títulos en negrita, bordes y sombreado de tablas.',true);
+  }catch(firstError){
+    try{
+      if(typeof fallbackCopyRichHtmlV153==='function') fallbackCopyRichHtmlV153(payload.html);
+      else throw firstError;
+      msg('Informe copiado con formato mediante el modo compatible.',true);
+    }catch(secondError){
+      if(typeof fallbackCopyPlainTextV70==='function'){
+        fallbackCopyPlainTextV70(payload.plain);
+        msg('El navegador solo permitió copiar el informe como texto sin formato.',true);
+      }else{
+        showDetailedErrorV70('No se pudo copiar automáticamente.',[
+          firstError.message||String(firstError),
+          secondError.message||String(secondError)
+        ]);
+      }
+    }
+  }
+};
+
+copiarInformeAprobatorio=function(){ return copiarInformeActualV70(); };
+
+window.addEventListener('load',()=>{
+  setTimeout(applyLiveReportFormattingV154,900);
+  setTimeout(applyLiveReportFormattingV154,1900);
 });
 </script>
 
