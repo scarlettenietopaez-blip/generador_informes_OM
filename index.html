@@ -27779,5 +27779,166 @@ document.addEventListener('click',event=>{
 });
 </script>
 
+
+
+<style>
+/* ==========================================================
+   V160 SOBRE V159
+   Impresión/PDF: muestra exclusivamente el informe.
+   Oculta encabezado, navegación, paneles y controles de la web,
+   y elimina cualquier espacio reservado por esos elementos.
+   ========================================================== */
+@page{
+  size:A4 portrait;
+  margin:0;
+}
+
+@media print{
+  html,
+  body{
+    margin:0!important;
+    padding:0!important;
+    width:210mm!important;
+    min-width:210mm!important;
+    max-width:210mm!important;
+    min-height:0!important;
+    background:#ffffff!important;
+    overflow:visible!important;
+  }
+
+  body > header,
+  body > header.no-print,
+  header,
+  header.no-print,
+  #headerProjectControlsV129,
+  #headerReportActionsV131,
+  #homeProjectBtnV124,
+  #projectEntryV123,
+  #passwordOverlay,
+  .project-entry-v123,
+  .password-overlay,
+  .home-project-v124,
+  .institutional-form-hero-v120,
+  .floating-preview,
+  .global-msg-host-v130,
+  .no-print,
+  aside.side-stack,
+  .tabs,
+  #copyPanelAprobatorio{
+    display:none!important;
+    visibility:hidden!important;
+    position:absolute!important;
+    width:0!important;
+    height:0!important;
+    min-width:0!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+    overflow:hidden!important;
+  }
+
+  main{
+    display:block!important;
+    width:210mm!important;
+    max-width:210mm!important;
+    min-width:210mm!important;
+    margin:0!important;
+    padding:0!important;
+    background:#ffffff!important;
+  }
+
+  main > .grid,
+  .grid{
+    display:block!important;
+    width:210mm!important;
+    max-width:210mm!important;
+    min-width:210mm!important;
+    margin:0!important;
+    padding:0!important;
+    gap:0!important;
+  }
+
+  .grid > section,
+  main section{
+    display:block!important;
+    width:210mm!important;
+    max-width:210mm!important;
+    min-width:210mm!important;
+    margin:0!important;
+    padding:0!important;
+  }
+
+  main section > .tab:not(#tab-vista),
+  main section > .tabs{
+    display:none!important;
+  }
+
+  #tab-vista,
+  #tab-vista.tab,
+  #tab-vista.tab.active{
+    display:block!important;
+    position:static!important;
+    width:210mm!important;
+    max-width:210mm!important;
+    min-width:210mm!important;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+    background:#ffffff!important;
+    box-shadow:none!important;
+    overflow:visible!important;
+  }
+
+  #tab-vista .report-wrap,
+  .report-wrap{
+    display:block!important;
+    position:static!important;
+    width:210mm!important;
+    max-width:210mm!important;
+    min-width:210mm!important;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:0!important;
+    background:#ffffff!important;
+    box-shadow:none!important;
+    overflow:visible!important;
+  }
+
+  #report,
+  #report.report,
+  .report.report-observaciones,
+  .report.report-aprobatorio{
+    display:block!important;
+    position:relative!important;
+    width:210mm!important;
+    max-width:210mm!important;
+    min-width:210mm!important;
+    min-height:297mm!important;
+    margin:0!important;
+    padding:25.4mm!important;
+    box-sizing:border-box!important;
+    background-color:#ffffff!important;
+    box-shadow:none!important;
+    overflow:visible!important;
+    transform:none!important;
+  }
+}
+</style>
+
+<script>
+window.addEventListener('beforeprint',()=>{
+  document.body.classList.add('pdf-print-v160');
+  try{
+    if(typeof renderReport==='function') renderReport();
+    if(typeof showTab==='function') showTab('tab-vista');
+  }catch(_e){}
+});
+window.addEventListener('afterprint',()=>{
+  document.body.classList.remove('pdf-print-v160');
+});
+</script>
+
 </body>
 </html>
