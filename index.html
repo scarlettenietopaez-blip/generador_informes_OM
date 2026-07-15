@@ -26590,5 +26590,307 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+
+<style>
+/* ==========================================================
+   V153 SOBRE V152
+   Tamaño uniforme de encabezados y formato compatible con copia.
+   ========================================================== */
+html body #report.report h2,
+html body .report h2{
+  font-size:11pt!important;
+  line-height:1.15!important;
+  font-weight:700!important;
+  margin:14px 0 7px!important;
+  padding:0 0 4px!important;
+  border-bottom:1px solid #222!important;
+}
+html body #report.report table,
+html body #report.report th,
+html body #report.report td,
+html body .report table,
+html body .report th,
+html body .report td{
+  border-radius:0!important;
+  box-shadow:none!important;
+  -webkit-print-color-adjust:exact!important;
+  print-color-adjust:exact!important;
+}
+</style>
+
+<script>
+/* ==========================================================
+   V153 SOBRE V152
+   Inserta estilos INLINE en la vista del informe para conservar:
+   - tamaño controlado de encabezados;
+   - negritas;
+   - bordes completos;
+   - fondos de encabezados y celdas de etiqueta;
+   al copiar y pegar en editores que admiten HTML enriquecido.
+   ========================================================== */
+function appendInlineStyleV153(el, styles){
+  if(!el) return;
+  Object.entries(styles||{}).forEach(([key,value])=>{
+    try{ el.style.setProperty(key,value,'important'); }catch(e){}
+  });
+}
+
+function reportCellBackgroundV153(el){
+  if(!el) return '#ffffff';
+  if(el.matches('th')) return '#d9d9d9';
+  if(el.classList.contains('apr-info-section')) return '#cfcfcf';
+  if(el.classList.contains('apr-info-label')) return '#d9d9d9';
+  if(el.classList.contains('label-cell')) return '#eeeeee';
+  if(el.classList.contains('study-cell')) return '#f3f3f3';
+  return '#ffffff';
+}
+
+function applyInlineReportFormattingV153(root){
+  if(!root) return root;
+
+  appendInlineStyleV153(root,{
+    'font-family':'Arial, Helvetica, sans-serif',
+    'font-size':'9pt',
+    'line-height':'1.3',
+    'color':'#111111',
+    'background-color':'#ffffff'
+  });
+
+  root.querySelectorAll('h1').forEach(el=>appendInlineStyleV153(el,{
+    'font-family':'Arial, Helvetica, sans-serif',
+    'font-size':'12pt',
+    'line-height':'1.2',
+    'font-weight':'700',
+    'text-align':'center',
+    'text-transform':'uppercase',
+    'color':'#111111',
+    'margin':'0 0 10px 0'
+  }));
+
+  root.querySelectorAll('h2').forEach(el=>appendInlineStyleV153(el,{
+    'display':'block',
+    'width':'100%',
+    'box-sizing':'border-box',
+    'font-family':'Arial, Helvetica, sans-serif',
+    'font-size':'11pt',
+    'line-height':'1.15',
+    'font-weight':'700',
+    'text-align':'left',
+    'text-transform':'uppercase',
+    'color':'#111111',
+    'background-color':'transparent',
+    'margin':'14px 0 7px 0',
+    'padding':'0 0 4px 0',
+    'border':'0',
+    'border-bottom':'1px solid #222222',
+    'border-radius':'0',
+    'box-shadow':'none'
+  }));
+
+  root.querySelectorAll('h3').forEach(el=>appendInlineStyleV153(el,{
+    'font-family':'Arial, Helvetica, sans-serif',
+    'font-size':'9.5pt',
+    'line-height':'1.2',
+    'font-weight':'700',
+    'color':'#111111',
+    'margin':'10px 0 5px 0'
+  }));
+
+  root.querySelectorAll('p, li, div').forEach(el=>{
+    if(el.closest('table')) return;
+    appendInlineStyleV153(el,{
+      'font-family':'Arial, Helvetica, sans-serif',
+      'font-size':'9pt',
+      'line-height':'1.3',
+      'color':'#111111'
+    });
+  });
+
+  root.querySelectorAll('table').forEach(table=>appendInlineStyleV153(table,{
+    'width':'100%',
+    'border-collapse':'collapse',
+    'border-spacing':'0',
+    'table-layout':table.classList.contains('apr-info-table')?'fixed':'auto',
+    'font-family':'Arial, Helvetica, sans-serif',
+    'font-size':'8.5pt',
+    'line-height':'1.2',
+    'color':'#111111',
+    'background-color':'#ffffff',
+    'border':'1px solid #000000',
+    'border-radius':'0',
+    'box-shadow':'none',
+    'margin':'7px 0 10px 0',
+    'mso-border-alt':'solid windowtext .5pt'
+  }));
+
+  root.querySelectorAll('th, td').forEach(cell=>{
+    const bg=reportCellBackgroundV153(cell);
+    appendInlineStyleV153(cell,{
+      'font-family':'Arial, Helvetica, sans-serif',
+      'font-size':'8.5pt',
+      'line-height':'1.2',
+      'color':'#111111',
+      'background-color':bg,
+      'border':'1px solid #000000',
+      'border-radius':'0',
+      'box-shadow':'none',
+      'padding':'4px 5px',
+      'vertical-align':'top',
+      'mso-border-alt':'solid windowtext .5pt'
+    });
+  });
+
+  root.querySelectorAll('th, .apr-info-label, .apr-info-section, .label-cell, .study-cell, strong, b, .bold, .desc-bold, .doc-title').forEach(el=>{
+    appendInlineStyleV153(el,{'font-weight':'700'});
+  });
+
+  root.querySelectorAll('th, .apr-info-label, .apr-info-section, .label-cell, .study-cell').forEach(el=>{
+    appendInlineStyleV153(el,{'text-transform':'uppercase'});
+  });
+
+  root.querySelectorAll('.no-print, button, input, select, textarea').forEach(el=>el.remove());
+  return root;
+}
+
+function applyLiveReportFormattingV153(){
+  const root=document.getElementById('report');
+  if(!root) return '';
+  if(typeof applyAllReportHeadingsV152==='function') applyAllReportHeadingsV152();
+  applyInlineReportFormattingV153(root);
+  return root.innerHTML;
+}
+
+if(typeof renderReport==='function'){
+  const _renderReport_base_V153=renderReport;
+  renderReport=function(...args){
+    const out=_renderReport_base_V153.apply(this,args);
+    return applyLiveReportFormattingV153() || out;
+  };
+}
+
+if(typeof renderPreview==='function'){
+  const _renderPreview_base_V153=renderPreview;
+  renderPreview=function(...args){
+    const out=_renderPreview_base_V153.apply(this,args);
+    applyLiveReportFormattingV153();
+    return out;
+  };
+}
+
+function buildClipboardPayloadV153(){
+  if(typeof renderReport==='function') renderReport();
+  const live=document.getElementById('report');
+  if(!live) throw new Error('No se encontró la Vista del Informe.');
+
+  const clone=live.cloneNode(true);
+  if(typeof formatAllReportHeadingsV152==='function'){
+    clone.innerHTML=formatAllReportHeadingsV152(clone.innerHTML);
+  }
+  applyInlineReportFormattingV153(clone);
+
+  const html=`<div style="font-family:Arial,Helvetica,sans-serif;font-size:9pt;line-height:1.3;color:#111111;background:#ffffff;">${clone.innerHTML}</div>`;
+  const plain=(clone.innerText||clone.textContent||'').trim();
+  return {html,plain};
+}
+
+function fallbackCopyRichHtmlV153(html){
+  const box=document.createElement('div');
+  box.contentEditable='true';
+  box.setAttribute('aria-hidden','true');
+  box.style.position='fixed';
+  box.style.left='-10000px';
+  box.style.top='0';
+  box.style.width='800px';
+  box.style.background='#fff';
+  box.innerHTML=html;
+  document.body.appendChild(box);
+
+  const selection=window.getSelection();
+  const range=document.createRange();
+  range.selectNodeContents(box);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  let ok=false;
+  try{ ok=document.execCommand('copy'); }
+  finally{
+    selection.removeAllRanges();
+    document.body.removeChild(box);
+  }
+  if(!ok) throw new Error('El navegador rechazó la copia enriquecida alternativa.');
+}
+
+/* Reemplazo final de la función de copia para utilizar el HTML ya
+   numerado y con estilos inline. Mantiene las validaciones existentes. */
+copiarInformeActualV70=async function(){
+  collectTop();
+
+  if(typeof isCopyEnabledReportV70==='function' && !isCopyEnabledReportV70()){
+    showDetailedErrorV70('No se puede copiar este informe.',[
+      'El botón Copiar está habilitado únicamente para Informe Técnico Aprobatorio e Informe de Desistimiento.'
+    ]);
+    return;
+  }
+
+  const errors=typeof validationErrorsV70==='function'
+    ? validationErrorsV70('copiar el informe') : [];
+  if(errors.length){
+    showDetailedErrorV70('No se pudo copiar el informe.',errors);
+    return;
+  }
+
+  let payload;
+  try{ payload=buildClipboardPayloadV153(); }
+  catch(error){
+    showDetailedErrorV70('No se pudo preparar el informe para copiar.',[error.message||String(error)]);
+    return;
+  }
+
+  if(!payload.plain){
+    showDetailedErrorV70('No se pudo copiar el informe.',[
+      'La Vista del Informe está vacía.'
+    ]);
+    return;
+  }
+
+  try{
+    if(!navigator.clipboard || !window.ClipboardItem || !window.isSecureContext){
+      throw new Error('Portapapeles enriquecido moderno no disponible.');
+    }
+    await navigator.clipboard.write([new ClipboardItem({
+      'text/html':new Blob([payload.html],{type:'text/html'}),
+      'text/plain':new Blob([payload.plain],{type:'text/plain'})
+    })]);
+    msg('Informe copiado con formato, negritas, bordes y fondos de tabla.',true);
+  }catch(firstError){
+    try{
+      fallbackCopyRichHtmlV153(payload.html);
+      msg('Informe copiado con formato mediante el modo compatible.',true);
+    }catch(secondError){
+      try{
+        if(typeof fallbackCopyPlainTextV70==='function') fallbackCopyPlainTextV70(payload.plain);
+        else throw secondError;
+        msg('El navegador solo permitió copiar el informe como texto sin formato.',true);
+      }catch(thirdError){
+        showDetailedErrorV70('No se pudo copiar automáticamente.',[
+          firstError.message||String(firstError),
+          secondError.message||String(secondError),
+          thirdError.message||String(thirdError)
+        ]);
+      }
+    }
+  }
+};
+
+copiarInformeAprobatorio=function(){
+  return copiarInformeActualV70();
+};
+
+window.addEventListener('load',()=>{
+  setTimeout(applyLiveReportFormattingV153,900);
+  setTimeout(applyLiveReportFormattingV153,1900);
+});
+</script>
+
 </body>
 </html>
