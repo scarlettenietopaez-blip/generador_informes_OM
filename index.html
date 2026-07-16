@@ -29746,5 +29746,197 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script id="patch-v119q-importar-js">
+/* ==========================================================
+   V119Q SOBRE V119P
+   Corrección:
+   - El botón Importar vuelve a abrir correctamente el selector de archivos.
+   - Se usa un input universal fuera de paneles que pueden ocultarse o redibujarse.
+   - Importa respaldos generales e individuales.
+   ========================================================== */
+
+function ensureImportFileUniversalV119Q(){
+  let input=document.getElementById('importFileUniversalV119Q');
+
+  if(!input){
+    input=document.createElement('input');
+    input.type='file';
+    input.id='importFileUniversalV119Q';
+    input.accept='.json,application/json';
+    input.style.cssText='position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;';
+    document.body.appendChild(input);
+  }
+
+  if(input.dataset.boundV119Q!=='1'){
+    input.dataset.boundV119Q='1';
+    input.addEventListener('change',importarRespaldoV119Q);
+  }
+
+  return input;
+}
+
+function abrirImportadorRespaldoV119Q(event=null){
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+
+  const input=ensureImportFileUniversalV119Q();
+
+  // Permite importar el mismo archivo dos veces seguidas si hace falta.
+  input.value='';
+
+  // El click ocurre directamente por acción del usuario.
+  input.click();
+}
+
+function normalizarFormulariosImportadosV119Q(data){
+  if(Array.isArray(data)) return data.filter(Boolean);
+
+  const arr=[];
+  if(Array.isArray(data?.formularios)) arr.push(...data.formularios.filter(Boolean));
+  if(data?.formulario && typeof data.formulario==='object') arr.push(data.formulario);
+
+  // Respaldo individual alternativo: {tipo:'formulario_individual', formulario:{...}}
+  if(data?.tipo==='formulario_individual' && data?.formulario) arr.push(data.formulario);
+
+  // Evitar duplicados por egob/clave.
+  const seen=new Set();
+  return arr.filter(item=>{
+    const key=String(item?.egob || item?.nroEgob || item?.id || '').trim() || JSON.stringify(item).slice(0,80);
+    if(seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function normalizarManualesImportadosV119Q(data){
+  if(Array.isArray(data?.observaciones_manuales)) return data.observaciones_manuales.filter(Boolean);
+  if(Array.isArray(data?.observacionesManuales)) return data.observacionesManuales.filter(Boolean);
+  if(Array.isArray(data?.manuales)) return data.manuales.filter(Boolean);
+  return [];
+}
+
+async function importarRespaldoV119Q(ev){
+  const file=ev?.target?.files?.[0];
+  if(!file){
+    if(typeof msg==='function') msg('No se seleccionó ningún archivo JSON.');
+    return;
+  }
+
+  try{
+    const text=await file.text();
+    const data=JSON.parse(text);
+
+    const formularios=normalizarFormulariosImportadosV119Q(data);
+    const manuales=normalizarManualesImportadosV119Q(data);
+
+    if(!formularios.length && !manuales.length){
+      if(typeof msg==='function') msg('El archivo JSON no contiene formularios para importar.');
+      return;
+    }
+
+    let importados=0;
+    for(const item of formularios){
+      if(!item || typeof item!=='object') continue;
+
+      // dbPut del sistema usa el objeto completo, con egob como clave.
+      if(!item.egob && item.nroEgob) item.egob=item.nroEgob;
+
+      if(item.egob && typeof dbPut==='function'){
+        await dbPut(item);
+        importados++;
+      }
+    }
+
+    let obsImportadas=0;
+    if(typeof manualObsPut==='function'){
+      for(const item of manuales){
+        if(item?.id){
+          await manualObsPut(item);
+          obsImportadas++;
+        }
+      }
+    }
+
+    if(typeof refreshSavedSearchV131==='function') await refreshSavedSearchV131();
+    if(typeof refreshSavedDropdownV129==='function') await refreshSavedDropdownV129();
+    if(typeof renderSavedList==='function') await renderSavedList();
+    if(typeof renderManualObsDB==='function') renderManualObsDB();
+
+    const input=document.getElementById('savedReportsSearchV131');
+    if(input && typeof renderSavedSearchResultsV131==='function'){
+      renderSavedSearchResultsV131(input.value || '');
+    }
+
+    if(typeof msg==='function'){
+      msg(`Respaldo importado correctamente. Formularios: ${importados}. Observaciones manuales: ${obsImportadas}.`, true);
+    }
+  }catch(error){
+    console.error('Error importando respaldo V119Q:', error);
+    if(typeof msg==='function') msg('No se pudo importar el archivo. Revise que sea un respaldo JSON válido.');
+  }finally{
+    if(ev?.target) ev.target.value='';
+  }
+}
+
+/* Mantiene compatibilidad con cualquier llamada previa a importarRespaldo(event). */
+importarRespaldo = importarRespaldoV119Q;
+
+function bindImportButtonsV119Q(){
+  ensureImportFileUniversalV119Q();
+
+  document.querySelectorAll('button').forEach(btn=>{
+    const txt=String(btn.textContent||'').trim().toUpperCase();
+    const onclick=String(btn.getAttribute('onclick')||'');
+
+    if(txt==='IMPORTAR' || onclick.includes('importFileTop') || onclick.includes('importFileSide') || onclick.includes('importarRespaldo')){
+      btn.setAttribute('type','button');
+      btn.onclick=abrirImportadorRespaldoV119Q;
+    }
+  });
+
+  // Si existen inputs viejos, también quedan enlazados al importador nuevo.
+  ['importFileTopV129','importFileTopV131','importFileSide','importFile'].forEach(id=>{
+    const old=document.getElementById(id);
+    if(old && old.dataset.boundV119Q!=='1'){
+      old.dataset.boundV119Q='1';
+      old.addEventListener('change',importarRespaldoV119Q);
+    }
+  });
+}
+
+const _ensureProjectSearchToolbarV131_base_V119Q = typeof ensureProjectSearchToolbarV131 === 'function'
+  ? ensureProjectSearchToolbarV131 : null;
+
+if(_ensureProjectSearchToolbarV131_base_V119Q){
+  ensureProjectSearchToolbarV131 = function(){
+    const out=_ensureProjectSearchToolbarV131_base_V119Q();
+    setTimeout(bindImportButtonsV119Q,0);
+    return out;
+  };
+
+  ensureProjectSearchToolbarV129=ensureProjectSearchToolbarV131;
+  ensureProjectSearchToolbarV130=ensureProjectSearchToolbarV131;
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(bindImportButtonsV119Q,600);
+  setTimeout(bindImportButtonsV119Q,1500);
+  setTimeout(bindImportButtonsV119Q,2600);
+});
+
+document.addEventListener('click',event=>{
+  const btn=event.target.closest('button');
+  if(!btn) return;
+
+  const txt=String(btn.textContent||'').trim().toUpperCase();
+  const onclick=String(btn.getAttribute('onclick')||'');
+
+  if(txt==='IMPORTAR' || onclick.includes('importFileTop') || onclick.includes('importFileSide')){
+    abrirImportadorRespaldoV119Q(event);
+  }
+},true);
+</script>
+
 </body>
 </html>
