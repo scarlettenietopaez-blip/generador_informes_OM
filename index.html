@@ -28462,5 +28462,612 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<style id="patch-ajustes-funcionales-v119n-css">
+/* V119N - Ajustes funcionales solicitados, sin modificar formato general */
+.saved-selected-v119n{
+  border:1px solid #cbd5e1;
+  border-radius:10px;
+  background:#f8fafc;
+  padding:8px;
+  margin:8px 0;
+}
+.saved-selected-v119n strong{
+  color:var(--azul);
+}
+.saved-selected-actions-v119n{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  margin-top:7px;
+}
+.saved-selected-actions-v119n button,
+.saved-select-btn-v119n,
+.saved-arrow-v119n,
+.saved-export-btn-v119n{
+  font-size:10.5px;
+  padding:6px 8px;
+  border-radius:8px;
+  min-height:28px;
+}
+.saved-item.selected-v119n{
+  outline:2px solid rgba(23,50,77,.28);
+  background:#eef5fb;
+}
+.saved-arrow-v119n{
+  min-width:34px;
+}
+.saved-search-select-v119n,
+.saved-search-export-v119n,
+.saved-search-arrow-v119n{
+  font-size:10.5px!important;
+  padding:6px 8px!important;
+  border-radius:8px!important;
+  min-height:28px!important;
+}
+.saved-search-tools-v119n{
+  display:flex;
+  gap:5px;
+  align-items:center;
+}
+</style>
+
+
+<script id="patch-ajustes-funcionales-v119n-js">
+/* ==========================================================
+   V119N
+   1. Área Útil Total siempre visible en Conclusión Técnica.
+   2. Copiar habilitado también para Informe con Observaciones.
+   3. Selección previa de formulario guardado para editar/exportar.
+   4. Comprobador Área Bruta Información General vs suma en Conclusión Técnica.
+   ========================================================== */
+
+/* ---------- Utilidades generales ---------- */
+function normV119N(value){
+  return String(value||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function parseNumeroV119N(value){
+  let s=String(value ?? '').trim();
+  if(!s) return NaN;
+  s=s.replace(/[^\d,.\-]/g,'');
+  if(!s || s==='-' || s==='.' || s===',') return NaN;
+
+  const hasComma=s.includes(',');
+  const hasDot=s.includes('.');
+
+  if(hasComma && hasDot){
+    // Formato frecuente: 1.234,56
+    s=s.replace(/\./g,'').replace(',', '.');
+  }else if(hasComma){
+    s=s.replace(',', '.');
+  }else{
+    const parts=s.split('.');
+    if(parts.length>2){
+      const dec=parts.pop();
+      s=parts.join('')+'.'+dec;
+    }
+  }
+
+  const n=Number(s);
+  return Number.isFinite(n) ? n : NaN;
+}
+
+function fmtNumeroV119N(n){
+  if(!Number.isFinite(n)) return '';
+  return n.toLocaleString('es-EC', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function conclusionRowNormV119N(raw){
+  if(typeof rowConclV108 === 'function') return rowConclV108(raw||{});
+  if(typeof rowConclV87 === 'function') return rowConclV87(raw||{});
+  if(typeof normalizeConclusionRowSafeV73 === 'function') return normalizeConclusionRowSafeV73(raw||{});
+  if(typeof normalizeConclusionRow === 'function') return normalizeConclusionRow(raw||{});
+  return raw||{};
+}
+
+function conclusionRoleV119N(raw,i=null){
+  if(typeof roleConclV108 === 'function') return roleConclV108(raw,i);
+  if(typeof roleFromDescV108 === 'function') return roleFromDescV108(conclusionRowNormV119N(raw).descripcion||'');
+  const d=normV119N(conclusionRowNormV119N(raw).descripcion||'');
+  if(d.includes('AREA') && d.includes('PREDIO')) return 'predio';
+  if(d.includes('AREA') && d.includes('UTIL') && d.includes('PLANTA BAJA')) return 'utilPB';
+  if(d.includes('AREA') && d.includes('UTIL') && d.includes('TOTAL')) return 'utilTotal';
+  if(d.includes('AREA') && d.includes('BRUTA') && d.includes('TOTAL')) return 'brutaTotal';
+  if(d.includes('AREA') && d.includes('BRUTA')) return 'bruta';
+  if(d.includes('COS PB')) return 'cosPB';
+  if(d.includes('COS TOTAL')) return 'cosTotal';
+  return '';
+}
+
+/* ---------- 1. Área Útil Total en Conclusión Técnica ---------- */
+function keyAreaUtilTotalV119N(){
+  return typeof normConclV108 === 'function' ? normConclV108('Área útil total') : normV119N('Área útil total');
+}
+
+function removeAreaUtilTotalFromDeletedV119N(){
+  if(!state.aprobatorio) state.aprobatorio={};
+  const key=keyAreaUtilTotalV119N();
+  ['deletedConclusionKeysV108','deletedConclusionKeysV107','deletedConclusionKeysV106'].forEach(prop=>{
+    if(!Array.isArray(state.aprobatorio[prop])) return;
+    state.aprobatorio[prop]=state.aprobatorio[prop].filter(k=>k!==key && k!=='desc:'+key);
+  });
+}
+
+function ensureAreaUtilTotalConclusionV119N(){
+  if(!state.aprobatorio) state.aprobatorio={};
+  if(!Array.isArray(state.aprobatorio.conclusion)) state.aprobatorio.conclusion=[];
+
+  removeAreaUtilTotalFromDeletedV119N();
+
+  const arr=state.aprobatorio.conclusion;
+  const exists=arr.some((raw,i)=>conclusionRoleV119N(raw,i)==='utilTotal'
+    || normV119N(conclusionRowNormV119N(raw).descripcion).includes('AREA UTIL TOTAL'));
+
+  if(exists) return;
+
+  const key=keyAreaUtilTotalV119N();
+  const row={
+    descripcion:'Área útil total',
+    levels:[],
+    cantidad:'',
+    unidad:'m2',
+    allowLevels:false,
+    _baseKeyV108:key,
+    _originV108:'base',
+    _roleV108:'utilTotal',
+    _roleV104:'utilTotal',
+    _baseOrderV108:2.5
+  };
+
+  const idxPB=arr.findIndex((raw,i)=>conclusionRoleV119N(raw,i)==='utilPB'
+    || normV119N(conclusionRowNormV119N(raw).descripcion).includes('AREA UTIL PLANTA BAJA'));
+  const idxBruta=arr.findIndex((raw,i)=>conclusionRoleV119N(raw,i)==='bruta');
+  const idxTotal=arr.findIndex((raw,i)=>conclusionRoleV119N(raw,i)==='brutaTotal');
+
+  let insertAt=arr.length;
+  if(idxPB>=0) insertAt=idxPB+1;
+  else if(idxBruta>=0) insertAt=idxBruta;
+  else if(idxTotal>=0) insertAt=idxTotal;
+
+  arr.splice(insertAt,0,row);
+}
+
+const _prepareRowsConclV108_base_V119N = typeof prepareRowsConclV108 === 'function'
+  ? prepareRowsConclV108 : null;
+
+if(_prepareRowsConclV108_base_V119N){
+  prepareRowsConclV108 = function(){
+    const out=_prepareRowsConclV108_base_V119N();
+    ensureAreaUtilTotalConclusionV119N();
+    return out;
+  };
+}
+
+const _renderConclusionTabla_base_V119N = typeof renderConclusionTabla === 'function'
+  ? renderConclusionTabla : null;
+
+if(_renderConclusionTabla_base_V119N){
+  renderConclusionTabla = function(){
+    ensureAreaUtilTotalConclusionV119N();
+    return _renderConclusionTabla_base_V119N();
+  };
+}
+
+const _conclusionRowsForReport_base_V119N = typeof conclusionRowsForReportV81 === 'function'
+  ? conclusionRowsForReportV81 : null;
+
+if(_conclusionRowsForReport_base_V119N){
+  conclusionRowsForReportV81 = function(){
+    ensureAreaUtilTotalConclusionV119N();
+
+    let rows=_conclusionRowsForReport_base_V119N() || [];
+    const has=rows.some((raw,i)=>conclusionRoleV119N(raw,i)==='utilTotal'
+      || normV119N(conclusionRowNormV119N(raw).descripcion).includes('AREA UTIL TOTAL'));
+
+    if(!has){
+      const source=(state.aprobatorio?.conclusion||[]).find((raw,i)=>conclusionRoleV119N(raw,i)==='utilTotal'
+        || normV119N(conclusionRowNormV119N(raw).descripcion).includes('AREA UTIL TOTAL'));
+      if(source){
+        const idxPB=rows.findIndex((raw,i)=>conclusionRoleV119N(raw,i)==='utilPB'
+          || normV119N(conclusionRowNormV119N(raw).descripcion).includes('AREA UTIL PLANTA BAJA'));
+        const idxBruta=rows.findIndex((raw,i)=>conclusionRoleV119N(raw,i)==='bruta');
+        const copy={...source};
+        if(idxPB>=0) rows.splice(idxPB+1,0,copy);
+        else if(idxBruta>=0) rows.splice(idxBruta,0,copy);
+        else rows.push(copy);
+      }
+    }
+
+    return rows;
+  };
+}
+
+/* ---------- 2. Copiar también para Observaciones ---------- */
+isCopyEnabledReportV70 = function(){
+  return state.tipoInforme==='Informe Técnico Aprobatorio'
+    || state.tipoInforme==='Informe de Desistimiento'
+    || state.tipoInforme==='Informe con Observaciones';
+};
+
+function updateCopyButtonByReportV119N(){
+  const onVista=(document.querySelector('.tab.active')?.id==='tab-vista');
+  const canCopy=typeof isCopyEnabledReportV70==='function' && isCopyEnabledReportV70();
+
+  const panel=document.getElementById('copyPanelAprobatorio');
+  if(panel) panel.classList.toggle('hidden', !onVista);
+
+  const btn=document.getElementById('btnCopiarAprobatorioVista');
+  if(btn){
+    btn.classList.toggle('hidden', !canCopy);
+    const tipo=state.tipoInforme || 'informe';
+    btn.title='Copiar '+tipo+' para pegar en eGOB';
+    btn.setAttribute('aria-label','Copiar '+tipo);
+  }
+}
+
+const _updateSideActions_base_V119N = typeof updateSideActions === 'function'
+  ? updateSideActions : null;
+
+updateSideActions = function(){
+  if(_updateSideActions_base_V119N) _updateSideActions_base_V119N();
+
+  const isApr=state.tipoInforme==='Informe Técnico Aprobatorio';
+  const lab=document.getElementById('fechaRevisionLabel');
+  const note=document.getElementById('fechaRevisionNote');
+  const sub=document.getElementById('fechaSubsanacionWrap');
+
+  if(lab) lab.textContent=isApr?'Fecha de emisión *':'Fecha de revisión *';
+  if(note) note.textContent=isApr?'Fecha de emisión para registro del informe aprobatorio.':'';
+  if(sub) sub.classList.toggle('hidden', isApr);
+
+  updateCopyButtonByReportV119N();
+};
+
+copiarInformeAprobatorio = function(){
+  return copiarInformeActualV70();
+};
+
+/* ---------- 3. Selección previa de formulario guardado ---------- */
+window.selectedSavedRecordKeyV119N = window.selectedSavedRecordKeyV119N || '';
+
+function savedTitleForListV119N(record){
+  if(typeof savedCombinedTitleV140==='function') return savedCombinedTitleV140(record);
+  if(typeof savedTitleV119==='function') return savedTitleV119(record);
+  return `eGOB ${savedRecordKeyV119N(record)}`;
+}
+
+function savedRecordKeyV119N(record){
+  if(typeof savedRecordKeyV131==='function') return savedRecordKeyV131(record);
+  return String(record?.egob||'').trim();
+}
+
+function selectedKeyV119N(){
+  return String(window.selectedSavedRecordKeyV119N || '').trim();
+}
+
+function setSelectedSavedRecordV119N(key){
+  window.selectedSavedRecordKeyV119N=String(key||'').trim();
+  renderSelectedSavedPanelV119N();
+  markSelectedSavedRowsV119N();
+}
+
+function markSelectedSavedRowsV119N(){
+  const key=selectedKeyV119N();
+  document.querySelectorAll('.saved-item[data-saved-row-key-v119n]').forEach(el=>{
+    el.classList.toggle('selected-v119n', decodeURIComponent(el.dataset.savedRowKeyV119n||'')===key);
+  });
+}
+
+function renderSelectedSavedPanelV119N(){
+  const key=selectedKeyV119N();
+  const holders=document.querySelectorAll('[data-selected-saved-panel-v119n]');
+  holders.forEach(holder=>{
+    if(!key){
+      holder.innerHTML='<div class="mini">Seleccione un formulario guardado para editarlo o exportarlo individualmente.</div>';
+    }else{
+      holder.innerHTML=`<div class="saved-selected-v119n">
+        <strong>Formulario seleccionado:</strong>
+        <div class="mini">eGOB / Registro: ${esc(key)}</div>
+        <div class="saved-selected-actions-v119n">
+          <button type="button" class="success" data-open-saved-v119n="${encodeURIComponent(key)}" title="Seguir editando">➜ Editar</button>
+          <button type="button" class="secondary" data-export-saved-v119n="${encodeURIComponent(key)}">Exportar seleccionado</button>
+          <button type="button" class="secondary" onclick="document.getElementById('importFileSide')?.click()">Importar</button>
+        </div>
+      </div>`;
+    }
+  });
+}
+
+function selectSavedRecordV119N(key,event=null){
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+  if(!key) return;
+  setSelectedSavedRecordV119N(key);
+  if(typeof msg==='function') msg('Formulario seleccionado: '+key+'. Use la flecha ➜ para seguir editando o exporte el respaldo individual.', true);
+}
+
+async function openSavedRecordV119N(key,event=null){
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+  key=String(key||selectedKeyV119N()).trim();
+  if(!key){
+    if(typeof msg==='function') msg('Seleccione primero un formulario guardado.');
+    return;
+  }
+  setSelectedSavedRecordV119N(key);
+  if(typeof cargarFormulario==='function') await cargarFormulario(key);
+  if(typeof hideProjectEntryV123==='function') hideProjectEntryV123();
+}
+
+async function getSavedRecordForExportV119N(key){
+  key=String(key||'').trim();
+  if(!key) return null;
+
+  try{
+    if(typeof dbGet==='function'){
+      const obj=await dbGet(key);
+      if(obj) return obj;
+    }
+  }catch(error){}
+
+  try{
+    const all=typeof dbAll==='function' ? await dbAll() : (savedReportsCacheV131||[]);
+    return (all||[]).find(item=>savedRecordKeyV119N(item)===key) || null;
+  }catch(error){
+    return null;
+  }
+}
+
+async function exportarFormularioSeleccionadoV119N(key=null){
+  key=String(key||selectedKeyV119N()).trim();
+  if(!key){
+    if(typeof msg==='function') msg('Seleccione primero un formulario guardado para exportarlo individualmente.');
+    return;
+  }
+
+  const record=await getSavedRecordForExportV119N(key);
+  if(!record){
+    if(typeof msg==='function') msg('No se encontró el formulario seleccionado para exportar.');
+    return;
+  }
+
+  const payload={
+    version:3,
+    tipo:'formulario_individual',
+    fecha:typeof today==='function' ? today() : new Date().toISOString().slice(0,10),
+    formulario:record,
+    formularios:[record]
+  };
+
+  const safeKey=String(key).replace(/[^\w\-]+/g,'_').replace(/_+/g,'_');
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`RESPALDO_FORMULARIO_${safeKey}_${payload.fecha}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  if(typeof msg==='function') msg('Formulario seleccionado exportado correctamente.', true);
+}
+
+const _exportarRespaldo_base_V119N = typeof exportarRespaldo === 'function' ? exportarRespaldo : null;
+
+exportarRespaldo = async function(){
+  const key=selectedKeyV119N();
+  if(key) return exportarFormularioSeleccionadoV119N(key);
+  if(_exportarRespaldo_base_V119N) return _exportarRespaldo_base_V119N();
+  if(typeof msg==='function') msg('No se pudo exportar el respaldo.');
+};
+
+const _importarRespaldo_base_V119N = typeof importarRespaldo === 'function' ? importarRespaldo : null;
+
+if(_importarRespaldo_base_V119N){
+  importarRespaldo = async function(ev){
+    const out=await _importarRespaldo_base_V119N(ev);
+    if(typeof refreshSavedSearchV131==='function') await refreshSavedSearchV131();
+    if(typeof renderSavedList==='function') renderSavedList();
+    renderSelectedSavedPanelV119N();
+    return out;
+  };
+}
+
+renderSavedList = async function(){
+  if(!db || typeof dbAll!=='function') return;
+
+  const arr=(await dbAll()||[])
+    .sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
+
+  const selected=selectedKeyV119N();
+  const panel='<div data-selected-saved-panel-v119n></div>';
+
+  const content = arr.length ? arr.map(x=>{
+    const key=savedRecordKeyV119N(x);
+    const encoded=encodeURIComponent(key);
+    const title=savedTitleForListV119N(x);
+    const selectedClass=key===selected ? ' selected-v119n' : '';
+    return `<div class="saved-item${selectedClass}" data-saved-row-key-v119n="${encoded}">
+      <strong>${esc(title)}</strong>
+      <span class="mini">Técnico: ${esc(x.tecnico||'')}<br>Actualizado: ${esc((x.updatedAt||'').replace('T',' ').slice(0,16))}</span>
+      <div class="buttons">
+        <button type="button" class="secondary saved-select-btn-v119n" data-select-saved-v119n="${encoded}">Seleccionar</button>
+        <button type="button" class="success saved-arrow-v119n" data-open-saved-v119n="${encoded}" title="Seguir editando">➜</button>
+        <button type="button" class="secondary saved-export-btn-v119n" data-export-saved-v119n="${encoded}">Exportar</button>
+        <button type="button" onclick="cargarFormulario('${esc(key)}').then(()=>{ if(state.tipoInforme==='Informe Técnico Aprobatorio' || state.tipoInforme==='Informe con Observaciones') copiarInformeAprobatorio(); else imprimirInforme(); })">${x.tipoInforme==='Informe Técnico Aprobatorio'||x.tipoInforme==='Informe con Observaciones'?'📋':'PDF'}</button>
+        <button type="button" class="danger" onclick="eliminarFormulario('${esc(key)}')">Eliminar</button>
+      </div>
+    </div>`;
+  }).join('') : '<p class="mini">Aún no hay formularios guardados en este navegador.</p>';
+
+  const final=panel+content;
+  const a=document.getElementById('guardadosLista'); if(a) a.innerHTML=final;
+  const b=document.getElementById('guardadosListaSide'); if(b) b.innerHTML=final;
+
+  renderSelectedSavedPanelV119N();
+  markSelectedSavedRowsV119N();
+};
+
+if(typeof renderSavedSearchResultsV131 === 'function'){
+  renderSavedSearchResultsV131 = function(query=''){
+    const list=document.getElementById('savedReportsResultsV131');
+    if(!list) return;
+    const q=typeof normalizeSearchV131==='function' ? normalizeSearchV131(query) : normV119N(query);
+    let matches=(savedReportsCacheV131||[]).filter(item=>{
+      const txt=typeof savedRecordSearchTextV131==='function'
+        ? savedRecordSearchTextV131(item)
+        : normV119N([savedRecordKeyV119N(item), savedTitleForListV119N(item), item?.tipoInforme||''].join(' '));
+      return !q || txt.includes(q);
+    });
+    matches=matches.slice(0,12);
+
+    if(!matches.length){
+      list.innerHTML='<div class="saved-search-empty-v131">No se encontraron informes guardados.</div>';
+    }else{
+      list.innerHTML=matches.map(item=>{
+        const key=savedRecordKeyV119N(item);
+        const encoded=encodeURIComponent(key);
+        const owner=typeof savedOwnerV131==='function' ? (savedOwnerV131(item)||'Propietario no registrado') : 'Propietario no registrado';
+        const project=typeof savedProjectV131==='function' ? (savedProjectV131(item)||'Proyecto sin nombre') : 'Proyecto sin nombre';
+        const title=savedTitleForListV119N(item);
+        const projectType=typeof savedProjectTypeLabelV139==='function' ? savedProjectTypeLabelV139(item) : '';
+        return `<div class="saved-search-result-row-v139">
+          <button type="button" class="saved-search-result-v131 saved-search-open-v139" data-select-saved-v119n="${encoded}">
+            <strong>${esc(title)}</strong>
+            <span class="saved-meta-v139">${esc(owner)} · ${esc(project)}${projectType?' · '+esc(projectType):''}</span>
+          </button>
+          <div class="saved-search-tools-v119n">
+            <button type="button" class="saved-search-arrow-v119n success" data-saved-key-v131="${encoded}" title="Seguir editando">➜</button>
+            <button type="button" class="saved-search-export-v119n secondary" data-export-saved-v119n="${encoded}">Exportar</button>
+            <button type="button" class="saved-search-delete-v139" data-delete-key-v139="${encoded}" onclick="deleteSavedRecordV139(decodeURIComponent(this.dataset.deleteKeyV139||''),event)" title="Eliminar informe" aria-label="Eliminar informe">${typeof trashIconV139==='function'?trashIconV139():'Eliminar'}</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    list.classList.add('open');
+  };
+}
+
+document.addEventListener('click',event=>{
+  const sel=event.target.closest('[data-select-saved-v119n]');
+  if(sel){
+    selectSavedRecordV119N(decodeURIComponent(sel.dataset.selectSavedV119n||''), event);
+    return;
+  }
+
+  const open=event.target.closest('[data-open-saved-v119n]');
+  if(open){
+    openSavedRecordV119N(decodeURIComponent(open.dataset.openSavedV119n||''), event);
+    return;
+  }
+
+  const exp=event.target.closest('[data-export-saved-v119n]');
+  if(exp){
+    event.preventDefault();
+    event.stopPropagation();
+    exportarFormularioSeleccionadoV119N(decodeURIComponent(exp.dataset.exportSavedV119n||''));
+  }
+}, true);
+
+/* ---------- 4. Comprobador Área Bruta ---------- */
+function areaBrutaInfoFieldV119N(){
+  return (DATA.infoFields||[]).find(f=>{
+    const label=normV119N(f?.label||'');
+    return label.includes('AREA BRUTA');
+  }) || null;
+}
+
+function areaBrutaInformacionGeneralV119N(){
+  const f=areaBrutaInfoFieldV119N();
+  if(!f) return NaN;
+
+  const visible=document.getElementById('info_'+f.key)?.value;
+  const val=(visible!==undefined && String(visible).trim()!=='')
+    ? visible
+    : state.info?.[f.key];
+
+  return parseNumeroV119N(val);
+}
+
+function sumaAreasBrutasConclusionV119N(){
+  if(typeof commitAllConclusionInputsV87 === 'function'){
+    try{ commitAllConclusionInputsV87(); }catch(error){}
+  }
+
+  if(typeof prepareRowsConclV108 === 'function'){
+    try{ prepareRowsConclV108(); }catch(error){}
+  }else{
+    ensureAreaUtilTotalConclusionV119N();
+  }
+
+  const rows=state.aprobatorio?.conclusion || [];
+  let sum=0;
+  let count=0;
+
+  rows.forEach((raw,i)=>{
+    const r=conclusionRowNormV119N(raw);
+    const role=conclusionRoleV119N(raw,i);
+    const desc=normV119N(r.descripcion||'');
+
+    const esBruta=role==='bruta' || (desc.includes('AREA') && desc.includes('BRUTA') && !desc.includes('TOTAL'));
+    if(!esBruta) return;
+
+    const n=parseNumeroV119N(r.cantidad);
+    if(Number.isFinite(n)){
+      sum+=n;
+      count++;
+    }
+  });
+
+  return {sum,count};
+}
+
+function errorAreaBrutaConclusionV119N(){
+  if(state.tipoInforme!=='Informe Técnico Aprobatorio') return '';
+
+  const info=areaBrutaInformacionGeneralV119N();
+  if(!Number.isFinite(info)) return '';
+
+  const {sum,count}=sumaAreasBrutasConclusionV119N();
+  if(!count) return '';
+
+  const diff=Math.abs(sum-info);
+  if(diff <= 0.01) return '';
+
+  return `Área Bruta: la suma de las áreas brutas en la Tabla de Conclusión Técnica es ${fmtNumeroV119N(sum)} m², pero el Área Bruta de Información General es ${fmtNumeroV119N(info)} m². Deben coincidir.`;
+}
+
+const _validationErrorsV70_base_V119N = typeof validationErrorsV70 === 'function'
+  ? validationErrorsV70 : null;
+
+if(_validationErrorsV70_base_V119N){
+  validationErrorsV70 = function(context='generar el PDF'){
+    const errors=_validationErrorsV70_base_V119N(context) || [];
+    const areaError=errorAreaBrutaConclusionV119N();
+    if(areaError && !errors.includes(areaError)) errors.push(areaError);
+    return errors;
+  };
+}
+
+/* Refuerzo al cargar. */
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    ensureAreaUtilTotalConclusionV119N();
+    if(typeof renderConclusionTabla==='function') renderConclusionTabla();
+    if(typeof renderSavedList==='function') renderSavedList();
+    updateCopyButtonByReportV119N();
+  },900);
+  setTimeout(()=>{
+    ensureAreaUtilTotalConclusionV119N();
+    if(typeof renderReport==='function') renderReport();
+    if(typeof renderPreview==='function') renderPreview();
+    if(typeof renderSavedList==='function') renderSavedList();
+    updateCopyButtonByReportV119N();
+  },1800);
+});
+</script>
+
 </body>
 </html>
