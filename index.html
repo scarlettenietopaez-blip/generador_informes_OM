@@ -29513,5 +29513,238 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<style id="patch-v119p-busqueda-css">
+/* V119P - Correcciones puntuales del buscador */
+#savedReportsResultsV131{
+  overflow-x:hidden!important;
+  max-width:100%!important;
+}
+
+.saved-search-row-v119p{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 42px!important;
+  gap:6px!important;
+  align-items:stretch!important;
+  width:100%!important;
+  max-width:100%!important;
+  box-sizing:border-box!important;
+}
+
+.saved-search-result-v119p{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  text-align:left!important;
+  background:#ffffff!important;
+  color:#0b2b4c!important;
+  border:1px solid #cbd5e1!important;
+  border-radius:9px!important;
+  padding:8px 10px!important;
+  display:block!important;
+  text-transform:none!important;
+  min-height:42px!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+}
+
+.saved-search-result-v119p strong,
+.saved-search-result-v119p span{
+  display:block!important;
+  max-width:100%!important;
+  white-space:normal!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  overflow-wrap:anywhere!important;
+  word-break:break-word!important;
+}
+
+.saved-search-result-v119p strong{
+  color:#0b2b4c!important;
+  font-size:12px!important;
+  line-height:1.18!important;
+  font-weight:900!important;
+}
+
+.saved-search-result-v119p span{
+  color:#41556b!important;
+  font-size:10.5px!important;
+  line-height:1.23!important;
+  margin-top:2px!important;
+  font-weight:700!important;
+}
+
+.saved-search-result-v119p.selected-v119p,
+.saved-search-result-v119p.selected-v119o{
+  border-color:#0e5c88!important;
+  box-shadow:0 0 0 2px rgba(14,92,136,.16)!important;
+  background:#eef7fb!important;
+}
+
+.saved-search-delete-v119p{
+  width:38px!important;
+  min-width:38px!important;
+  max-width:38px!important;
+  height:auto!important;
+  min-height:42px!important;
+  padding:6px!important;
+  border-radius:9px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  font-size:15px!important;
+  line-height:1!important;
+}
+</style>
+
+
+<script id="patch-v119p-busqueda-js">
+/* ==========================================================
+   V119P SOBRE V119O
+   Correcciones:
+   1. Recupera botón eliminar en resultados del buscador.
+   2. Evita barra horizontal por textos largos.
+   3. Quita Definitivo/Anteproyecto repetido de la línea secundaria.
+   ========================================================== */
+
+function normV119P(value){
+  return String(value||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function savedRecordKeyV119P(record){
+  if(typeof savedRecordKeyV119O === 'function') return savedRecordKeyV119O(record);
+  if(typeof savedRecordKeyV119N === 'function') return savedRecordKeyV119N(record);
+  if(typeof savedRecordKeyV131 === 'function') return savedRecordKeyV131(record);
+  return String(record?.egob||'').trim();
+}
+
+function savedTitleV119P(record){
+  if(typeof savedTitleV119O === 'function') return savedTitleV119O(record);
+  if(typeof savedCombinedTitleV140 === 'function') return savedCombinedTitleV140(record);
+  if(typeof savedTitleV119 === 'function') return savedTitleV119(record);
+  return `eGOB ${savedRecordKeyV119P(record)}`;
+}
+
+function savedMetaSinTipoRepetidoV119P(record){
+  const owner = typeof savedOwnerV131 === 'function'
+    ? (savedOwnerV131(record)||'Propietario no registrado')
+    : (record?.propietario || record?.owner || 'Propietario no registrado');
+
+  const project = typeof savedProjectV131 === 'function'
+    ? (savedProjectV131(record)||'Proyecto sin nombre')
+    : (record?.proyecto || record?.project || 'Proyecto sin nombre');
+
+  return `${owner} · ${project}`;
+}
+
+function selectedSavedKeyV119P(){
+  if(typeof selectedSavedKeyV119O === 'function') return selectedSavedKeyV119O();
+  const input=document.getElementById('savedReportsSearchV131');
+  return String(input?.dataset?.selectedSavedKeyV119O || window.selectedSavedRecordKeyV119N || '').trim();
+}
+
+function renderSavedSearchResultsV119P(query=''){
+  const list=document.getElementById('savedReportsResultsV131');
+  if(!list) return;
+
+  const q=typeof normalizeSearchV131 === 'function' ? normalizeSearchV131(query) : normV119P(query);
+
+  let matches=(savedReportsCacheV131||[]).filter(item=>{
+    const txt=typeof savedRecordSearchTextV131 === 'function'
+      ? savedRecordSearchTextV131(item)
+      : normV119P([savedRecordKeyV119P(item), savedTitleV119P(item), item?.tipoInforme||''].join(' '));
+    return !q || txt.includes(q);
+  }).slice(0,12);
+
+  const selected=selectedSavedKeyV119P();
+
+  if(!matches.length){
+    list.innerHTML='<div class="saved-search-empty-v131">No se encontraron informes guardados.</div>';
+  }else{
+    list.innerHTML=matches.map(item=>{
+      const key=savedRecordKeyV119P(item);
+      const encoded=encodeURIComponent(key);
+      const title=savedTitleV119P(item);
+      const meta=savedMetaSinTipoRepetidoV119P(item);
+      const selectedClass=key===selected ? ' selected-v119p selected-v119o' : '';
+      return `<div class="saved-search-row-v119p">
+        <button type="button" class="saved-search-result-v119p${selectedClass}" data-select-saved-search-v119o="${encoded}" data-select-saved-search-v119p="${encoded}">
+          <strong>${esc(title)}</strong>
+          <span>${esc(meta)}</span>
+        </button>
+        <button type="button" class="danger saved-search-delete-v119p" data-delete-saved-search-v119p="${encoded}" title="Eliminar informe guardado" aria-label="Eliminar informe guardado">🗑</button>
+      </div>`;
+    }).join('');
+  }
+
+  list.classList.add('open');
+}
+
+renderSavedSearchResultsV131 = renderSavedSearchResultsV119P;
+
+async function deleteSavedSearchRecordV119P(key,event=null){
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+
+  key=String(key||'').trim();
+  if(!key) return;
+
+  const ok=confirm(`¿Eliminar el informe guardado "${key}"?`);
+  if(!ok) return;
+
+  if(typeof eliminarFormulario === 'function'){
+    await eliminarFormulario(key);
+  }else if(typeof dbDelete === 'function'){
+    await dbDelete(key);
+  }
+
+  const input=document.getElementById('savedReportsSearchV131');
+  if(input && input.dataset.selectedSavedKeyV119O===key){
+    input.dataset.selectedSavedKeyV119O='';
+    input.value='';
+    window.selectedSavedRecordKeyV119N='';
+    window.selectedSavedRecordTitleV119O='';
+  }
+
+  if(typeof refreshSavedSearchV131 === 'function') await refreshSavedSearchV131();
+  if(typeof renderSavedList === 'function') renderSavedList();
+
+  const q=document.getElementById('savedReportsSearchV131')?.value || '';
+  renderSavedSearchResultsV119P(q);
+
+  if(typeof updateOpenSelectedButtonV119O === 'function') updateOpenSelectedButtonV119O();
+  if(typeof msg==='function') msg('Informe eliminado correctamente.', true);
+}
+
+document.addEventListener('click',event=>{
+  const del=event.target.closest('[data-delete-saved-search-v119p]');
+  if(del){
+    deleteSavedSearchRecordV119P(decodeURIComponent(del.dataset.deleteSavedSearchV119p||''),event);
+    return;
+  }
+
+  const row=event.target.closest('[data-select-saved-search-v119p]');
+  if(row){
+    if(typeof selectSavedSearchRecordV119O === 'function'){
+      selectSavedSearchRecordV119O(decodeURIComponent(row.dataset.selectSavedSearchV119p||''),event);
+    }
+  }
+}, true);
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    if(typeof ensureProjectSearchToolbarV131 === 'function') ensureProjectSearchToolbarV131();
+    const q=document.getElementById('savedReportsSearchV131')?.value || '';
+    if(document.getElementById('savedReportsResultsV131')?.classList.contains('open')){
+      renderSavedSearchResultsV119P(q);
+    }
+  },900);
+});
+</script>
+
 </body>
 </html>
