@@ -28030,46 +28030,50 @@ window.addEventListener('afterprint',()=>{
 </script>
 
 
-<style id="print-fondo-bordes-v119f">
+
+
+
+
+<style id="print-fondo-bordes-v119g">
 /* ==========================================================
-   V119F - Fondo institucional y bordes al imprimir, sin romper JS
+   V119G - Imprimir PDF con fondo_institucional.png
    ========================================================== */
 
+/* Fondo visible también en la vista previa del informe */
+#report.print-bg-png-v119g,
+.report.print-bg-png-v119g{
+  background-color:#ffffff!important;
+  background-image:url("assets/fondo_institucional.png")!important;
+  background-repeat:repeat-y!important;
+  background-position:top center!important;
+  background-size:210mm 297mm!important;
+  -webkit-print-color-adjust:exact!important;
+  print-color-adjust:exact!important;
+  color-adjust:exact!important;
+}
+
 @media print{
+  @page{
+    size:A4 portrait;
+    margin:0;
+  }
+
   html,
+  body{
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+    color-adjust:exact!important;
+  }
+
+  /* El fondo se aplica al BODY con el archivo físico PNG.
+     Esto es lo que Chrome respeta mejor al imprimir con "Gráficos del fondo". */
   body,
-  #report,
-  .report,
-  .report-wrap,
-  #tab-vista{
-    -webkit-print-color-adjust:exact!important;
-    print-color-adjust:exact!important;
-    color-adjust:exact!important;
-  }
-
-  /* V160 dejaba fondos blancos sobre el informe. Estos se vuelven
-     transparentes para que se vea el fondo institucional del body. */
-  #tab-vista,
-  #tab-vista.tab,
-  #tab-vista.tab.active,
-  .report-wrap,
-  #report,
-  .report,
-  .report.report-observaciones,
-  .report.report-aprobatorio,
-  .report.report-desistimiento{
-    background-color:transparent!important;
-    -webkit-print-color-adjust:exact!important;
-    print-color-adjust:exact!important;
-    color-adjust:exact!important;
-  }
-
-  /* Para el aprobatorio/desistimiento también se usa la clase que ya
-     contiene el fondo institucional base64 en el CSS original. */
   body.printing-observaciones,
   body.printing-aprobatorio,
   body.printing-desistimiento,
-  body.printing-report-v119f{
+  body.printing-report-v119g{
+    background-color:#ffffff!important;
+    background-image:url("assets/fondo_institucional.png")!important;
     background-repeat:repeat-y!important;
     background-position:top center!important;
     background-size:210mm 297mm!important;
@@ -28078,7 +28082,30 @@ window.addEventListener('afterprint',()=>{
     color-adjust:exact!important;
   }
 
-  /* Bordes completos en todas las tablas del informe. */
+  /* Los contenedores deben ser transparentes para no tapar el fondo del body */
+  main,
+  main > .grid,
+  .grid,
+  .grid > section,
+  main section,
+  #tab-vista,
+  #tab-vista.tab,
+  #tab-vista.tab.active,
+  .report-wrap,
+  #report,
+  .report,
+  .report.report-observaciones,
+  .report.report-aprobatorio,
+  .report.report-desistimiento,
+  .report.print-bg-png-v119g{
+    background-color:transparent!important;
+    background-image:none!important;
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+    color-adjust:exact!important;
+  }
+
+  /* Bordes completos en todas las tablas del informe */
   #report table,
   .report table,
   #report .apr-info-table,
@@ -28137,22 +28164,23 @@ window.addEventListener('afterprint',()=>{
 </style>
 
 
-<script id="print-fondo-bordes-v119f-js">
+<script id="print-fondo-bordes-v119g-js">
 /* ==========================================================
-   V119F - Refuerzo seguro de impresión
-   No se inserta dentro de plantillas HTML internas.
+   V119G - Refuerzo seguro para imprimir fondo_institucional.png
    ========================================================== */
-function aplicarFondoYBordesImpresionV119F(){
+function aplicarFondoYBordesImpresionV119G(){
   const report = document.getElementById('report') || document.querySelector('.report');
   if(!report) return;
 
-  document.body.classList.add('printing-observaciones','printing-report-v119f');
+  report.classList.add('print-bg-png-v119g');
+  document.body.classList.add('printing-report-v119g');
 
   const tipo = String(state?.tipoInforme || '').toUpperCase();
+
+  // Forzamos printing-observaciones porque esa clase define el formato con fondo.
+  document.body.classList.add('printing-observaciones');
   document.body.classList.toggle('printing-aprobatorio', tipo.includes('APROBATORIO'));
   document.body.classList.toggle('printing-desistimiento', tipo.includes('DESISTIMIENTO'));
-
-  report.style.backgroundColor='transparent';
 
   report.querySelectorAll('table').forEach(tbl=>{
     tbl.style.borderCollapse='collapse';
@@ -28165,27 +28193,27 @@ function aplicarFondoYBordesImpresionV119F(){
   });
 }
 
-const _imprimirInforme_base_V119F = typeof imprimirInforme === 'function' ? imprimirInforme : null;
-if(_imprimirInforme_base_V119F){
+const _imprimirInforme_base_V119G = typeof imprimirInforme === 'function' ? imprimirInforme : null;
+if(_imprimirInforme_base_V119G){
   imprimirInforme = function(){
-    aplicarFondoYBordesImpresionV119F();
-    return _imprimirInforme_base_V119F();
+    aplicarFondoYBordesImpresionV119G();
+    return _imprimirInforme_base_V119G();
   };
 }
 
-const _renderReport_base_V119F = typeof renderReport === 'function' ? renderReport : null;
-if(_renderReport_base_V119F){
+const _renderReport_base_V119G = typeof renderReport === 'function' ? renderReport : null;
+if(_renderReport_base_V119G){
   renderReport = function(){
-    const out = _renderReport_base_V119F();
-    setTimeout(aplicarFondoYBordesImpresionV119F,0);
+    const out = _renderReport_base_V119G();
+    setTimeout(aplicarFondoYBordesImpresionV119G,0);
     return out;
   };
 }
 
-window.addEventListener('beforeprint', aplicarFondoYBordesImpresionV119F);
+window.addEventListener('beforeprint', aplicarFondoYBordesImpresionV119G);
 window.addEventListener('load',()=>{
-  setTimeout(aplicarFondoYBordesImpresionV119F,900);
-  setTimeout(aplicarFondoYBordesImpresionV119F,1800);
+  setTimeout(aplicarFondoYBordesImpresionV119G,900);
+  setTimeout(aplicarFondoYBordesImpresionV119G,1800);
 });
 </script>
 
