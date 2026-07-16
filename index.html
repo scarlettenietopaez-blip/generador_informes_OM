@@ -30494,5 +30494,236 @@ document.addEventListener('click',event=>{
 })();
 </script>
 
+
+<style id="patch-v119t-home-iconos-css">
+/* ==========================================================
+   V119T SOBRE V119R
+   Corrección segura:
+   - Página principal sin scroll, sin MutationObserver.
+   - Iconos convertir/eliminar en estilo outline.
+   ========================================================== */
+
+/* Se activa únicamente mediante JS cuando la página principal está visible */
+body.home-no-scroll-v119t{
+  overflow:hidden!important;
+  height:100vh!important;
+}
+
+/* Evita barra vertical solo en la pantalla principal */
+body.home-no-scroll-v119t #projectEntryV123,
+body.home-no-scroll-v119t .project-entry-v123,
+body.home-no-scroll-v119t .project-entry-v119,
+body.home-no-scroll-v119t .landing-page-v119,
+body.home-no-scroll-v119t .project-entry{
+  max-height:100vh!important;
+  overflow:hidden!important;
+}
+
+/* Al entrar al formulario, esta clase se quita y el scroll vuelve normal */
+
+/* Convertir: fondo blanco, borde/icono azul */
+.convert-outline-v119t,
+[data-convert-saved-v119r],
+[data-convert-current-v119r],
+button[title*="Convertir"],
+button[aria-label*="Convertir"]{
+  background:#ffffff!important;
+  color:#0e5c88!important;
+  border:1.5px solid #0e5c88!important;
+  box-shadow:none!important;
+  min-width:38px!important;
+  width:38px!important;
+  height:38px!important;
+  padding:0!important;
+  border-radius:8px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  line-height:1!important;
+  font-size:17px!important;
+}
+
+/* Eliminar: fondo blanco, borde/icono rojo */
+.delete-outline-v119t,
+.saved-search-delete-v119p,
+[data-delete-saved-search-v119p],
+button[title*="Eliminar informe guardado"],
+button[aria-label*="Eliminar informe guardado"]{
+  background:#ffffff!important;
+  color:#c1122f!important;
+  border:1.5px solid #c1122f!important;
+  box-shadow:none!important;
+  min-width:38px!important;
+  width:38px!important;
+  height:38px!important;
+  padding:0!important;
+  border-radius:8px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  line-height:1!important;
+  font-size:15px!important;
+}
+
+.convert-outline-v119t:hover,
+[data-convert-saved-v119r]:hover,
+[data-convert-current-v119r]:hover,
+button[title*="Convertir"]:hover,
+button[aria-label*="Convertir"]:hover{
+  background:#eef7fb!important;
+}
+
+.delete-outline-v119t:hover,
+.saved-search-delete-v119p:hover,
+[data-delete-saved-search-v119p]:hover,
+button[title*="Eliminar informe guardado"]:hover,
+button[aria-label*="Eliminar informe guardado"]:hover{
+  background:#fff1f3!important;
+}
+
+/* Si la fila del buscador tiene convertir y eliminar, mantiene columnas compactas */
+.saved-search-row-v119p,
+.saved-search-row-v119r{
+  grid-template-columns:minmax(0,1fr) 42px 42px!important;
+  align-items:center!important;
+}
+</style>
+
+
+<script id="patch-v119t-home-iconos-js">
+/* ==========================================================
+   V119T SOBRE V119R
+   Corrección del problema de bloqueo:
+   - Se elimina el MutationObserver de v119S.
+   - No se recorren todos los botones en cada cambio del DOM.
+   - Solo se actualiza en carga, clics puntuales y renders de listas.
+   ========================================================== */
+
+function isHomeVisibleV119T(){
+  const selectors=[
+    '#projectEntryV123',
+    '.project-entry-v123',
+    '.project-entry-v119',
+    '.landing-page-v119',
+    '.project-entry'
+  ];
+
+  for(const sel of selectors){
+    const el=document.querySelector(sel);
+    if(!el) continue;
+    const st=getComputedStyle(el);
+    const rect=el.getBoundingClientRect();
+    if(st.display!=='none' && st.visibility!=='hidden' && rect.width>0 && rect.height>0){
+      return true;
+    }
+  }
+  return false;
+}
+
+function actualizarScrollHomeV119T(){
+  document.body.classList.toggle('home-no-scroll-v119t', isHomeVisibleV119T());
+}
+
+function aplicarIconosOutlineV119T(root=document){
+  const selector=[
+    '[data-convert-saved-v119r]',
+    '[data-convert-current-v119r]',
+    'button[title*="Convertir"]',
+    'button[aria-label*="Convertir"]',
+    '.saved-search-delete-v119p',
+    '[data-delete-saved-search-v119p]',
+    'button[title*="Eliminar informe guardado"]',
+    'button[aria-label*="Eliminar informe guardado"]'
+  ].join(',');
+
+  root.querySelectorAll(selector).forEach(btn=>{
+    const title=(btn.getAttribute('title')||'').toUpperCase();
+    const aria=(btn.getAttribute('aria-label')||'').toUpperCase();
+    const dataNames=Array.from(btn.attributes||[]).map(a=>a.name).join(' ').toUpperCase();
+
+    const esConvertir = title.includes('CONVERTIR')
+      || aria.includes('CONVERTIR')
+      || dataNames.includes('CONVERT');
+
+    const esEliminar = btn.classList.contains('saved-search-delete-v119p')
+      || title.includes('ELIMINAR INFORME GUARDADO')
+      || aria.includes('ELIMINAR INFORME GUARDADO')
+      || dataNames.includes('DELETE-SAVED-SEARCH');
+
+    if(esConvertir){
+      btn.classList.add('convert-outline-v119t');
+      btn.classList.remove('success','secondary','danger');
+      btn.setAttribute('type','button');
+    }
+
+    if(esEliminar){
+      btn.classList.add('delete-outline-v119t');
+      btn.classList.remove('danger','success','secondary');
+      btn.setAttribute('type','button');
+    }
+  });
+}
+
+/* Hooks ligeros: no observan todo el documento */
+const _showProjectEntryV123_base_V119T = typeof showProjectEntryV123 === 'function' ? showProjectEntryV123 : null;
+if(_showProjectEntryV123_base_V119T){
+  showProjectEntryV123 = function(){
+    const out=_showProjectEntryV123_base_V119T.apply(this, arguments);
+    setTimeout(()=>{ actualizarScrollHomeV119T(); aplicarIconosOutlineV119T(); },0);
+    return out;
+  };
+}
+
+const _hideProjectEntryV123_base_V119T = typeof hideProjectEntryV123 === 'function' ? hideProjectEntryV123 : null;
+if(_hideProjectEntryV123_base_V119T){
+  hideProjectEntryV123 = function(){
+    const out=_hideProjectEntryV123_base_V119T.apply(this, arguments);
+    setTimeout(()=>{ actualizarScrollHomeV119T(); aplicarIconosOutlineV119T(); },0);
+    return out;
+  };
+}
+
+const _renderSavedSearchResultsV131_base_V119T = typeof renderSavedSearchResultsV131 === 'function'
+  ? renderSavedSearchResultsV131 : null;
+
+if(_renderSavedSearchResultsV131_base_V119T){
+  renderSavedSearchResultsV131 = function(){
+    const out=_renderSavedSearchResultsV131_base_V119T.apply(this, arguments);
+    setTimeout(()=>aplicarIconosOutlineV119T(document.getElementById('savedReportsResultsV131') || document),0);
+    return out;
+  };
+}
+
+const _renderSavedList_base_V119T = typeof renderSavedList === 'function' ? renderSavedList : null;
+if(_renderSavedList_base_V119T){
+  renderSavedList = async function(){
+    const out=await _renderSavedList_base_V119T.apply(this, arguments);
+    setTimeout(()=>aplicarIconosOutlineV119T(),0);
+    return out;
+  };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{ actualizarScrollHomeV119T(); aplicarIconosOutlineV119T(); },500);
+  setTimeout(()=>{ actualizarScrollHomeV119T(); aplicarIconosOutlineV119T(); },1500);
+});
+
+window.addEventListener('resize', actualizarScrollHomeV119T);
+
+document.addEventListener('click',event=>{
+  const target=event.target;
+  if(target && (
+    target.closest?.('#projectEntryV123') ||
+    target.closest?.('.project-entry-v123') ||
+    target.closest?.('.project-entry-v119') ||
+    target.closest?.('#savedReportsResultsV131') ||
+    target.closest?.('#guardadosListaSide') ||
+    target.closest?.('#guardadosLista')
+  )){
+    setTimeout(()=>{ actualizarScrollHomeV119T(); aplicarIconosOutlineV119T(); },80);
+  }
+}, true);
+</script>
+
 </body>
 </html>
