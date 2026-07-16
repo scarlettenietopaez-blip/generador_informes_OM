@@ -28378,5 +28378,209 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<script id="fix-req043-estudio-morfologico-v119l">
+/* ==========================================================
+   V119L SOBRE V119K
+   Corrección:
+   - Asegura que para Obra Mayor Definitivo se refleje el requisito
+     complementario 6: Estudio Morfológico.
+   - No modifica Anteproyecto de Edificación.
+   ========================================================== */
+
+function normReq043V119L(value){
+  return String(value||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function isObraMayorDefinitivoV119L(){
+  return !(typeof isAnteproyectoV123 === 'function' && isAnteproyectoV123());
+}
+
+function ensureReq043EstudioMorfologicoV119L(){
+  if(!isObraMayorDefinitivoV119L()) return;
+  if(!DATA || !Array.isArray(DATA.requisitos)) return;
+
+  const exists = DATA.requisitos.some(r=>{
+    const id=String(r?.id||'').trim().toUpperCase();
+    const txt=normReq043V119L(r?.texto||'');
+    return id==='REQ_043' || (txt.includes('ESTUDIO') && txt.includes('MORFOLOGICO'));
+  });
+
+  if(exists) return;
+
+  DATA.requisitos.push({
+    id:'REQ_043',
+    grupo:'Requisitos complementarios',
+    texto:'6. Estudio Morfológico',
+    opciones:['Cumple','No Cumple','No Aplica']
+  });
+}
+
+/* Si por algún render previo el requisito existe en DATA pero no aparece en la tabla,
+   se fuerza un nuevo render después de asegurar el dato. */
+const _renderRequisitosForm_base_V119L = typeof renderRequisitosForm === 'function'
+  ? renderRequisitosForm : null;
+
+if(_renderRequisitosForm_base_V119L){
+  renderRequisitosForm = function(rebuild=true){
+    ensureReq043EstudioMorfologicoV119L();
+    return _renderRequisitosForm_base_V119L(rebuild);
+  };
+}
+
+/* Refuerzo después de cargar CSV y al cambiar el check de complementarios. */
+function refreshReq043V119L(){
+  if(!isObraMayorDefinitivoV119L()) return;
+  ensureReq043EstudioMorfologicoV119L();
+
+  const box=document.getElementById('requisitosForm');
+  if(!box) return;
+
+  const visible=normReq043V119L(box.textContent||'').includes('ESTUDIO MORFOLOGICO');
+  const toggle=document.getElementById('toggleComplementarios');
+  const complementariosActivos=toggle ? toggle.checked : !!state.mostrarComplementarios;
+
+  if(complementariosActivos && !visible && typeof _renderRequisitosForm_base_V119L === 'function'){
+    _renderRequisitosForm_base_V119L(false);
+  }
+}
+
+document.addEventListener('change',event=>{
+  if(event.target?.id==='toggleComplementarios'){
+    setTimeout(refreshReq043V119L,80);
+  }
+});
+
+window.addEventListener('load',()=>{
+  setTimeout(refreshReq043V119L,900);
+  setTimeout(refreshReq043V119L,1800);
+  setTimeout(refreshReq043V119L,2800);
+});
+</script>
+
+
+<script id="fix-factibilidades-solo-mas2-v119m">
+/* ==========================================================
+   V119M SOBRE V119L
+   Corrección:
+   - La tabla de Factibilidades NO debe aparecer en Requisitos Complementarios.
+   - La tabla de Factibilidades se mantiene únicamente en el grupo:
+     "Requisitos más de 2 pisos o 400 m2".
+   ========================================================== */
+
+function normReqV119M(value){
+  return String(value||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^A-Z0-9]+/gi,' ')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function isObraMayorDefinitivoV119M(){
+  return !(typeof isAnteproyectoV123 === 'function' && isAnteproyectoV123());
+}
+
+function grupoMas2o400V119M(grupo){
+  const g=normReqV119M(grupo);
+  return g.includes('MAS DE 2') || g.includes('400 M2') || g.includes('400 M');
+}
+
+function grupoComplementariosV119M(grupo){
+  return normReqV119M(grupo).includes('COMPLEMENTARIOS');
+}
+
+/* Reemplaza la detección anterior, que dependía demasiado del ID.
+   Ahora Factibilidades solo se activa si el requisito está dentro del grupo
+   Más de 2 pisos o 400 m2. */
+isReqFactibilidadesOMV145 = function(req){
+  if(!isObraMayorDefinitivoV119M()) return false;
+  if(!req) return false;
+
+  const grupo=req.grupo || '';
+  const texto=normReqV119M(req.texto || '');
+  const id=String(req.id||'').trim().toUpperCase();
+
+  if(!grupoMas2o400V119M(grupo)) return false;
+  if(grupoComplementariosV119M(grupo)) return false;
+
+  return id==='REQ_032'
+    || texto.includes('FACTIBILIDAD')
+    || texto.includes('SISTEMAS PUBLICOS DE SOPORTE')
+    || texto.includes('SISTEMAS PÚBLICOS DE SOPORTE');
+};
+
+/* El requisito de estudios complementarios también se protege para que no
+   capture accidentalmente el Estudio Morfológico. */
+isReqEstudiosOMV145 = function(req){
+  if(!isObraMayorDefinitivoV119M()) return false;
+  if(!req) return false;
+
+  const grupo=req.grupo || '';
+  const texto=normReqV119M(req.texto || '');
+  const id=String(req.id||'').trim().toUpperCase();
+
+  if(grupoComplementariosV119M(grupo)) return false;
+
+  return id==='REQ_034'
+    || (grupoMas2o400V119M(grupo) && texto.includes('ESTUDIOS COMPLEMENTARIOS'));
+};
+
+/* Limpieza visual de seguridad: si alguna tabla de factibilidades quedó
+   insertada dentro de Requisitos Complementarios, se elimina únicamente ahí. */
+function limpiarFactibilidadesEnComplementariosV119M(){
+  const box=document.getElementById('requisitosForm');
+  if(!box || !isObraMayorDefinitivoV119M()) return;
+
+  const titles=[...box.querySelectorAll('.section-title')];
+
+  titles.forEach(title=>{
+    if(!grupoComplementariosV119M(title.textContent)) return;
+
+    let el=title.nextElementSibling;
+    while(el && !el.classList.contains('section-title')){
+      el.querySelectorAll('.req-factibilidades-v134, .req-factibilidades-table-v134').forEach(tbl=>{
+        const cell=tbl.closest('td') || tbl.closest('.req9-detail') || tbl.parentElement;
+        if(cell){
+          cell.innerHTML='<span class="req-detail-pill-v94">Sin seleccionar</span>';
+        }else{
+          tbl.remove();
+        }
+      });
+      el=el.nextElementSibling;
+    }
+  });
+}
+
+const _renderRequisitosForm_base_V119M = typeof renderRequisitosForm === 'function'
+  ? renderRequisitosForm : null;
+
+if(_renderRequisitosForm_base_V119M){
+  renderRequisitosForm = function(rebuild=true){
+    const out=_renderRequisitosForm_base_V119M(rebuild);
+    setTimeout(limpiarFactibilidadesEnComplementariosV119M,0);
+    return out;
+  };
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    if(typeof renderRequisitosForm==='function') renderRequisitosForm(false);
+    limpiarFactibilidadesEnComplementariosV119M();
+  },900);
+  setTimeout(limpiarFactibilidadesEnComplementariosV119M,1800);
+});
+
+document.addEventListener('change',event=>{
+  if(event.target?.id==='toggleComplementarios'){
+    setTimeout(limpiarFactibilidadesEnComplementariosV119M,80);
+  }
+});
+</script>
+
 </body>
 </html>
