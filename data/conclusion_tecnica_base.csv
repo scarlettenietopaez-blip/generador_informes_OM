@@ -1,7 +1,7 @@
 ﻿Descripción,Niveles,Cantidad,Unidad,Activo
 Área del predio (IPRUS),,,m2,Sí
 Área útil planta baja,,,m2,Sí
-Área útil total,,,m2,No
+Área útil total,,,m2,Sí
 Área bruta planta baja,,,m2,Sí
 Área Bruta total de construcción,,,m2,Sí
 Número de pisos,,,U,Sí
