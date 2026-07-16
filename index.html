@@ -28042,16 +28042,20 @@ window.addEventListener('afterprint',()=>{
 
 
 
-<style id="print-fondo-bordes-v119i">
+
+
+
+
+<style id="print-fondo-bordes-v119j">
 /* ==========================================================
-   V119I - Fondo institucional como IMAGEN real solo en PDF
-   - No usa background-image para el fondo principal.
+   V119J - Fondo institucional por cada hoja impresa
    - No aparece en Vista del Informe.
-   - Solo Observaciones y Desistimiento.
+   - No se aplica a Aprobatorio.
+   - Se aplica a Observaciones y Desistimiento.
    ========================================================== */
 
-/* En pantalla: nunca mostrar la imagen de fondo */
-#printFondoInstitucionalV119I{
+#printBackgroundLayerV119J,
+.print-bg-page-v119j{
   display:none!important;
 }
 
@@ -28080,45 +28084,72 @@ window.addEventListener('afterprint',()=>{
     color-adjust:exact!important;
   }
 
-  /* Imagen real, no fondo CSS. Así Chrome/Edge sí la imprime como contenido. */
-  body.printing-fondo-institucional-v119i #printFondoInstitucionalV119I{
-    display:block!important;
-    position:fixed!important;
-    inset:0!important;
-    width:210mm!important;
-    height:297mm!important;
-    min-width:210mm!important;
-    min-height:297mm!important;
-    object-fit:fill!important;
-    z-index:0!important;
-    opacity:1!important;
-    pointer-events:none!important;
-    visibility:visible!important;
-    print-color-adjust:exact!important;
-    -webkit-print-color-adjust:exact!important;
-  }
-
-  /* Aprobatorio: ocultar la imagen y mantener hoja blanca */
-  body.printing-aprobatorio #printFondoInstitucionalV119I{
+  /* Por defecto, ningún fondo institucional. Protege el aprobatorio. */
+  #printBackgroundLayerV119J{
     display:none!important;
   }
 
-  /* El contenido debe quedar sobre la imagen */
-  body.printing-fondo-institucional-v119i main,
-  body.printing-fondo-institucional-v119i main > .grid,
-  body.printing-fondo-institucional-v119i .grid,
-  body.printing-fondo-institucional-v119i .grid > section,
-  body.printing-fondo-institucional-v119i main section,
-  body.printing-fondo-institucional-v119i #tab-vista,
-  body.printing-fondo-institucional-v119i #tab-vista.tab,
-  body.printing-fondo-institucional-v119i #tab-vista.tab.active,
-  body.printing-fondo-institucional-v119i .report-wrap,
-  body.printing-fondo-institucional-v119i #report,
-  body.printing-fondo-institucional-v119i .report,
-  body.printing-fondo-institucional-v119i .report.report-observaciones,
-  body.printing-fondo-institucional-v119i .report.report-desistimiento{
+  body.printing-aprobatorio #printBackgroundLayerV119J{
+    display:none!important;
+  }
+
+  /* Solo para Observaciones y Desistimiento:
+     se imprime una imagen por cada página del documento. */
+  body.printing-fondo-institucional-v119j #report{
     position:relative!important;
-    z-index:1!important;
+    isolation:isolate!important;
+  }
+
+  body.printing-fondo-institucional-v119j #printBackgroundLayerV119J{
+    display:block!important;
+    position:absolute!important;
+    left:0!important;
+    top:0!important;
+    width:210mm!important;
+    min-height:297mm!important;
+    z-index:0!important;
+    pointer-events:none!important;
+    overflow:visible!important;
+    background:transparent!important;
+    visibility:visible!important;
+  }
+
+  body.printing-fondo-institucional-v119j .print-bg-page-v119j{
+    display:block!important;
+    position:absolute!important;
+    left:0!important;
+    width:210mm!important;
+    height:297mm!important;
+    object-fit:fill!important;
+    z-index:0!important;
+    opacity:1!important;
+    visibility:visible!important;
+    pointer-events:none!important;
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+    color-adjust:exact!important;
+  }
+
+  /* El contenido del informe se coloca sobre las imágenes de fondo. */
+  body.printing-fondo-institucional-v119j #report > *:not(#printBackgroundLayerV119J){
+    position:relative!important;
+    z-index:2!important;
+  }
+
+  /* Los contenedores no deben tapar el fondo por página. */
+  body.printing-fondo-institucional-v119j main,
+  body.printing-fondo-institucional-v119j main > .grid,
+  body.printing-fondo-institucional-v119j .grid,
+  body.printing-fondo-institucional-v119j .grid > section,
+  body.printing-fondo-institucional-v119j main section,
+  body.printing-fondo-institucional-v119j #tab-vista,
+  body.printing-fondo-institucional-v119j #tab-vista.tab,
+  body.printing-fondo-institucional-v119j #tab-vista.tab.active,
+  body.printing-fondo-institucional-v119j .report-wrap,
+  body.printing-fondo-institucional-v119j #report,
+  body.printing-fondo-institucional-v119j .report,
+  body.printing-fondo-institucional-v119j .report.report-observaciones,
+  body.printing-fondo-institucional-v119j .report.report-desistimiento{
     background-color:transparent!important;
     background-image:none!important;
     -webkit-print-color-adjust:exact!important;
@@ -28126,11 +28157,11 @@ window.addEventListener('afterprint',()=>{
     color-adjust:exact!important;
   }
 
-  /* Más margen superior e inferior para Observaciones y Desistimiento */
-  body.printing-fondo-institucional-v119i #report.report-observaciones,
-  body.printing-fondo-institucional-v119i .report.report-observaciones,
-  body.printing-fondo-institucional-v119i #report.report-desistimiento,
-  body.printing-fondo-institucional-v119i .report.report-desistimiento{
+  /* Márgenes ajustados para que el texto no choque con encabezado ni pie. */
+  body.printing-fondo-institucional-v119j #report.report-observaciones,
+  body.printing-fondo-institucional-v119j .report.report-observaciones,
+  body.printing-fondo-institucional-v119j #report.report-desistimiento,
+  body.printing-fondo-institucional-v119j .report.report-desistimiento{
     padding-top:52mm!important;
     padding-bottom:48mm!important;
     padding-left:22mm!important;
@@ -28139,7 +28170,7 @@ window.addEventListener('afterprint',()=>{
     background:transparent!important;
   }
 
-  /* Aprobatorio: sin imagen, fondo blanco, márgenes propios */
+  /* Aprobatorio limpio, sin fondo institucional. */
   body.printing-aprobatorio main,
   body.printing-aprobatorio main > .grid,
   body.printing-aprobatorio .grid,
@@ -28153,7 +28184,7 @@ window.addEventListener('afterprint',()=>{
     background-image:none!important;
   }
 
-  /* Bordes completos en tablas */
+  /* Bordes completos de tablas. */
   #report table,
   .report table,
   #report .apr-info-table,
@@ -28212,45 +28243,90 @@ window.addEventListener('afterprint',()=>{
 </style>
 
 
-<script id="print-fondo-bordes-v119i-js">
+<script id="print-fondo-bordes-v119j-js">
 /* ==========================================================
-   V119I - Imagen institucional real solo al imprimir/PDF
+   V119J - Inserta fondo_institucional.png una vez por página
    ========================================================== */
 
-function informeUsaFondoInstitucionalV119I(){
+function informeUsaFondoInstitucionalV119J(){
   const tipo = String(state?.tipoInforme || '').toUpperCase();
   return tipo.includes('OBSERVACIONES') || tipo.includes('DESISTIMIENTO');
 }
 
-function ensurePrintFondoInstitucionalImgV119I(){
-  let img = document.getElementById('printFondoInstitucionalV119I');
-  if(!img){
-    img = document.createElement('img');
-    img.id = 'printFondoInstitucionalV119I';
-    img.alt = '';
-    img.setAttribute('aria-hidden','true');
-    img.src = 'assets/fondo_institucional.png';
-    document.body.insertBefore(img, document.body.firstChild);
+function pxPorMmV119J(){
+  let ruler = document.getElementById('mmRulerV119J');
+  if(!ruler){
+    ruler = document.createElement('div');
+    ruler.id = 'mmRulerV119J';
+    ruler.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:1mm;height:1mm;visibility:hidden;pointer-events:none;';
+    document.body.appendChild(ruler);
   }
-  return img;
+  return ruler.getBoundingClientRect().height || 3.7795275591;
 }
 
-function prepararImpresionFondoInstitucionalV119I(){
+function estimarPaginasReporteV119J(report){
+  const pxmm = pxPorMmV119J();
+  const pageH = 297 * pxmm;
+
+  // Se calcula sin contar la capa de fondo para evitar que ella aumente el alto.
+  const oldLayer = document.getElementById('printBackgroundLayerV119J');
+  const oldDisplay = oldLayer ? oldLayer.style.display : '';
+  if(oldLayer) oldLayer.style.display='none';
+
+  const h = Math.max(
+    report.scrollHeight || 0,
+    report.offsetHeight || 0,
+    report.getBoundingClientRect().height || 0
+  );
+
+  if(oldLayer) oldLayer.style.display=oldDisplay;
+
+  return Math.max(1, Math.ceil(h / pageH));
+}
+
+function ensurePrintBackgroundLayerV119J(){
+  const report = document.getElementById('report') || document.querySelector('.report');
+  if(!report) return null;
+
+  let layer = document.getElementById('printBackgroundLayerV119J');
+  if(!layer){
+    layer = document.createElement('div');
+    layer.id = 'printBackgroundLayerV119J';
+    layer.setAttribute('aria-hidden','true');
+    report.insertBefore(layer, report.firstChild);
+  }else if(layer.parentElement !== report){
+    report.insertBefore(layer, report.firstChild);
+  }
+
+  return layer;
+}
+
+function construirFondosPorPaginaV119J(){
   const report = document.getElementById('report') || document.querySelector('.report');
   if(!report) return;
 
-  const usaFondo = informeUsaFondoInstitucionalV119I();
+  const usaFondo = informeUsaFondoInstitucionalV119J();
   const tipo = String(state?.tipoInforme || '').toUpperCase();
 
-  ensurePrintFondoInstitucionalImgV119I();
-
-  document.body.classList.toggle('printing-fondo-institucional-v119i', usaFondo);
+  document.body.classList.toggle('printing-fondo-institucional-v119j', usaFondo);
   document.body.classList.toggle('printing-aprobatorio', tipo.includes('APROBATORIO'));
   document.body.classList.toggle('printing-desistimiento', tipo.includes('DESISTIMIENTO'));
   document.body.classList.toggle('printing-observaciones', tipo.includes('OBSERVACIONES'));
 
-  // En pantalla se mantiene sin fondo; la imagen solo se muestra por @media print.
-  report.style.backgroundImage='none';
+  let layer = ensurePrintBackgroundLayerV119J();
+
+  if(!usaFondo){
+    if(layer) layer.innerHTML='';
+    return;
+  }
+
+  const pages = estimarPaginasReporteV119J(report);
+  const pxmm = pxPorMmV119J();
+  const pageHPx = 297 * pxmm;
+
+  layer.innerHTML = Array.from({length: pages}, (_,i)=>`
+    <img class="print-bg-page-v119j" src="assets/fondo_institucional.png" alt="" style="top:${i*pageHPx}px;">
+  `).join('');
 
   report.querySelectorAll('table').forEach(tbl=>{
     tbl.style.borderCollapse='collapse';
@@ -28263,42 +28339,41 @@ function prepararImpresionFondoInstitucionalV119I(){
   });
 }
 
-function limpiarPantallaFondoInstitucionalV119I(){
+function limpiarFondoPantallaV119J(){
   const report = document.getElementById('report') || document.querySelector('.report');
   if(report) report.style.backgroundImage='none';
 }
 
-const _imprimirInforme_base_V119I = typeof imprimirInforme === 'function' ? imprimirInforme : null;
-if(_imprimirInforme_base_V119I){
+const _imprimirInforme_base_V119J = typeof imprimirInforme === 'function' ? imprimirInforme : null;
+if(_imprimirInforme_base_V119J){
   imprimirInforme = function(){
-    prepararImpresionFondoInstitucionalV119I();
-    return _imprimirInforme_base_V119I();
+    construirFondosPorPaginaV119J();
+    return _imprimirInforme_base_V119J();
   };
 }
 
-const _renderReport_base_V119I = typeof renderReport === 'function' ? renderReport : null;
-if(_renderReport_base_V119I){
+const _renderReport_base_V119J = typeof renderReport === 'function' ? renderReport : null;
+if(_renderReport_base_V119J){
   renderReport = function(){
-    const out = _renderReport_base_V119I();
+    const out = _renderReport_base_V119J();
     setTimeout(()=>{
-      prepararImpresionFondoInstitucionalV119I();
-      limpiarPantallaFondoInstitucionalV119I();
+      construirFondosPorPaginaV119J();
+      limpiarFondoPantallaV119J();
     },0);
     return out;
   };
 }
 
-window.addEventListener('beforeprint', prepararImpresionFondoInstitucionalV119I);
-window.addEventListener('afterprint', limpiarPantallaFondoInstitucionalV119I);
+window.addEventListener('beforeprint', construirFondosPorPaginaV119J);
+window.addEventListener('afterprint', limpiarFondoPantallaV119J);
 window.addEventListener('load',()=>{
-  ensurePrintFondoInstitucionalImgV119I();
   setTimeout(()=>{
-    prepararImpresionFondoInstitucionalV119I();
-    limpiarPantallaFondoInstitucionalV119I();
+    construirFondosPorPaginaV119J();
+    limpiarFondoPantallaV119J();
   },900);
   setTimeout(()=>{
-    prepararImpresionFondoInstitucionalV119I();
-    limpiarPantallaFondoInstitucionalV119I();
+    construirFondosPorPaginaV119J();
+    limpiarFondoPantallaV119J();
   },1800);
 });
 </script>
