@@ -29069,5 +29069,449 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<style id="patch-v119o-area-util-busqueda-css">
+/* V119O - Ajuste puntual sin cambiar formato general */
+.saved-search-result-v119o{
+  width:100%;
+  text-align:left;
+  background:#ffffff!important;
+  color:#0b2b4c!important;
+  border:1px solid #cbd5e1!important;
+  border-radius:9px!important;
+  padding:8px 10px!important;
+  display:block!important;
+  text-transform:none!important;
+  min-height:42px!important;
+}
+.saved-search-result-v119o strong{
+  display:block;
+  color:#0b2b4c!important;
+  font-size:12px;
+  line-height:1.2;
+}
+.saved-search-result-v119o span{
+  display:block;
+  color:#41556b!important;
+  font-size:10.5px;
+  line-height:1.25;
+  margin-top:2px;
+}
+.saved-search-result-v119o.selected-v119o{
+  border-color:#0e5c88!important;
+  box-shadow:0 0 0 2px rgba(14,92,136,.16)!important;
+  background:#eef7fb!important;
+}
+.open-selected-v119o{
+  font-size:15px!important;
+  min-width:42px!important;
+  padding:7px 10px!important;
+}
+.open-selected-v119o[disabled]{
+  opacity:.55!important;
+  cursor:not-allowed!important;
+}
+.project-search-v131 .search-help-v131 .selected-hint-v119o{
+  color:#0b2b4c;
+  font-weight:800;
+}
+</style>
+
+
+<script id="patch-v119o-area-util-busqueda-js">
+/* ==========================================================
+   V119O SOBRE V119N
+   Correcciones:
+   1) Área útil total también aparece en el informe.
+   2) Buscador: seleccionar deja el registro en la barra.
+      Un solo botón ➜ para editar y el botón Exportar existente exporta el seleccionado.
+   ========================================================== */
+
+/* ---------- 1. Área útil total en el informe ---------- */
+function normV119O(value){
+  return String(value||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function rowConclV119O(raw){
+  if(typeof rowConclV108 === 'function') return rowConclV108(raw||{});
+  if(typeof rowConclV87 === 'function') return rowConclV87(raw||{});
+  if(typeof normalizeConclusionRowSafeV73 === 'function') return normalizeConclusionRowSafeV73(raw||{});
+  if(typeof normalizeConclusionRow === 'function') return normalizeConclusionRow(raw||{});
+  return raw||{};
+}
+
+function isAreaUtilTotalRowV119O(raw){
+  const r=rowConclV119O(raw);
+  const d=normV119O(r.descripcion||raw?.descripcion||'');
+  const role=typeof roleConclV108 === 'function' ? roleConclV108(raw) : '';
+  return role==='utilTotal' || (d.includes('AREA') && d.includes('UTIL') && d.includes('TOTAL'));
+}
+
+function isAreaUtilPBRowV119O(raw){
+  const r=rowConclV119O(raw);
+  const d=normV119O(r.descripcion||raw?.descripcion||'');
+  const role=typeof roleConclV108 === 'function' ? roleConclV108(raw) : '';
+  return role==='utilPB' || (d.includes('AREA') && d.includes('UTIL') && d.includes('PLANTA BAJA'));
+}
+
+function findAreaUtilTotalStateRowV119O(){
+  if(typeof ensureAreaUtilTotalConclusionV119N === 'function'){
+    try{ ensureAreaUtilTotalConclusionV119N(); }catch(error){}
+  }
+  return (state.aprobatorio?.conclusion || []).find(raw=>isAreaUtilTotalRowV119O(raw)) || null;
+}
+
+const _conclusionRowsForReportV81_base_V119O = typeof conclusionRowsForReportV81 === 'function'
+  ? conclusionRowsForReportV81 : null;
+
+conclusionRowsForReportV81 = function(){
+  if(typeof ensureAreaUtilTotalConclusionV119N === 'function'){
+    try{ ensureAreaUtilTotalConclusionV119N(); }catch(error){}
+  }
+
+  let rows = _conclusionRowsForReportV81_base_V119O
+    ? (_conclusionRowsForReportV81_base_V119O() || [])
+    : (state.aprobatorio?.conclusion || []);
+
+  const hasUtilTotal = rows.some(raw=>isAreaUtilTotalRowV119O(raw));
+  if(hasUtilTotal) return rows;
+
+  const utilTotal = findAreaUtilTotalStateRowV119O();
+  if(!utilTotal) return rows;
+
+  const idxPB = rows.findIndex(raw=>isAreaUtilPBRowV119O(raw));
+  const idxBrutaPB = rows.findIndex(raw=>{
+    const d=normV119O(rowConclV119O(raw).descripcion||'');
+    return d.includes('AREA') && d.includes('BRUTA') && d.includes('PLANTA BAJA');
+  });
+
+  const copy = {...utilTotal};
+  rows = rows.slice();
+
+  if(idxPB >= 0) rows.splice(idxPB + 1, 0, copy);
+  else if(idxBrutaPB >= 0) rows.splice(idxBrutaPB, 0, copy);
+  else rows.push(copy);
+
+  return rows;
+};
+
+const _conclusionReport_base_V119O = typeof conclusionReport === 'function' ? conclusionReport : null;
+if(_conclusionReport_base_V119O){
+  conclusionReport = function(){
+    if(typeof ensureAreaUtilTotalConclusionV119N === 'function'){
+      try{ ensureAreaUtilTotalConclusionV119N(); }catch(error){}
+    }
+    return _conclusionReport_base_V119O();
+  };
+}
+
+/* ---------- 2. Buscador con selección previa ---------- */
+window.selectedSavedRecordTitleV119O = window.selectedSavedRecordTitleV119O || '';
+
+function savedRecordKeyV119O(record){
+  if(typeof savedRecordKeyV119N === 'function') return savedRecordKeyV119N(record);
+  if(typeof savedRecordKeyV131 === 'function') return savedRecordKeyV131(record);
+  return String(record?.egob||'').trim();
+}
+
+function savedTitleV119O(record){
+  if(typeof savedCombinedTitleV140 === 'function') return savedCombinedTitleV140(record);
+  if(typeof savedTitleForListV119N === 'function') return savedTitleForListV119N(record);
+  if(typeof savedTitleV119 === 'function') return savedTitleV119(record);
+  return `eGOB ${savedRecordKeyV119O(record)}`;
+}
+
+function savedMetaV119O(record){
+  const owner = typeof savedOwnerV131 === 'function' ? (savedOwnerV131(record)||'Propietario no registrado') : 'Propietario no registrado';
+  const project = typeof savedProjectV131 === 'function' ? (savedProjectV131(record)||'Proyecto sin nombre') : 'Proyecto sin nombre';
+  const projectType = typeof savedProjectTypeLabelV139 === 'function' ? savedProjectTypeLabelV139(record) : '';
+  return `${owner} · ${project}${projectType ? ' · '+projectType : ''}`;
+}
+
+function setSearchInputSelectedV119O(recordOrKey){
+  const input=document.getElementById('savedReportsSearchV131');
+  if(!input) return;
+
+  let record=null;
+  if(typeof recordOrKey === 'object' && recordOrKey){
+    record=recordOrKey;
+  }else{
+    const key=String(recordOrKey||'').trim();
+    record=(savedReportsCacheV131||[]).find(r=>savedRecordKeyV119O(r)===key) || null;
+  }
+
+  const key=record ? savedRecordKeyV119O(record) : String(recordOrKey||'').trim();
+  const title=record ? savedTitleV119O(record) : key;
+
+  input.value=title;
+  input.dataset.selectedSavedKeyV119O=key;
+  window.selectedSavedRecordTitleV119O=title;
+
+  const help=document.querySelector('#projectSearchToolbarV129 .search-help-v131');
+  if(help){
+    help.innerHTML=`<span class="selected-hint-v119o">Seleccionado:</span> ${esc(title)}. Use ➜ para editar o Exportar para respaldo individual.`;
+  }
+
+  updateOpenSelectedButtonV119O();
+}
+
+function selectedSavedKeyV119O(){
+  const input=document.getElementById('savedReportsSearchV131');
+  return String(input?.dataset?.selectedSavedKeyV119O || window.selectedSavedRecordKeyV119N || '').trim();
+}
+
+function updateOpenSelectedButtonV119O(){
+  const btn=document.getElementById('openSelectedSavedV119O');
+  if(!btn) return;
+  btn.disabled=!selectedSavedKeyV119O();
+  btn.title=selectedSavedKeyV119O() ? 'Seguir editando el formulario seleccionado' : 'Seleccione primero un formulario guardado';
+}
+
+function clearSelectedWhenTypingV119O(){
+  const input=document.getElementById('savedReportsSearchV131');
+  if(!input) return;
+  input.dataset.selectedSavedKeyV119O='';
+  window.selectedSavedRecordKeyV119N='';
+  window.selectedSavedRecordTitleV119O='';
+  const help=document.querySelector('#projectSearchToolbarV129 .search-help-v131');
+  if(help) help.textContent='La búsqueda revisa los informes guardados en este navegador.';
+  updateOpenSelectedButtonV119O();
+}
+
+function selectSavedSearchRecordV119O(key,event=null){
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+
+  key=String(key||'').trim();
+  if(!key) return;
+
+  const record=(savedReportsCacheV131||[]).find(r=>savedRecordKeyV119O(r)===key) || null;
+
+  if(typeof setSelectedSavedRecordV119N === 'function'){
+    setSelectedSavedRecordV119N(key);
+  }else{
+    window.selectedSavedRecordKeyV119N=key;
+  }
+
+  setSearchInputSelectedV119O(record || key);
+  document.getElementById('savedReportsResultsV131')?.classList.remove('open');
+
+  if(typeof msg==='function') msg('Formulario seleccionado. Use ➜ para seguir editando o Exportar para respaldo individual.', true);
+}
+
+async function openSelectedSavedSearchV119O(){
+  const key=selectedSavedKeyV119O();
+  if(!key){
+    if(typeof msg==='function') msg('Seleccione primero un formulario guardado.');
+    return;
+  }
+
+  if(typeof openSavedRecordV119N === 'function'){
+    await openSavedRecordV119N(key);
+  }else if(typeof cargarFormulario === 'function'){
+    await cargarFormulario(key);
+  }
+
+  if(typeof hideProjectEntryV123 === 'function') hideProjectEntryV123();
+}
+
+function ensureSearchActionsV119O(){
+  const bar=document.getElementById('projectSearchToolbarV129');
+  if(!bar) return;
+
+  let openBtn=document.getElementById('openSelectedSavedV119O');
+  if(!openBtn){
+    openBtn=document.createElement('button');
+    openBtn.type='button';
+    openBtn.id='openSelectedSavedV119O';
+    openBtn.className='success open-selected-v119o';
+    openBtn.textContent='➜';
+    openBtn.onclick=openSelectedSavedSearchV119O;
+
+    const exportBtn=[...bar.querySelectorAll('button')].find(b=>
+      String(b.getAttribute('onclick')||'').includes('exportarRespaldo')
+      || normV119O(b.textContent)==='EXPORTAR'
+    );
+
+    if(exportBtn) exportBtn.insertAdjacentElement('beforebegin', openBtn);
+    else bar.appendChild(openBtn);
+  }
+
+  updateOpenSelectedButtonV119O();
+}
+
+/* Al seleccionar, no se abre inmediatamente. Se queda en la barra de búsqueda. */
+renderSavedSearchResultsV131 = function(query=''){
+  const list=document.getElementById('savedReportsResultsV131');
+  if(!list) return;
+
+  const q=typeof normalizeSearchV131 === 'function' ? normalizeSearchV131(query) : normV119O(query);
+  let matches=(savedReportsCacheV131||[]).filter(item=>{
+    const txt=typeof savedRecordSearchTextV131 === 'function'
+      ? savedRecordSearchTextV131(item)
+      : normV119O([savedRecordKeyV119O(item), savedTitleV119O(item), item?.tipoInforme||''].join(' '));
+    return !q || txt.includes(q);
+  }).slice(0,12);
+
+  const selected=selectedSavedKeyV119O();
+
+  if(!matches.length){
+    list.innerHTML='<div class="saved-search-empty-v131">No se encontraron informes guardados.</div>';
+  }else{
+    list.innerHTML=matches.map(item=>{
+      const key=savedRecordKeyV119O(item);
+      const encoded=encodeURIComponent(key);
+      const title=savedTitleV119O(item);
+      const meta=savedMetaV119O(item);
+      const cls=key===selected ? ' saved-search-result-v119o selected-v119o' : ' saved-search-result-v119o';
+      return `<button type="button" class="${cls}" data-select-saved-search-v119o="${encoded}">
+        <strong>${esc(title)}</strong>
+        <span>${esc(meta)}</span>
+      </button>`;
+    }).join('');
+  }
+
+  list.classList.add('open');
+};
+
+const _bindSavedSearchV131_base_V119O = typeof bindSavedSearchV131 === 'function' ? bindSavedSearchV131 : null;
+bindSavedSearchV131 = function(){
+  if(_bindSavedSearchV131_base_V119O) _bindSavedSearchV131_base_V119O();
+
+  const bar=document.getElementById('projectSearchToolbarV129');
+  const input=document.getElementById('savedReportsSearchV131');
+  const list=document.getElementById('savedReportsResultsV131');
+  if(!bar || !input || !list || bar.dataset.boundV119O==='1') {
+    ensureSearchActionsV119O();
+    return;
+  }
+
+  bar.dataset.boundV119O='1';
+
+  input.addEventListener('input',()=>{
+    clearSelectedWhenTypingV119O();
+  });
+
+  input.addEventListener('keydown',event=>{
+    if(event.key==='Enter'){
+      const first=list.querySelector('[data-select-saved-search-v119o]');
+      if(first){
+        event.preventDefault();
+        event.stopPropagation();
+        selectSavedSearchRecordV119O(decodeURIComponent(first.dataset.selectSavedSearchV119o||''),event);
+      }
+    }
+  }, true);
+
+  list.addEventListener('click',event=>{
+    const button=event.target.closest('[data-select-saved-search-v119o]');
+    if(button){
+      selectSavedSearchRecordV119O(decodeURIComponent(button.dataset.selectSavedSearchV119o||''),event);
+    }
+  }, true);
+
+  ensureSearchActionsV119O();
+};
+
+const _ensureProjectSearchToolbarV131_base_V119O = typeof ensureProjectSearchToolbarV131 === 'function'
+  ? ensureProjectSearchToolbarV131 : null;
+
+if(_ensureProjectSearchToolbarV131_base_V119O){
+  ensureProjectSearchToolbarV131 = function(){
+    _ensureProjectSearchToolbarV131_base_V119O();
+    ensureSearchActionsV119O();
+    if(typeof bindSavedSearchV131 === 'function') bindSavedSearchV131();
+  };
+
+  ensureProjectSearchToolbarV129=ensureProjectSearchToolbarV131;
+  ensureProjectSearchToolbarV130=ensureProjectSearchToolbarV131;
+}
+
+const _setSelectedSavedRecordV119N_base_V119O = typeof setSelectedSavedRecordV119N === 'function'
+  ? setSelectedSavedRecordV119N : null;
+
+setSelectedSavedRecordV119N = function(key){
+  if(_setSelectedSavedRecordV119N_base_V119O) _setSelectedSavedRecordV119N_base_V119O(key);
+  else window.selectedSavedRecordKeyV119N=String(key||'').trim();
+  setSearchInputSelectedV119O(key);
+  updateOpenSelectedButtonV119O();
+};
+
+const _exportarRespaldo_base_V119O = typeof exportarRespaldo === 'function' ? exportarRespaldo : null;
+exportarRespaldo = async function(){
+  const key=selectedSavedKeyV119O();
+  if(key && typeof exportarFormularioSeleccionadoV119N === 'function'){
+    return exportarFormularioSeleccionadoV119N(key);
+  }
+  if(_exportarRespaldo_base_V119O) return _exportarRespaldo_base_V119O();
+};
+
+/* La lista lateral se simplifica: se elimina Exportar y flecha por cada registro.
+   Para editar/exportar individualmente se usa la selección + botones globales. */
+renderSavedList = async function(){
+  if(!db || typeof dbAll!=='function') return;
+
+  const arr=(await dbAll()||[])
+    .sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
+
+  const selected=selectedSavedKeyV119O();
+
+  const content = arr.length ? arr.map(x=>{
+    const key=savedRecordKeyV119O(x);
+    const encoded=encodeURIComponent(key);
+    const title=savedTitleV119O(x);
+    const selectedClass=key===selected ? ' selected-v119n' : '';
+    return `<div class="saved-item${selectedClass}" data-saved-row-key-v119n="${encoded}">
+      <strong>${esc(title)}</strong>
+      <span class="mini">Técnico: ${esc(x.tecnico||'')}<br>Actualizado: ${esc((x.updatedAt||'').replace('T',' ').slice(0,16))}</span>
+      <div class="buttons">
+        <button type="button" class="secondary saved-select-btn-v119n" data-select-saved-v119n="${encoded}">Seleccionar</button>
+        <button type="button" class="danger" onclick="eliminarFormulario('${esc(key)}')">Eliminar</button>
+      </div>
+    </div>`;
+  }).join('') : '<p class="mini">Aún no hay formularios guardados en este navegador.</p>';
+
+  const a=document.getElementById('guardadosLista'); if(a) a.innerHTML=content;
+  const b=document.getElementById('guardadosListaSide'); if(b) b.innerHTML=content;
+};
+
+document.addEventListener('click',event=>{
+  const row=event.target.closest('[data-select-saved-search-v119o]');
+  if(row){
+    selectSavedSearchRecordV119O(decodeURIComponent(row.dataset.selectSavedSearchV119o||''),event);
+    return;
+  }
+
+  const open=document.getElementById('openSelectedSavedV119O');
+  if(open && event.target===open){
+    event.preventDefault();
+    event.stopPropagation();
+    openSelectedSavedSearchV119O();
+  }
+}, true);
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    if(typeof ensureAreaUtilTotalConclusionV119N === 'function') ensureAreaUtilTotalConclusionV119N();
+    if(typeof renderReport === 'function') renderReport();
+    if(typeof renderPreview === 'function') renderPreview();
+    if(typeof ensureProjectSearchToolbarV131 === 'function') ensureProjectSearchToolbarV131();
+    if(typeof renderSavedList === 'function') renderSavedList();
+    ensureSearchActionsV119O();
+  },900);
+  setTimeout(()=>{
+    if(typeof ensureAreaUtilTotalConclusionV119N === 'function') ensureAreaUtilTotalConclusionV119N();
+    if(typeof renderReport === 'function') renderReport();
+    if(typeof ensureProjectSearchToolbarV131 === 'function') ensureProjectSearchToolbarV131();
+    if(typeof renderSavedList === 'function') renderSavedList();
+    ensureSearchActionsV119O();
+  },1800);
+});
+</script>
+
 </body>
 </html>
