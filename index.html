@@ -30725,5 +30725,220 @@ document.addEventListener('click',event=>{
 }, true);
 </script>
 
+
+<style id="patch-v119u-bordes-impresion-css">
+/* ==========================================================
+   V119U SOBRE V119T
+   Corrección de impresión:
+   - Bordes completos y líneas internas en todas las tablas.
+   - Aplica a Obra Mayor Definitivo y Anteproyecto de Edificación.
+   - Aplica a Observaciones, Aprobatorio y Desistimiento.
+   ========================================================== */
+
+@media print{
+  .report,
+  #report{
+    overflow:visible!important;
+  }
+
+  #report table,
+  .report table,
+  #report .apr-info-table,
+  .report .apr-info-table,
+  #report .informe-table,
+  .report .informe-table,
+  #report .tech-note-table,
+  .report .tech-note-table,
+  #report .form-report-table,
+  .report .form-report-table,
+  #report .req-table,
+  .report .req-table,
+  #report .conclusion-table,
+  .report .conclusion-table{
+    width:100%!important;
+    max-width:100%!important;
+    table-layout:fixed!important;
+    border-collapse:separate!important;
+    border-spacing:0!important;
+    border:0!important;
+    outline:0.85pt solid #000!important;
+    outline-offset:-0.85pt!important;
+    box-sizing:border-box!important;
+    overflow:visible!important;
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+    color-adjust:exact!important;
+  }
+
+  #report tr,
+  .report tr{
+    break-inside:avoid!important;
+    page-break-inside:avoid!important;
+  }
+
+  #report th,
+  #report td,
+  .report th,
+  .report td,
+  #report table th,
+  #report table td,
+  .report table th,
+  .report table td,
+  #report .apr-info-table th,
+  #report .apr-info-table td,
+  .report .apr-info-table th,
+  .report .apr-info-table td,
+  #report .informe-table th,
+  #report .informe-table td,
+  .report .informe-table th,
+  .report .informe-table td,
+  #report .tech-note-table th,
+  #report .tech-note-table td,
+  .report .tech-note-table th,
+  .report .tech-note-table td,
+  #report .form-report-table th,
+  #report .form-report-table td,
+  .report .form-report-table th,
+  .report .form-report-table td{
+    border:0!important;
+    border-right:0.85pt solid #000!important;
+    border-bottom:0.85pt solid #000!important;
+    box-shadow:none!important;
+    outline:0!important;
+    background-clip:padding-box!important;
+    box-sizing:border-box!important;
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+    color-adjust:exact!important;
+  }
+
+  #report tr > th:first-child,
+  #report tr > td:first-child,
+  .report tr > th:first-child,
+  .report tr > td:first-child{
+    border-left:0.85pt solid #000!important;
+  }
+
+  #report tr:first-child > th,
+  #report tr:first-child > td,
+  .report tr:first-child > th,
+  .report tr:first-child > td,
+  #report thead tr:first-child > th,
+  #report thead tr:first-child > td,
+  .report thead tr:first-child > th,
+  .report thead tr:first-child > td{
+    border-top:0.85pt solid #000!important;
+  }
+
+  /* Refuerzo para tablas que se parten entre páginas */
+  #report tbody tr:first-child > th,
+  #report tbody tr:first-child > td,
+  .report tbody tr:first-child > th,
+  .report tbody tr:first-child > td{
+    border-top:0.85pt solid #000!important;
+  }
+
+  /* Encabezados y celdas de etiqueta conservan relleno gris al imprimir */
+  #report th,
+  .report th,
+  #report .apr-info-label,
+  .report .apr-info-label,
+  #report .apr-info-section,
+  .report .apr-info-section,
+  #report .label-cell,
+  .report .label-cell,
+  #report .study-cell,
+  .report .study-cell{
+    background-color:#e6e6e6!important;
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+    color-adjust:exact!important;
+  }
+
+  /* Líneas de títulos/secciones dentro de informes */
+  #report h2,
+  .report h2,
+  #report .report-section-title,
+  .report .report-section-title{
+    border-bottom:0.85pt solid #000!important;
+    box-shadow:none!important;
+  }
+
+  /* Evita que el borde derecho se corte en Chrome/Edge */
+  #report table,
+  .report table{
+    margin-right:0.5pt!important;
+  }
+}
+</style>
+
+
+<script id="patch-v119u-bordes-impresion-js">
+/* ==========================================================
+   V119U - Refuerzo antes de imprimir.
+   Coloca bordes con prioridad !important para evitar que estilos inline
+   o border-collapse de Chrome/Edge oculten líneas.
+   ========================================================== */
+
+function aplicarBordesImpresionV119U(){
+  const report=document.getElementById('report') || document.querySelector('.report');
+  if(!report) return;
+
+  report.querySelectorAll('table').forEach(tbl=>{
+    tbl.style.setProperty('width','100%','important');
+    tbl.style.setProperty('max-width','100%','important');
+    tbl.style.setProperty('table-layout','fixed','important');
+    tbl.style.setProperty('border-collapse','separate','important');
+    tbl.style.setProperty('border-spacing','0','important');
+    tbl.style.setProperty('outline','0.85pt solid #000','important');
+    tbl.style.setProperty('outline-offset','-0.85pt','important');
+    tbl.style.setProperty('box-sizing','border-box','important');
+  });
+
+  report.querySelectorAll('tr').forEach(tr=>{
+    tr.style.setProperty('break-inside','avoid','important');
+    tr.style.setProperty('page-break-inside','avoid','important');
+  });
+
+  report.querySelectorAll('th,td').forEach(cell=>{
+    cell.style.setProperty('border','0','important');
+    cell.style.setProperty('border-right','0.85pt solid #000','important');
+    cell.style.setProperty('border-bottom','0.85pt solid #000','important');
+    cell.style.setProperty('box-sizing','border-box','important');
+  });
+
+  report.querySelectorAll('tr > th:first-child, tr > td:first-child').forEach(cell=>{
+    cell.style.setProperty('border-left','0.85pt solid #000','important');
+  });
+
+  report.querySelectorAll('tr:first-child > th, tr:first-child > td, thead tr:first-child > th, thead tr:first-child > td, tbody tr:first-child > th, tbody tr:first-child > td').forEach(cell=>{
+    cell.style.setProperty('border-top','0.85pt solid #000','important');
+  });
+}
+
+const _imprimirInforme_base_V119U = typeof imprimirInforme === 'function' ? imprimirInforme : null;
+if(_imprimirInforme_base_V119U){
+  imprimirInforme = function(){
+    aplicarBordesImpresionV119U();
+    return _imprimirInforme_base_V119U.apply(this, arguments);
+  };
+}
+
+const _renderReport_base_V119U = typeof renderReport === 'function' ? renderReport : null;
+if(_renderReport_base_V119U){
+  renderReport = function(){
+    const out=_renderReport_base_V119U.apply(this, arguments);
+    setTimeout(aplicarBordesImpresionV119U,0);
+    return out;
+  };
+}
+
+window.addEventListener('beforeprint', aplicarBordesImpresionV119U);
+window.addEventListener('load',()=>{
+  setTimeout(aplicarBordesImpresionV119U,900);
+  setTimeout(aplicarBordesImpresionV119U,1800);
+});
+</script>
+
 </body>
 </html>
