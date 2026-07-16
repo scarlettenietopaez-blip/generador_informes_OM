@@ -27940,5 +27940,94 @@ window.addEventListener('afterprint',()=>{
 });
 </script>
 
+
+
+<!-- ==========================================================
+     V162 SOBRE V160
+     Corrección segura de V161:
+     elimina únicamente REG. MUNICIPAL de Consideraciones
+     estructurales sin insertar código dentro del HTML copiado.
+     ========================================================== -->
+<script>
+(function(){
+  function removeStructuralMunicipalRowV162(root){
+    root = root || document;
+    try{
+      const direct=root.querySelector ? root.querySelector('#estMunicipal') : null;
+      if(direct){
+        const tr=direct.closest('tr');
+        if(tr) tr.remove();
+      }
+
+      const headings=[...root.querySelectorAll('h2,h3,.section-title,.report-section-title-v157,.report-section-title-v156,div')]
+        .filter(el=>/CONSIDERACIONES\s+ESTRUCTURALES/i.test((el.textContent||'').trim()));
+
+      headings.forEach(head=>{
+        let node=head.nextElementSibling;
+        while(node){
+          const txt=(node.textContent||'').trim();
+          if(node!==head && (node.matches?.('h2,h3,.section-title,.report-section-title-v157,.report-section-title-v156') || /^\d+\.\s+/.test(txt))) break;
+          if(node.tagName==='TABLE'){
+            node.querySelectorAll('tr').forEach(tr=>{
+              if(/REG\.?\s*MUNICIPAL|REGISTRO\s+MUNICIPAL/i.test(tr.textContent||'')) tr.remove();
+            });
+            break;
+          }
+          node=node.nextElementSibling;
+        }
+      });
+    }catch(_e){}
+  }
+
+  function stripStructuralMunicipalRowV162(source){
+    source=String(source||'');
+    if(!source) return source;
+    try{
+      const doc=new DOMParser().parseFromString('<div id="v162-root">'+source+'</div>','text/html');
+      const root=doc.getElementById('v162-root');
+      if(!root) return source;
+      removeStructuralMunicipalRowV162(root);
+      return root.innerHTML;
+    }catch(_e){
+      return source;
+    }
+  }
+
+  const baseRenderAprobatorioForm=typeof renderAprobatorioForm==='function' ? renderAprobatorioForm : null;
+  if(baseRenderAprobatorioForm){
+    renderAprobatorioForm=function(){
+      const out=baseRenderAprobatorioForm.apply(this,arguments);
+      setTimeout(()=>removeStructuralMunicipalRowV162(document),0);
+      return out;
+    };
+  }
+
+  const baseStructuralTable=typeof aprobatorioStructuralTable==='function' ? aprobatorioStructuralTable : null;
+  if(baseStructuralTable){
+    aprobatorioStructuralTable=function(){
+      return stripStructuralMunicipalRowV162(baseStructuralTable.apply(this,arguments));
+    };
+  }
+
+  const baseRenderReport=typeof renderReport==='function' ? renderReport : null;
+  if(baseRenderReport){
+    renderReport=function(){
+      const out=baseRenderReport.apply(this,arguments);
+      const report=document.getElementById('report');
+      if(report){
+        report.innerHTML=stripStructuralMunicipalRowV162(report.innerHTML);
+        removeStructuralMunicipalRowV162(report);
+      }
+      return out;
+    };
+  }
+
+  window.addEventListener('load',()=>{
+    setTimeout(()=>removeStructuralMunicipalRowV162(document),500);
+    setTimeout(()=>removeStructuralMunicipalRowV162(document),1500);
+  });
+})();
+</script>
+
 </body>
 </html>
