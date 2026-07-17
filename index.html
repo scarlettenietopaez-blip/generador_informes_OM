@@ -30940,5 +30940,241 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<style id="patch-v119v-sustento-css">
+/* ==========================================================
+   V119V SOBRE V119U
+   Sustento Técnico de Observaciones:
+   - Nro. más angosto.
+   - Imágenes ajustadas: 1 grande, 2 por fila, 3 en dos filas, etc.
+   ========================================================== */
+
+/* Tabla Sustento Técnico: la columna Nro. no debe ocupar media tabla */
+.report table.tech-note-table,
+#report table.tech-note-table{
+  table-layout:fixed!important;
+}
+
+.report table.tech-note-table col.col-nro-v119v,
+#report table.tech-note-table col.col-nro-v119v{
+  width:14mm!important;
+}
+
+.report table.tech-note-table col.col-texto-v119v,
+#report table.tech-note-table col.col-texto-v119v{
+  width:auto!important;
+}
+
+.report table.tech-note-table th:first-child,
+.report table.tech-note-table td:first-child,
+#report table.tech-note-table th:first-child,
+#report table.tech-note-table td:first-child{
+  width:14mm!important;
+  min-width:14mm!important;
+  max-width:14mm!important;
+  text-align:left!important;
+  vertical-align:top!important;
+  box-sizing:border-box!important;
+}
+
+.report table.tech-note-table th:nth-child(2),
+.report table.tech-note-table td:nth-child(2),
+#report table.tech-note-table th:nth-child(2),
+#report table.tech-note-table td:nth-child(2){
+  width:auto!important;
+  vertical-align:top!important;
+}
+
+/* La fila de imágenes usa todo el ancho disponible */
+.report table.tech-note-table tr.sustento-img-row-v55 td,
+#report table.tech-note-table tr.sustento-img-row-v55 td{
+  width:100%!important;
+  max-width:100%!important;
+}
+
+/* Galería del sustento: por defecto dos imágenes por fila */
+.report .sustento-img-gallery-v113,
+#report .sustento-img-gallery-v113{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:8px!important;
+  width:100%!important;
+  page-break-inside:avoid!important;
+  break-inside:avoid!important;
+  align-items:start!important;
+}
+
+/* Una sola imagen: más grande y ocupando todo el ancho */
+.report .sustento-img-gallery-v113.sustento-img-count-1-v119v,
+#report .sustento-img-gallery-v113.sustento-img-count-1-v119v{
+  grid-template-columns:1fr!important;
+}
+
+.report .sustento-img-gallery-v113.sustento-img-count-1-v119v img,
+#report .sustento-img-gallery-v113.sustento-img-count-1-v119v img{
+  max-height:460px!important;
+  width:100%!important;
+  justify-self:center!important;
+}
+
+/* Dos o más: dos por fila. Tres queda en dos filas automáticamente. */
+.report .sustento-img-gallery-v113 img,
+#report .sustento-img-gallery-v113 img{
+  width:100%!important;
+  max-width:100%!important;
+  max-height:260px!important;
+  object-fit:contain!important;
+  display:block!important;
+  border:1px solid #cbd5e1!important;
+  border-radius:4px!important;
+  padding:3px!important;
+  background:#fff!important;
+  box-sizing:border-box!important;
+}
+
+@media print{
+  .report table.tech-note-table,
+  #report table.tech-note-table{
+    table-layout:fixed!important;
+  }
+
+  .report table.tech-note-table col.col-nro-v119v,
+  #report table.tech-note-table col.col-nro-v119v{
+    width:13mm!important;
+  }
+
+  .report table.tech-note-table th:first-child,
+  .report table.tech-note-table td:first-child,
+  #report table.tech-note-table th:first-child,
+  #report table.tech-note-table td:first-child{
+    width:13mm!important;
+    min-width:13mm!important;
+    max-width:13mm!important;
+  }
+
+  .report .sustento-img-gallery-v113,
+  #report .sustento-img-gallery-v113{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:7px!important;
+  }
+
+  .report .sustento-img-gallery-v113.sustento-img-count-1-v119v,
+  #report .sustento-img-gallery-v113.sustento-img-count-1-v119v{
+    grid-template-columns:1fr!important;
+  }
+
+  .report .sustento-img-gallery-v113.sustento-img-count-1-v119v img,
+  #report .sustento-img-gallery-v113.sustento-img-count-1-v119v img{
+    max-height:390px!important;
+  }
+
+  .report .sustento-img-gallery-v113 img,
+  #report .sustento-img-gallery-v113 img{
+    max-height:230px!important;
+  }
+}
+</style>
+
+
+<script id="patch-v119v-sustento-js">
+/* ==========================================================
+   V119V
+   Refuerza estructura de Sustento Técnico sin tocar el formato general.
+   ========================================================== */
+
+function escV119V(v){
+  if(typeof esc === 'function') return esc(v);
+  return String(v ?? '').replace(/[&<>"']/g, s=>({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[s]));
+}
+
+function imageRowsForSustentoV113(srcs){
+  const imgs=(srcs||[]).filter(Boolean);
+  if(!imgs.length) return '';
+
+  const countClass = imgs.length === 1
+    ? 'sustento-img-count-1-v119v'
+    : imgs.length === 2
+      ? 'sustento-img-count-2-v119v'
+      : 'sustento-img-count-many-v119v';
+
+  return `<tr class="sustento-img-row-v55"><td colspan="2">
+    <div class="sustento-img-gallery-v113 ${countClass}" data-img-count="${imgs.length}">
+      ${imgs.map((src,i)=>`<img class="sustento-img-v55" src="${escV119V(src)}" alt="Imagen ${i+1}">`).join('')}
+    </div>
+  </td></tr>`;
+}
+
+function ajustarTablaSustentoV119V(root=document){
+  root.querySelectorAll('table.tech-note-table').forEach(tbl=>{
+    if(!tbl.querySelector('colgroup.colgroup-sustento-v119v')){
+      tbl.insertAdjacentHTML('afterbegin',
+        '<colgroup class="colgroup-sustento-v119v"><col class="col-nro-v119v"><col class="col-texto-v119v"></colgroup>'
+      );
+    }
+
+    tbl.querySelectorAll('tr.sustento-img-row-v55 td').forEach(td=>{
+      td.setAttribute('colspan','2');
+    });
+
+    tbl.querySelectorAll('.sustento-img-gallery-v113').forEach(gal=>{
+      const n=gal.querySelectorAll('img').length;
+      gal.classList.toggle('sustento-img-count-1-v119v', n===1);
+      gal.classList.toggle('sustento-img-count-2-v119v', n===2);
+      gal.classList.toggle('sustento-img-count-many-v119v', n>=3);
+      gal.dataset.imgCount=String(n);
+    });
+  });
+}
+
+/* Si existe la función original de Sustento, se mantiene y solo se añade colgroup */
+const _textosTecnicosSection_base_V119V = typeof textosTecnicosSection === 'function'
+  ? textosTecnicosSection : null;
+
+if(_textosTecnicosSection_base_V119V){
+  textosTecnicosSection = function(){
+    let html=_textosTecnicosSection_base_V119V.apply(this, arguments);
+
+    if(String(html||'').includes('class="tech-note-table"') && !String(html||'').includes('colgroup-sustento-v119v')){
+      html=String(html).replace(
+        '<table class="tech-note-table">',
+        '<table class="tech-note-table"><colgroup class="colgroup-sustento-v119v"><col class="col-nro-v119v"><col class="col-texto-v119v"></colgroup>'
+      );
+    }
+
+    return html;
+  };
+}
+
+const _renderReport_base_V119V = typeof renderReport === 'function' ? renderReport : null;
+if(_renderReport_base_V119V){
+  renderReport = function(){
+    const out=_renderReport_base_V119V.apply(this, arguments);
+    setTimeout(()=>ajustarTablaSustentoV119V(document),0);
+    return out;
+  };
+}
+
+const _renderPreview_base_V119V = typeof renderPreview === 'function' ? renderPreview : null;
+if(_renderPreview_base_V119V){
+  renderPreview = function(){
+    const out=_renderPreview_base_V119V.apply(this, arguments);
+    setTimeout(()=>ajustarTablaSustentoV119V(document),0);
+    return out;
+  };
+}
+
+window.addEventListener('beforeprint',()=>ajustarTablaSustentoV119V(document));
+window.addEventListener('load',()=>{
+  setTimeout(()=>ajustarTablaSustentoV119V(document),900);
+  setTimeout(()=>ajustarTablaSustentoV119V(document),1800);
+});
+</script>
+
 </body>
 </html>
