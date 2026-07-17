@@ -1,0 +1,35 @@
+﻿Tipo_Informe;Asunto;Cuerpo;Activo
+Informe con Observaciones;Notificación de {{Tipo de Informe}} – Trámite E-GOB N.° {{Número de EGOB}} – {{Tipo de Proyecto}};"De mi consideración:
+
+Reciba un cordial saludo.
+
+Por medio del presente, se notifica el contenido del {{Tipo de Informe}}, correspondiente al trámite E-GOB N.° {{Número de EGOB}} de {{Tipo de Proyecto}}, relacionado con el predio de propiedad de los señores {{Propietarios}}.
+
+Una vez realizada la revisión técnica de la documentación presentada, se han determinado observaciones que deberán ser subsanadas conforme al detalle contenido en el informe técnico adjunto, por lo que se emite criterio técnico NO FAVORABLE hasta que dichas observaciones sean atendidas.
+
+De conformidad con lo establecido en el artículo 140 del Código Orgánico Administrativo, se concede un plazo de diez (10) días hábiles, contados a partir de la presente notificación, para presentar la documentación corregida mediante un alcance al trámite E-GOB N.° {{Número de EGOB}}. La fecha máxima para el ingreso de la subsanación corresponde al día {{Fecha Subsanación}}.
+
+Se solicita revisar detenidamente las observaciones contenidas en el informe adjunto y realizar las correcciones pertinentes a fin de continuar con el proceso administrativo correspondiente.
+
+En caso de requerir asistencia o aclaraciones técnicas, podrá acercarse a la Mesa Técnica de la Dirección de Gestión de Planificación, Hábitat y Desarrollo Urbanístico, ubicada en las calles Espejo y Olmedo, edificio del Ex Colegio Salesianos, tercer piso.
+
+Particular que comunico para los fines pertinentes.
+
+Atentamente,
+
+{{Nombre del Técnico Revisor}}
+{{Cargo del Técnico Revisor}}";Sí
+Informe de Desistimiento;Notificación de {{Tipo de Informe}} – Trámite E-GOB N.° {{Número de EGOB}} – {{Tipo de Proyecto}};"De mi consideración:
+
+Reciba un cordial saludo.
+
+Por medio del presente, se notifica el contenido del {{Tipo de Informe}}, correspondiente al trámite E-GOB N.° {{Número de EGOB}} de {{Tipo de Proyecto}}, relacionado con el predio de propiedad de los señores {{Propietarios}}.
+
+Se adjunta el informe técnico correspondiente para su conocimiento y fines pertinentes.
+
+Particular que comunico para los fines pertinentes.
+
+Atentamente,
+
+{{Nombre del Técnico Revisor}}
+{{Cargo del Técnico Revisor}}";Sí

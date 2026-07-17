@@ -1,0 +1,7 @@
+﻿Tipo_Informe;Titulo;Texto_Base;Activo
+Informe con Observaciones;SIENTO RAZÓN;"Siento razón que con fecha {{Fecha de hoy}} se notificó al correo electrónico registrado {{correo para notificar}}, el informe con observaciones, para su correcta resolución en el término de 10 días.
+
+Particular que informo para los fines correspondientes";Sí
+Informe de Desistimiento;SIENTO RAZÓN;"Siento razón que con fecha {{Fecha de hoy}} se notificó al correo electrónico registrado {{correo para notificar}}, el informe de desistimiento, para su conocimiento.
+
+Particular que informo para los fines correspondientes";Sí
