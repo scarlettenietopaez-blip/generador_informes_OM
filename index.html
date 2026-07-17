@@ -31176,5 +31176,275 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+
+<style id="patch-v119w-formato-aprobatorio-css">
+/* ==========================================================
+   V119W SOBRE V119V
+   Formato Informe Técnico Aprobatorio:
+   - Propietarios: un título y una fila por propietario.
+   - Detalles de IPRUS y Gravámenes en líneas separadas.
+   ========================================================== */
+
+.report .apr-info-table .apr-owner-value-v119w,
+#report .apr-info-table .apr-owner-value-v119w{
+  text-align:left!important;
+  vertical-align:top!important;
+}
+
+.report .apr-info-table .apr-owner-label-v119w,
+#report .apr-info-table .apr-owner-label-v119w{
+  vertical-align:middle!important;
+}
+
+.report .req-detail-lines-v119w,
+#report .req-detail-lines-v119w{
+  white-space:normal!important;
+  line-height:1.25!important;
+}
+
+.report .req-detail-line-v119w,
+#report .req-detail-line-v119w{
+  display:block!important;
+  margin:0 0 2px 0!important;
+  text-align:left!important;
+}
+
+.report .req-detail-line-v119w strong,
+#report .req-detail-line-v119w strong{
+  font-weight:800!important;
+}
+</style>
+
+
+<script id="patch-v119w-formato-aprobatorio-js">
+/* ==========================================================
+   V119W SOBRE V119V
+   Cambios de formato únicamente en Vista del Informe Aprobatorio.
+   ========================================================== */
+
+function escV119W(v){
+  if(typeof esc === 'function') return esc(v);
+  return String(v ?? '').replace(/[&<>"']/g, s=>({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[s]));
+}
+
+function normV119W(v){
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function fmtDateV119W(value){
+  if(!value) return '';
+  if(typeof fmtDate === 'function') return fmtDate(value);
+  const s=String(value||'').trim();
+  const m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : s;
+}
+
+/* ---------- 1. Propietarios en Información General ---------- */
+function ownerRowsAprobatorioV119W(){
+  if(typeof ensurePropietarios === 'function') ensurePropietarios();
+
+  let arr=Array.isArray(state.propietarios)
+    ? state.propietarios.filter(p=>String(p?.nombre||p?.ci||'').trim())
+    : [];
+
+  if(!arr.length){
+    const n=typeof infoValueForReportV105 === 'function'
+      ? infoValueForReportV105('NOMBRE DEL PROPIETARIO')
+      : (typeof infoValue === 'function' ? infoValue('NOMBRE DEL PROPIETARIO') : '');
+    const c=typeof infoValueForReportV105 === 'function'
+      ? infoValueForReportV105('CI/RUC')
+      : (typeof infoValue === 'function' ? infoValue('CI/RUC') : '');
+    arr=[{nombre:n,ci:c}].filter(p=>String(p.nombre||p.ci||'').trim());
+  }
+
+  if(!arr.length){
+    return `<tr>
+      <td class="apr-info-label apr-owner-label-v119w">NOMBRE DEL PROPIETARIO</td>
+      <td class="apr-info-value apr-owner-value-v119w"></td>
+      <td class="apr-info-label apr-owner-label-v119w">CI/RUC</td>
+      <td class="apr-info-value apr-owner-value-v119w"></td>
+    </tr>`;
+  }
+
+  const rows=arr.map((p,i)=>{
+    const labelOwner = i===0
+      ? `<td class="apr-info-label apr-owner-label-v119w" rowspan="${arr.length}">NOMBRE DEL PROPIETARIO</td>`
+      : '';
+    const labelCi = i===0
+      ? `<td class="apr-info-label apr-owner-label-v119w" rowspan="${arr.length}">CI/RUC</td>`
+      : '';
+    return `<tr>
+      ${labelOwner}
+      <td class="apr-info-value apr-owner-value-v119w">${escV119W(p.nombre||'')}</td>
+      ${labelCi}
+      <td class="apr-info-value apr-owner-value-v119w">${escV119W(p.ci||'')}</td>
+    </tr>`;
+  }).join('');
+
+  return rows;
+}
+
+const _aprobatorioInfoTableFromTemplate_base_V119W = typeof aprobatorioInfoTableFromTemplate === 'function'
+  ? aprobatorioInfoTableFromTemplate : null;
+
+aprobatorioInfoTableFromTemplate = function(text){
+  if(typeof ensurePropietarios === 'function') ensurePropietarios();
+  if(typeof syncPropietariosInfo === 'function') syncPropietariosInfo();
+
+  const val = (label)=>{
+    if(typeof infoValueForReportV105 === 'function') return infoValueForReportV105(label);
+    if(typeof infoValue === 'function') return infoValue(label);
+    return '';
+  };
+
+  const proyecto = val('PROYECTO DEFINITIVO');
+  const x = val('X:');
+  const y = val('Y:');
+
+  const apod = (state.apoderado && state.apoderado.activo && typeof aprTwo === 'function')
+    ? aprTwo('APODERADO', state.apoderado.nombre || '', 'CI/RUC APODERADO', state.apoderado.ci || '')
+    : '';
+
+  if(typeof aprOne !== 'function' || typeof aprTwo !== 'function'){
+    const base = _aprobatorioInfoTableFromTemplate_base_V119W
+      ? _aprobatorioInfoTableFromTemplate_base_V119W(text)
+      : '';
+    return String(base||'');
+  }
+
+  return `<table class="apr-info-table"><colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"></colgroup><tbody>
+    ${aprOne('TRÁMITE E-GOB', state.egob || val('TRÁMITE EGOB'))}
+    ${ownerRowsAprobatorioV119W()}
+    ${apod}
+    ${aprOne('PROYECTO DEFINITIVO', proyecto)}
+    ${aprOne('NOMBRE DEL PROYECTO', val('NOMBRE DEL PROYECTO'))}
+    ${aprTwo('USO PRINCIPAL', val('USO PRINCIPAL'), 'ALTURA EDIFICACIÓN', val('ALTURA EDIFICACIÓN') ? val('ALTURA EDIFICACIÓN')+' pisos' : '')}
+    <tr><td class="apr-info-section" colspan="4">REFERENCIA UBICACIÓN</td></tr>
+    ${aprTwo('X', x, 'Y', y)}
+    ${aprOne('CLAVE CATASTRAL', val('CLAVE CATASTRAL'))}
+    ${state.catastral && state.catastral.urbanoRural ? aprOne('URBANO / RURAL', state.catastral.urbanoRural) : ''}
+    ${aprTwo('BARRIO / SECTOR', val('BARRIO/SECTOR'), 'CÓDIGO PIT', val('CÓDIGO PIT'))}
+    ${aprOne('DIRECCIÓN', val('DIRECCIÓN'))}
+    ${aprOne('PROYECTISTA', val('PROYECTISTA'))}
+    ${aprTwo('REG. SENESCYT', val('REGISTRO SENESCYT'), 'REG. MUNICIPAL', val('REGISTRO MUNICIPAL'))}
+  </tbody></table>`;
+};
+
+/* ---------- 2. Detalles de requisitos IPRUS y Gravámenes ---------- */
+function isIprusReqV119W(req){
+  if(typeof isIprusReqV94 === 'function' && isIprusReqV94(req)) return true;
+  const t=normV119W(`${req?.grupo||''} ${req?.texto||''}`);
+  return t.includes('IPRUS') || t.includes('INFORME PREDIAL');
+}
+
+function isGravamenReqV119W(req){
+  if(typeof isGravamenesReqV109 === 'function' && isGravamenesReqV109(req)) return true;
+  const t=normV119W(`${req?.grupo||''} ${req?.texto||''}`);
+  return t.includes('GRAVAMEN');
+}
+
+function detailLinesHtmlV119W(lines){
+  const valid=(lines||[]).filter(line=>String(line?.value||'').trim());
+  if(!valid.length) return '';
+  return `<div class="req-detail-lines-v119w">${valid.map(line=>
+    `<div class="req-detail-line-v119w"><strong>${escV119W(line.label)}</strong> ${escV119W(line.value)}</div>`
+  ).join('')}</div>`;
+}
+
+function reqDetailReportHtmlV119W(req){
+  const v=state.requisitos?.[req.id] || {};
+  const d=v.detalle || {};
+
+  if(isIprusReqV119W(req)){
+    const html=detailLinesHtmlV119W([
+      {label:'N° IPRUS:', value:d.nroIprus || ''},
+      {label:'Fecha:', value:d.fechaIprus ? fmtDateV119W(d.fechaIprus) : ''},
+      {label:'N° eGOB:', value:d.egobIprus || ''}
+    ]);
+    return html || escV119W(v.estado || '');
+  }
+
+  if(isGravamenReqV119W(req)){
+    const html=detailLinesHtmlV119W([
+      {label:'Ficha registral No.:', value:d.fichaRegistralGravamenes || d.fichaRegistral || ''},
+      {label:'Certificado No.:', value:d.certificadoGravamenes || d.certificado || ''},
+      {label:'Fecha:', value:(d.fechaGravamenes || d.fecha) ? fmtDateV119W(d.fechaGravamenes || d.fecha) : ''}
+    ]);
+    return html || escV119W(v.estado || '');
+  }
+
+  const detalle = typeof reqDefaultDetailV94 === 'function'
+    ? reqDefaultDetailV94(req)
+    : (v.estado || '');
+
+  return escV119W(detalle || '').replace(/\n/g,'<br>');
+}
+
+/* Para cualquier otro uso de reqDefaultDetailV94, se elimina solo la línea
+   Área del predio (IPRUS) en la vista del informe. */
+const _reqDefaultDetailV94_base_V119W = typeof reqDefaultDetailV94 === 'function'
+  ? reqDefaultDetailV94 : null;
+
+if(_reqDefaultDetailV94_base_V119W){
+  reqDefaultDetailV94 = function(req){
+    if(isIprusReqV119W(req)){
+      const d=state.requisitos?.[req.id]?.detalle||{};
+      const lines=[];
+      if(d.nroIprus) lines.push('N° IPRUS: '+d.nroIprus);
+      if(d.fechaIprus) lines.push('Fecha: '+fmtDateV119W(d.fechaIprus));
+      if(d.egobIprus) lines.push('N° eGOB: '+d.egobIprus);
+      return lines.join('\n')||(state.requisitos?.[req.id]?.estado||'');
+    }
+
+    if(isGravamenReqV119W(req)){
+      const d=state.requisitos?.[req.id]?.detalle||{};
+      const lines=[];
+      if(d.fichaRegistralGravamenes || d.fichaRegistral) lines.push('Ficha registral No.: '+(d.fichaRegistralGravamenes || d.fichaRegistral));
+      if(d.certificadoGravamenes || d.certificado) lines.push('Certificado No.: '+(d.certificadoGravamenes || d.certificado));
+      if(d.fechaGravamenes || d.fecha) lines.push('Fecha: '+fmtDateV119W(d.fechaGravamenes || d.fecha));
+      return lines.join('\n')||(state.requisitos?.[req.id]?.estado||'');
+    }
+
+    return _reqDefaultDetailV94_base_V119W(req);
+  };
+}
+
+/* Tabla de Requisitos del informe: mantiene estructura, cambia solo la celda de detalle. */
+reqTable = function(reqs, mode){
+  if(!reqs.length) return '<p>No se registran requisitos para esta sección.</p>';
+
+  return `<table class="req-report-v94"><thead><tr>
+    <th>Requisito</th>
+    <th>Resultado / detalle</th>
+    ${mode === 'obs' ? '<th>Corrección requerida</th>' : ''}
+  </tr></thead><tbody>${reqs.map((r)=>{
+    const v = state.requisitos[r.id] || {};
+    const reqText = typeof stripReqNumber === 'function' ? stripReqNumber(r.texto) : String(r.texto||'');
+    return `<tr>
+      <td>${escV119W(reqText)}</td>
+      <td class="req-detail-report-v94">${reqDetailReportHtmlV119W(r)}</td>
+      ${mode === 'obs' ? `<td>${escV119W(v.observacion || r.correccionDefault || '')}</td>` : ''}
+    </tr>`;
+  }).join('')}</tbody></table>`;
+};
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    if(typeof renderReport === 'function') renderReport();
+    if(typeof renderPreview === 'function') renderPreview();
+  },900);
+});
+</script>
+
 </body>
 </html>
