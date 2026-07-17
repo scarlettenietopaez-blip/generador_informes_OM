@@ -33047,8 +33047,10 @@ window.addEventListener('load',()=>{
     return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   }
   function isProposalRowV2(r){
-    return normV2(r?.seccion||r?.Seccion||r?.Sección)===PROPUESTA_SECTION_V2 ||
-      /^((AP|OM)_)?PROP_/i.test(String(r?.id||r?.ID||''));
+    const section=normV2(r?.seccion||r?.Seccion||r?.Sección);
+    const id=String(r?.id||r?.ID||'').trim();
+    return section===PROPUESTA_SECTION_V2 ||
+      /^(?:(?:AP|OM)_(?:PROP|PTA)_|PROP_)/i.test(id);
   }
   function projectV2(){
     try{
@@ -33078,7 +33080,9 @@ window.addEventListener('load',()=>{
     return all[id];
   }
   function proposalRowsV2(){
-    const rows=PROPUESTA_V2[projectV2()]||[];
+    /* VERSIÓN 7: la tabla técnica nunca puede mostrar filas documentales,
+       incluso cuando se utilice la base interna por una falla de carga del CSV. */
+    const rows=(PROPUESTA_V2[projectV2()]||[]).filter(isProposalRowV2);
     return [...rows].sort((a,b)=>(Number(a.orden)||0)-(Number(b.orden)||0));
   }
   function splitOptionsV2(v){
@@ -33554,5 +33558,75 @@ window.addEventListener('load',()=>{
 })();
 </script>
 
+<!-- VERSIÓN 6: autoexpansión de notas antes/después de conclusiones -->
+<style>
+  #notaPreConclusionesText,
+  #notaAprobatorioTextoV56,
+  .note-check-v37 textarea,
+  .optional-note-panel textarea{
+    overflow-y:hidden !important;
+    resize:none !important;
+    min-height:72px;
+  }
+</style>
+<script>
+(function(){
+  'use strict';
+  const NOTE_SELECTOR = '#notaPreConclusionesText, #notaAprobatorioTextoV56, .note-check-v37 textarea, .optional-note-panel textarea';
+
+  function autoGrowNoteV6(el){
+    if(!el || el.tagName !== 'TEXTAREA') return;
+    el.style.overflowY='hidden';
+    el.style.height='auto';
+    const minHeight=parseFloat(window.getComputedStyle(el).minHeight)||72;
+    el.style.height=Math.max(el.scrollHeight,minHeight)+'px';
+  }
+
+  function resizeAllNotesV6(root=document){
+    if(root.matches && root.matches(NOTE_SELECTOR)) autoGrowNoteV6(root);
+    if(root.querySelectorAll) root.querySelectorAll(NOTE_SELECTOR).forEach(autoGrowNoteV6);
+  }
+
+  document.addEventListener('input',function(ev){
+    if(ev.target && ev.target.matches && ev.target.matches(NOTE_SELECTOR)){
+      autoGrowNoteV6(ev.target);
+    }
+  },true);
+
+  document.addEventListener('change',function(ev){
+    if(ev.target && ev.target.matches && ev.target.matches(NOTE_SELECTOR)){
+      autoGrowNoteV6(ev.target);
+    }
+  },true);
+
+  document.addEventListener('click',function(){
+    window.setTimeout(()=>resizeAllNotesV6(),40);
+  },true);
+
+  const observer=new MutationObserver(function(mutations){
+    mutations.forEach(function(mutation){
+      mutation.addedNodes.forEach(function(node){
+        if(node && node.nodeType===1) resizeAllNotesV6(node);
+      });
+    });
+  });
+
+  function startV6(){
+    resizeAllNotesV6();
+    observer.observe(document.body,{childList:true,subtree:true});
+    window.setTimeout(()=>resizeAllNotesV6(),250);
+    window.setTimeout(()=>resizeAllNotesV6(),1000);
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',startV6,{once:true});
+  else startV6();
+
+  window.addEventListener('resize',()=>resizeAllNotesV6());
+  window.autoGrowNoteV6=autoGrowNoteV6;
+})();
+</script>
+
+
+<!-- VERSIÓN 7: separación estricta entre Requisitos Documentales y Requisitos Propuesta Arquitectónica. -->
 </body>
 </html>
