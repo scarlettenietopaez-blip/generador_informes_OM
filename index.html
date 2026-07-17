@@ -31446,5 +31446,400 @@ window.addEventListener('load',()=>{
 });
 </script>
 
+<!-- ==========================================================
+     V163 SOBRE V162
+     ANEXOS para Informes Técnicos Aprobatorios:
+     - Sección independiente al final de la pestaña APROBATORIO.
+     - No forma parte de la Vista del Informe ni del PDF.
+     - Filas dinámicas con folder/expediente, fojas, planos y CDs.
+     - Copia únicamente el texto de anexos para pegar en eGOB.
+     ========================================================== -->
+<style>
+.anexos-v163{
+  margin-top:22px;
+  padding:16px;
+  border:1px solid #b8cbe0;
+  border-radius:14px;
+  background:#f8fbff;
+}
+.anexos-v163 .anexos-title-v163{
+  margin:0 0 6px;
+  padding:10px 12px;
+  border-left:4px solid #c9183a;
+  background:#eef4fa;
+  color:#0b2b4c;
+  font-size:15px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.anexos-v163 .anexos-help-v163{
+  margin:0 0 12px;
+  color:#667085;
+  font-size:12px;
+}
+.anexos-table-v163{
+  width:100%;
+  table-layout:fixed;
+  border-collapse:collapse;
+  background:#fff;
+}
+.anexos-table-v163 th,
+.anexos-table-v163 td{
+  border:1px solid #b8cbe0;
+  padding:7px;
+  vertical-align:middle;
+}
+.anexos-table-v163 th{
+  background:#e5eef7;
+  color:#0b2b4c;
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  text-align:center;
+}
+.anexos-table-v163 td:first-child{
+  font-weight:900;
+  color:#0b2b4c;
+  text-align:center;
+}
+.anexos-table-v163 input[type="number"],
+.anexos-table-v163 select{
+  width:100%;
+  min-width:0;
+  padding:8px;
+  border:1px solid #c8d6e5;
+  border-radius:9px;
+  background:#fff;
+  color:#17324d;
+}
+.anexos-table-v163 input[type="checkbox"]{
+  width:18px;
+  height:18px;
+  margin:0;
+}
+.anexos-check-v163{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  margin:0;
+  color:#17324d;
+  font-size:11px;
+  font-weight:800;
+  text-transform:none;
+}
+.anexos-actions-v163{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  margin-top:12px;
+}
+.anexos-actions-v163 button{
+  min-height:34px;
+}
+.anexos-preview-v163{
+  margin-top:12px;
+  padding:10px 12px;
+  border:1px dashed #9bb3ca;
+  border-radius:10px;
+  background:#fff;
+  color:#17324d;
+  font-size:12px;
+  line-height:1.55;
+}
+.anexos-preview-v163 p{
+  margin:0 0 8px;
+}
+.anexos-preview-v163 p:last-child{
+  margin-bottom:0;
+}
+.anexos-vista-v163{
+  display:none;
+  margin:0 0 12px;
+  padding:10px 12px;
+  border:1px solid #b8cbe0;
+  border-radius:11px;
+  background:#f8fbff;
+  color:#17324d;
+}
+.anexos-vista-v163.visible{
+  display:block;
+}
+.anexos-vista-head-v163{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:7px;
+}
+.anexos-vista-title-v163{
+  color:#0b2b4c;
+  font-size:12px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.anexos-vista-head-v163 button{
+  min-height:30px;
+  padding:6px 10px;
+  font-size:10.5px;
+  background:#fff;
+  color:#0b2b4c;
+  border:1px solid #0b2b4c;
+}
+.anexos-vista-text-v163{
+  padding:8px 10px;
+  border:1px dashed #9bb3ca;
+  border-radius:8px;
+  background:#fff;
+  font-size:11px;
+  line-height:1.45;
+}
+.anexos-vista-text-v163 p{
+  margin:0 0 5px;
+}
+.anexos-vista-text-v163 p:last-child{
+  margin-bottom:0;
+}
+@media(max-width:900px){
+  .anexos-table-v163{table-layout:auto;}
+  .anexos-v163{overflow-x:auto;}
+  .anexos-table-v163{min-width:820px;}
+}
+@media print{
+  .anexos-v163,
+  .anexos-vista-v163{display:none!important;}
+}
+</style>
+
+<script>
+(function(){
+  function ensureAnexosDataV163(){
+    if(typeof state==='undefined') return [];
+    if(!state.aprobatorio || typeof state.aprobatorio!=='object') state.aprobatorio={};
+    if(!Array.isArray(state.aprobatorio.anexos)) state.aprobatorio.anexos=[];
+    if(!state.aprobatorio.anexos.length){
+      state.aprobatorio.anexos.push({tipo:'folder',fojas:'',incluyePlanos:false,incluyeCds:false,cds:''});
+    }
+    state.aprobatorio.anexos=state.aprobatorio.anexos.map(row=>({
+      tipo:String(row?.tipo||'folder').toLowerCase()==='expediente'?'expediente':'folder',
+      fojas:row?.fojas==null?'':String(row.fojas),
+      incluyePlanos:!!row?.incluyePlanos,
+      incluyeCds:!!row?.incluyeCds,
+      cds:row?.cds==null?'':String(row.cds)
+    }));
+    return state.aprobatorio.anexos;
+  }
+
+  function annexLineV163(row,index,placeholder=false){
+    const tipo=row.tipo==='expediente'?'expediente':'folder';
+    const fojas=String(row.fojas||'').trim() || (placeholder?'…':'');
+    const cds=String(row.cds||'').trim() || (placeholder?'…':'');
+    let line=`Carpeta ${index+1} (${tipo}): ${fojas} fojas`;
+    if(row.incluyePlanos) line+=' incluido planos';
+    line+=' en su foliado';
+    if(row.incluyeCds) line+=` + ${cds} CDs`;
+    return line;
+  }
+
+  function anexosTextV163(placeholder=false){
+    return ensureAnexosDataV163().map((row,i)=>annexLineV163(row,i,placeholder)).join('\n\n');
+  }
+
+  function anexosHtmlCopyV163(){
+    return ensureAnexosDataV163().map((row,i)=>
+      `<p style="margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:11pt;color:#000;">${typeof esc==='function'?esc(annexLineV163(row,i,false)):annexLineV163(row,i,false)}</p>`
+    ).join('');
+  }
+
+  function validateAnexosV163(){
+    const rows=ensureAnexosDataV163();
+    for(let i=0;i<rows.length;i++){
+      if(!String(rows[i].fojas||'').trim()) return `Complete el número de fojas de la Carpeta ${i+1}.`;
+      if(rows[i].incluyeCds && !String(rows[i].cds||'').trim()) return `Complete el número de CDs de la Carpeta ${i+1}.`;
+    }
+    return '';
+  }
+
+  function refreshAnexosPreviewV163(){
+    const html=ensureAnexosDataV163().map((row,i)=>`<p>${typeof esc==='function'?esc(annexLineV163(row,i,true)):annexLineV163(row,i,true)}</p>`).join('');
+    const preview=document.querySelector('#anexosBoxV163 .anexos-preview-v163');
+    if(preview) preview.innerHTML=html;
+    const vista=document.querySelector('#anexosVistaV163 .anexos-vista-text-v163');
+    if(vista) vista.innerHTML=html;
+  }
+
+  window.updateAnexoV163=function(index,field,value){
+    const rows=ensureAnexosDataV163();
+    if(!rows[index]) return;
+    if(field==='incluyePlanos' || field==='incluyeCds') rows[index][field]=!!value;
+    else rows[index][field]=String(value??'');
+    if(field==='incluyeCds' && !value) rows[index].cds='';
+    if(field==='fojas' || field==='cds') refreshAnexosPreviewV163();
+    else renderAnexosV163();
+  };
+
+  window.addAnexoV163=function(){
+    ensureAnexosDataV163().push({tipo:'folder',fojas:'',incluyePlanos:false,incluyeCds:false,cds:''});
+    renderAnexosV163();
+  };
+
+  window.removeAnexoV163=function(index){
+    const rows=ensureAnexosDataV163();
+    if(rows.length<=1){
+      if(typeof msg==='function') msg('Debe conservar al menos una fila de anexos.');
+      return;
+    }
+    rows.splice(index,1);
+    renderAnexosV163();
+  };
+
+  window.copiarAnexosV163=async function(){
+    const error=validateAnexosV163();
+    if(error){
+      if(typeof msg==='function') msg(error);
+      else alert(error);
+      return;
+    }
+    const plain=anexosTextV163(false);
+    const html=`<div style="font-family:Arial,sans-serif;color:#000;">${anexosHtmlCopyV163()}</div>`;
+    try{
+      if(navigator.clipboard && window.ClipboardItem && window.isSecureContext){
+        await navigator.clipboard.write([new ClipboardItem({
+          'text/html':new Blob([html],{type:'text/html'}),
+          'text/plain':new Blob([plain],{type:'text/plain'})
+        })]);
+      }else{
+        throw new Error('Portapapeles enriquecido no disponible');
+      }
+      if(typeof msg==='function') msg('Anexos copiados para pegar en eGOB.',true);
+    }catch(_e){
+      const ta=document.createElement('textarea');
+      ta.value=plain;
+      ta.setAttribute('readonly','');
+      ta.style.position='fixed';
+      ta.style.left='-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try{ document.execCommand('copy'); }catch(_e2){}
+      ta.remove();
+      if(typeof msg==='function') msg('Anexos copiados como texto para pegar en eGOB.',true);
+    }
+  };
+
+  window.renderAnexosV163=function(){
+    const form=document.getElementById('aprobatorioForm');
+    if(!form) return;
+    let box=document.getElementById('anexosBoxV163');
+    if(!box){
+      box=document.createElement('section');
+      box.id='anexosBoxV163';
+      box.className='anexos-v163 no-print';
+      form.appendChild(box);
+    }
+    const rows=ensureAnexosDataV163();
+    box.innerHTML=`
+      <div class="anexos-title-v163">ANEXOS</div>
+      <p class="anexos-help-v163">Esta información no se incluye en el Informe Técnico Aprobatorio. El resultado y el botón “Copiar anexos” se encuentran en Vista del Informe.</p>
+      <table class="anexos-table-v163">
+        <colgroup>
+          <col style="width:9%">
+          <col style="width:18%">
+          <col style="width:14%">
+          <col style="width:18%">
+          <col style="width:16%">
+          <col style="width:13%">
+          <col style="width:12%">
+        </colgroup>
+        <thead><tr>
+          <th>Carpeta</th>
+          <th>Tipo</th>
+          <th>N.º de fojas</th>
+          <th>Planos incluidos</th>
+          <th>Agregar CDs</th>
+          <th>N.º de CDs</th>
+          <th>Acción</th>
+        </tr></thead>
+        <tbody>${rows.map((row,i)=>`<tr>
+          <td>Carpeta ${i+1}</td>
+          <td><select onchange="updateAnexoV163(${i},'tipo',this.value)">
+            <option value="folder" ${row.tipo==='folder'?'selected':''}>folder</option>
+            <option value="expediente" ${row.tipo==='expediente'?'selected':''}>expediente</option>
+          </select></td>
+          <td><input type="number" min="0" step="1" inputmode="numeric" value="${typeof esc==='function'?esc(row.fojas):row.fojas}" placeholder="Fojas" oninput="updateAnexoV163(${i},'fojas',this.value)"></td>
+          <td><label class="anexos-check-v163"><input type="checkbox" ${row.incluyePlanos?'checked':''} onchange="updateAnexoV163(${i},'incluyePlanos',this.checked)"> incluido planos</label></td>
+          <td><label class="anexos-check-v163"><input type="checkbox" ${row.incluyeCds?'checked':''} onchange="updateAnexoV163(${i},'incluyeCds',this.checked)"> + CDs</label></td>
+          <td><input type="number" min="0" step="1" inputmode="numeric" value="${typeof esc==='function'?esc(row.cds):row.cds}" placeholder="CDs" ${row.incluyeCds?'':'disabled'} oninput="updateAnexoV163(${i},'cds',this.value)"></td>
+          <td style="text-align:center"><button type="button" class="danger mini-btn" onclick="removeAnexoV163(${i})" ${rows.length<=1?'disabled':''}>Quitar</button></td>
+        </tr>`).join('')}</tbody>
+      </table>
+      <div class="anexos-actions-v163">
+        <button type="button" class="secondary" onclick="addAnexoV163()">+ Agregar fila</button>
+      </div>`;
+    renderAnexosVistaV163();
+  };
+
+
+  window.renderAnexosVistaV163=function(){
+    const tab=document.getElementById('tab-vista');
+    if(!tab) return;
+    let box=document.getElementById('anexosVistaV163');
+    if(!box){
+      box=document.createElement('section');
+      box.id='anexosVistaV163';
+      box.className='anexos-vista-v163 no-print';
+      const reportWrap=tab.querySelector('.report-wrap');
+      if(reportWrap) tab.insertBefore(box,reportWrap);
+      else tab.appendChild(box);
+    }
+    const isAprobatorio=typeof state!=='undefined' && state?.tipoInforme==='Informe Técnico Aprobatorio';
+    box.classList.toggle('visible',isAprobatorio);
+    if(!isAprobatorio){
+      box.innerHTML='';
+      return;
+    }
+    const rows=ensureAnexosDataV163();
+    box.innerHTML=`
+      <div class="anexos-vista-head-v163">
+        <div class="anexos-vista-title-v163">ANEXOS</div>
+        <button type="button" onclick="copiarAnexosV163()">Copiar anexos</button>
+      </div>
+      <div class="anexos-vista-text-v163">${rows.map((row,i)=>`<p>${typeof esc==='function'?esc(annexLineV163(row,i,true)):annexLineV163(row,i,true)}</p>`).join('')}</div>`;
+  };
+
+  const baseRenderReportV163=typeof renderReport==='function'?renderReport:null;
+  if(baseRenderReportV163){
+    renderReport=function(){
+      const out=baseRenderReportV163.apply(this,arguments);
+      setTimeout(renderAnexosVistaV163,0);
+      return out;
+    };
+  }
+
+  const baseRenderAprobatorioFormV163=typeof renderAprobatorioForm==='function'?renderAprobatorioForm:null;
+  if(baseRenderAprobatorioFormV163){
+    renderAprobatorioForm=function(){
+      const out=baseRenderAprobatorioFormV163.apply(this,arguments);
+      setTimeout(renderAnexosV163,0);
+      return out;
+    };
+  }
+
+  const baseApplyStateToUIV163=typeof applyStateToUI==='function'?applyStateToUI:null;
+  if(baseApplyStateToUIV163){
+    applyStateToUI=function(){
+      ensureAnexosDataV163();
+      const out=baseApplyStateToUIV163.apply(this,arguments);
+      setTimeout(()=>{ renderAnexosV163(); renderAnexosVistaV163(); },0);
+      return out;
+    };
+  }
+
+  window.addEventListener('load',()=>{
+    setTimeout(()=>{ ensureAnexosDataV163(); renderAnexosV163(); renderAnexosVistaV163(); },900);
+  });
+})();
+</script>
+
 </body>
 </html>
