@@ -5646,8 +5646,14 @@ renderInformeObservaciones = function(){
  const t=DATA.plantillaObservaciones; const title=(tmplRow(t,'ENC_002').Título||'INFORME TÉCNICO DE OBSERVACIONES OBRA MAYOR');
  const ant=replaceTemplateHtml(tmplRow(t,'ANT_001').Texto_Base||''); const base=t.filter(r=>String(r.ID_Bloque||'').startsWith('BLG_') && cleanMostrar(r.Mostrar)==='sí');
  const con=replaceTemplate(tmplRow(t,'CON_001').Texto_Base||'');
+ const apodActivo=!!(state.apoderado&&state.apoderado.activo);
+ const apodNombre=String(state.apoderado?.nombre||'').trim();
+ const apodCi=String(state.apoderado?.ci||'').trim();
+ const apodDetalle=apodActivo&&(apodNombre||apodCi)
+   ? ` Adicionalmente, actúa como apoderado(a) ${apodNombre?`el/la Sr(a). <strong>${esc(apodNombre)}</strong>`:'la persona registrada'}${apodCi?`, con número de identificación <strong>${esc(apodCi)}</strong>`:''}.`
+   : '';
  const nota=(state.notaPreConclusiones&&state.notaPreConclusiones.activo&&state.notaPreConclusiones.texto)?`<h2>Nota</h2><p>${nl2br(state.notaPreConclusiones.texto)}</p>`:'';
- return `${reportHeader(title)}<h2>Antecedentes</h2><p>${ant}</p><h2>Criterio técnico</h2>${selectedObsTable()}<h2>Base legal</h2>${base.map(b=>`<h3>${esc(b.Título)}</h3><p class="legal-text">${formatLegalText(b.Texto_Base)}</p>`).join('')}${textosTecnicosSection()}${nota}<h2>Conclusiones</h2>${formatConclusionText(con)}${firmaTecnicoSection()}`;
+ return `${reportHeader(title)}<h2>Antecedentes</h2><p>${ant}${apodDetalle}</p><h2>Criterio técnico</h2>${selectedObsTable()}<h2>Base legal</h2>${base.map(b=>`<h3>${esc(b.Título)}</h3><p class="legal-text">${formatLegalText(b.Texto_Base)}</p>`).join('')}${textosTecnicosSection()}${nota}<h2>Conclusiones</h2>${formatConclusionText(con)}${firmaTecnicoSection()}`;
 };
 
 const _aprobatorioInfoTableFromTemplateV35_V36 = aprobatorioInfoTableFromTemplate;
@@ -33645,5 +33651,11 @@ window.addEventListener('load',()=>{
 
 
 <!-- VERSIÓN 7: separación estricta entre Requisitos Documentales y Requisitos Propuesta Arquitectónica. -->
+
+<script>
+/* ==========================================================
+   VERSION 9 - Apoderado en Antecedentes de Informes de Observaciones
+   ========================================================== */
+</script>
 </body>
 </html>
