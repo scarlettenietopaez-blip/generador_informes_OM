@@ -32078,15 +32078,36 @@ window.addEventListener('load',()=>{
   function isSecondObservationV119X(){
     const raw=String(state?.egob||state?.egobBaseV119||state?.egobBaseV116||'');
     const checkbox=document.getElementById('calc5DiasSubsanacionV55');
-    const activeByForm=typeof obsSegundoActivoV119==='function'
-      ? !!obsSegundoActivoV119()
-      : !!checkbox?.checked;
-    return state?.tipoInforme==='Informe con Observaciones' && (
-      activeByForm ||
-      !!state?.segundaObservacionV116 ||
+    if(state?.tipoInforme!=='Informe con Observaciones') return false;
+    if(checkbox) return !!checkbox.checked;
+    return !!state?.segundaObservacionV116 ||
       !!state?.fechaSubsanacionCincoDias ||
-      /2do\s+Informe\s+(de|con)\s+Observaciones/i.test(raw)
-    );
+      /2do\s+Informe\s+(de|con)\s+Observaciones/i.test(raw);
+  }
+  function syncSecondObservationDeadlineV119X(){
+    if(!isSecondObservationV119X()) return String(state?.fechaSubsanacion||'');
+    const base=String(state?.fechaRevision||document.getElementById('fechaRevision')?.value||'').trim();
+    if(!base || typeof addBusinessDays!=='function') return String(state?.fechaSubsanacion||'');
+    const value=addBusinessDays(base,5);
+    state.fechaSubsanacion=value;
+    state.fechaSubsanacionCincoDias=true;
+    state.fechaSubsanacionManual=false;
+    const input=document.getElementById('fechaSubsanacion');
+    if(input) input.value=value;
+    return value;
+  }
+  function applySecondObservationTermV119X(text){
+    let out=String(text||'');
+    if(!isSecondObservationV119X()) return out;
+    return out
+      .replace(/diez\s*\(\s*10\s*\)\s*d[ií]as\s*h[aá]biles/gi,'cinco (5) días hábiles')
+      .replace(/diez\s*\(\s*10\s*\)\s*d[ií]as\s*laborables/gi,'cinco (5) días laborables')
+      .replace(/diez\s+d[ií]as\s*h[aá]biles/gi,'cinco días hábiles')
+      .replace(/diez\s+d[ií]as\s*laborables/gi,'cinco días laborables')
+      .replace(/10\s*d[ií]as\s*h[aá]biles/gi,'5 días hábiles')
+      .replace(/10\s*d[ií]as\s*laborables/gi,'5 días laborables')
+      .replace(/t[eé]rmino\s+de\s+10\s+d[ií]as/gi,'término de 5 días')
+      .replace(/plazo\s+no\s+mayor\s+a\s+10\s+d[ií]as/gi,'plazo no mayor a 5 días');
   }
   function reportLabelV119X(){
     if(state?.tipoInforme==='Informe de Desistimiento') return 'Informe Técnico de Desistimiento';
@@ -32120,12 +32141,15 @@ window.addEventListener('load',()=>{
   function placeholderDataV119X(){
     const tech=technicianV119X();
     const n=ensureNotificationStateV119X();
+    const deadline=isSecondObservationV119X()
+      ? syncSecondObservationDeadlineV119X()
+      : String(state?.fechaSubsanacion||document.getElementById('fechaSubsanacion')?.value||'');
     return {
       '{{Tipo de Informe}}':reportLabelV119X(),
       '{{Número de EGOB}}':String(state?.egob||''),
       '{{Tipo de Proyecto}}':projectLabelV119X(),
       '{{Propietarios}}':ownersV119X(),
-      '{{Fecha Subsanación}}':longDateV119X(state?.fechaSubsanacion||'',false,false),
+      '{{Fecha Subsanación}}':longDateV119X(deadline,false,false),
       '{{Nombre del Técnico Revisor}}':String(tech?.nombre||state?.tecnico||''),
       '{{Cargo del Técnico Revisor}}':String(tech?.cargo||'TÉCNICO REVISOR'),
       '{{Fecha de hoy}}':longDateV119X(new Date(),true,true),
@@ -32146,12 +32170,12 @@ window.addEventListener('load',()=>{
     const row=templateForV119X(notificationTemplatesV119X);
     return {
       subject:replacePlaceholdersV119X(row.Asunto||row.asunto||''),
-      body:replacePlaceholdersV119X(row.Cuerpo||row.cuerpo||row.Texto_Base||'')
+      body:applySecondObservationTermV119X(replacePlaceholdersV119X(row.Cuerpo||row.cuerpo||row.Texto_Base||''))
     };
   }
   function sientoDataV119X(){
     const row=templateForV119X(sientoTemplatesV119X);
-    let text=replacePlaceholdersV119X(row.Texto_Base||row.Texto||row.texto||'');
+    let text=applySecondObservationTermV119X(replacePlaceholdersV119X(row.Texto_Base||row.Texto||row.texto||''));
     if(allNotificationEmailsV119X().length>1){
       text=text.replace(/al correo electrónico registrado/gi,'a los correos electrónicos registrados');
     }
@@ -33714,5 +33738,141 @@ window.addEventListener('load',()=>{
    VERSION 9 - Apoderado en Antecedentes de Informes de Observaciones
    ========================================================== */
 </script>
+
+
+<!-- ==========================================================
+     VERSIÓN 12 - SEGUNDA OBSERVACIÓN: PLAZO ÚNICO DE 5 DÍAS LABORABLES
+     Base: VERSIÓN 10.
+     - Fuerza el cálculo de 5 días laborables desde la fecha de revisión.
+     - Sustituye el plazo de 10 por 5 días en Informe, correo y Siento Razón.
+     - Mantiene 10 días cuando Segunda observación está desactivada.
+     ========================================================== -->
+<script>
+(function(){
+  'use strict';
+
+  function isSecondObservationV12(){
+    const cb=document.getElementById('calc5DiasSubsanacionV55');
+    const raw=String(state?.egob||state?.egobBaseV119||state?.egobBaseV116||'');
+    if(state?.tipoInforme!=='Informe con Observaciones') return false;
+    if(cb) return !!cb.checked;
+    return !!state?.segundaObservacionV116 ||
+      !!state?.fechaSubsanacionCincoDias ||
+      /2do\s+Informe\s+(de|con)\s+Observaciones/i.test(raw);
+  }
+
+  function deadlineV12(){
+    const second=isSecondObservationV12();
+    const days=second?5:10;
+    const base=String(state?.fechaRevision||document.getElementById('fechaRevision')?.value||'').trim();
+    if(!base || typeof addBusinessDays!=='function') return String(state?.fechaSubsanacion||'');
+    const value=addBusinessDays(base,days);
+    state.fechaSubsanacion=value;
+    state.fechaSubsanacionCincoDias=second;
+    state.fechaSubsanacionManual=false;
+    state.segundaObservacionV116=second;
+    state.primeraObservacionV119=!second;
+    const input=document.getElementById('fechaSubsanacion');
+    if(input) input.value=value;
+    const help=document.querySelector('#fechaSubsanacionWrap .mini');
+    if(help) help.textContent=`Calcula automáticamente ${days} días laborables`;
+    return value;
+  }
+
+  function replaceSecondObservationTermV12(value){
+    let out=String(value??'');
+    if(!isSecondObservationV12()) return out;
+    return out
+      .replace(/diez\s*\(\s*10\s*\)\s*d[ií]as\s*h[aá]biles/gi,'cinco (5) días hábiles')
+      .replace(/diez\s*\(\s*10\s*\)\s*d[ií]as\s*laborables/gi,'cinco (5) días laborables')
+      .replace(/diez\s+d[ií]as\s*h[aá]biles/gi,'cinco días hábiles')
+      .replace(/diez\s+d[ií]as\s*laborables/gi,'cinco días laborables')
+      .replace(/10\s*d[ií]as\s*h[aá]biles/gi,'5 días hábiles')
+      .replace(/10\s*d[ií]as\s*laborables/gi,'5 días laborables')
+      .replace(/t[eé]rmino\s+de\s+10\s+d[ií]as/gi,'término de 5 días')
+      .replace(/plazo\s+no\s+mayor\s+a\s+10\s+d[ií]as/gi,'plazo no mayor a 5 días');
+  }
+
+  function refreshSecondObservationV12(){
+    deadlineV12();
+    if(typeof renderReport==='function') renderReport();
+    if(typeof renderPreview==='function') renderPreview();
+    if(typeof window.renderNotificationTabV119X==='function') window.renderNotificationTabV119X();
+  }
+
+  const formatConclusionBaseV12=typeof formatConclusionText==='function'?formatConclusionText:null;
+  if(formatConclusionBaseV12){
+    formatConclusionText=function(text){
+      if(isSecondObservationV12()) deadlineV12();
+      return replaceSecondObservationTermV12(formatConclusionBaseV12.call(this,text));
+    };
+  }
+
+  const replaceTemplateBaseV12=typeof replaceTemplate==='function'?replaceTemplate:null;
+  if(replaceTemplateBaseV12){
+    replaceTemplate=function(text){
+      if(isSecondObservationV12()) deadlineV12();
+      return replaceSecondObservationTermV12(replaceTemplateBaseV12.call(this,text));
+    };
+  }
+
+  const replaceTemplateHtmlBaseV12=typeof replaceTemplateHtml==='function'?replaceTemplateHtml:null;
+  if(replaceTemplateHtmlBaseV12){
+    replaceTemplateHtml=function(text){
+      if(isSecondObservationV12()) deadlineV12();
+      return replaceSecondObservationTermV12(replaceTemplateHtmlBaseV12.call(this,text));
+    };
+  }
+
+  const renderReportBaseV12=typeof renderReport==='function'?renderReport:null;
+  if(renderReportBaseV12){
+    renderReport=function(){
+      if(isSecondObservationV12()) deadlineV12();
+      const result=renderReportBaseV12.apply(this,arguments);
+      const report=document.getElementById('report');
+      if(report && isSecondObservationV12()) report.innerHTML=replaceSecondObservationTermV12(report.innerHTML);
+      return typeof result==='string'?replaceSecondObservationTermV12(result):result;
+    };
+  }
+
+  const applyStateBaseV12=typeof applyStateToUI==='function'?applyStateToUI:null;
+  if(applyStateBaseV12){
+    applyStateToUI=function(){
+      const result=applyStateBaseV12.apply(this,arguments);
+      setTimeout(()=>{
+        if(state?.tipoInforme==='Informe con Observaciones' && isSecondObservationV12()) {
+          refreshSecondObservationV12();
+        }
+      },60);
+      return result;
+    };
+  }
+
+  document.addEventListener('change',function(event){
+    if(event.target?.id==='calc5DiasSubsanacionV55'){
+      setTimeout(refreshSecondObservationV12,0);
+    }
+  },true);
+
+  document.addEventListener('input',function(event){
+    if(event.target?.id==='fechaRevision' && isSecondObservationV12()){
+      setTimeout(refreshSecondObservationV12,0);
+    }
+  },true);
+
+  window.addEventListener('load',()=>{
+    setTimeout(()=>{
+      const cb=document.getElementById('calc5DiasSubsanacionV55');
+      if(cb?.checked || state?.segundaObservacionV116 || state?.fechaSubsanacionCincoDias){
+        refreshSecondObservationV12();
+      }
+    },1700);
+  });
+
+  window.isSecondObservationV12=isSecondObservationV12;
+  window.deadlineV12=deadlineV12;
+})();
+</script>
+
 </body>
 </html>
