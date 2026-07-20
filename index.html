@@ -31893,7 +31893,7 @@ window.addEventListener('load',()=>{
 
 
 <!-- ==========================================================
-     V119X - NOTIFICAR / SIENTO RAZÓN eGOB
+     V119X / VERSIÓN 10 - NOTIFICAR / SIENTO RAZÓN eGOB CON MÚLTIPLES CORREOS Y PDF
      Base: versión oficial 119W con ANEXOS en Vista del Informe.
      Este módulo se añade sin reemplazar las funciones existentes.
      Textos configurables:
@@ -31927,7 +31927,7 @@ window.addEventListener('load',()=>{
   let notificationTemplatesV119X=[...DEFAULT_NOTIFICATION_TEMPLATES_V119X];
   let sientoTemplatesV119X=[...DEFAULT_SIENTO_TEMPLATES_V119X];
   let professionalEmailsV119X=[];
-  let respaldoPdfV119X=null;
+  let respaldoPdfsV119X=[];
   let templatesPromiseV119X=null;
   let professionalsPromiseV119X=null;
 
@@ -31942,16 +31942,28 @@ window.addEventListener('load',()=>{
     return typeof state!=='undefined' && state?.tipoInforme==='Informe con Observaciones';
   }
   function ensureNotificationStateV119X(){
-    if(typeof state==='undefined') return {correo:'',correoAuto:'',correoManual:false,respaldoNombre:''};
+    if(typeof state==='undefined') return {correo:'',correoAuto:'',correoManual:false,correosAdicionales:[],respaldoNombre:'',respaldoNombres:[]};
     if(!state.notificacionEgob || typeof state.notificacionEgob!=='object'){
-      state.notificacionEgob={correo:'',correoAuto:'',correoManual:false,respaldoNombre:''};
+      state.notificacionEgob={correo:'',correoAuto:'',correoManual:false,correosAdicionales:[],respaldoNombre:'',respaldoNombres:[]};
     }
     const n=state.notificacionEgob;
     n.correo=String(n.correo||'');
     n.correoAuto=String(n.correoAuto||'');
     n.correoManual=!!n.correoManual;
+    if(!Array.isArray(n.correosAdicionales)){
+      n.correosAdicionales=String(n.correosAdicionales||'').split(/[;,\n]+/).map(v=>v.trim()).filter(Boolean);
+    }
+    n.correosAdicionales=n.correosAdicionales.map(v=>String(v||'').trim());
     n.respaldoNombre=String(n.respaldoNombre||'');
+    if(!Array.isArray(n.respaldoNombres)) n.respaldoNombres=n.respaldoNombre?[n.respaldoNombre]:[];
+    n.respaldoNombres=n.respaldoNombres.map(v=>String(v||'').trim()).filter(Boolean);
+    if(!n.respaldoNombre && n.respaldoNombres.length) n.respaldoNombre=n.respaldoNombres[0];
     return n;
+  }
+  function allNotificationEmailsV119X(){
+    const n=ensureNotificationStateV119X();
+    const values=[n.correo,...(n.correosAdicionales||[])].map(v=>String(v||'').trim()).filter(Boolean);
+    return [...new Map(values.map(v=>[v.toLowerCase(),v])).values()];
   }
 
   function parseCsvFallbackV119X(text){
@@ -32117,7 +32129,7 @@ window.addEventListener('load',()=>{
       '{{Nombre del Técnico Revisor}}':String(tech?.nombre||state?.tecnico||''),
       '{{Cargo del Técnico Revisor}}':String(tech?.cargo||'TÉCNICO REVISOR'),
       '{{Fecha de hoy}}':longDateV119X(new Date(),true,true),
-      '{{correo para notificar}}':String(n.correo||'')
+      '{{correo para notificar}}':allNotificationEmailsV119X().join(', ')
     };
   }
   function replacePlaceholdersV119X(text){
@@ -32139,9 +32151,13 @@ window.addEventListener('load',()=>{
   }
   function sientoDataV119X(){
     const row=templateForV119X(sientoTemplatesV119X);
+    let text=replacePlaceholdersV119X(row.Texto_Base||row.Texto||row.texto||'');
+    if(allNotificationEmailsV119X().length>1){
+      text=text.replace(/al correo electrónico registrado/gi,'a los correos electrónicos registrados');
+    }
     return {
       title:replacePlaceholdersV119X(row.Titulo||row.titulo||'SIENTO RAZÓN'),
-      text:replacePlaceholdersV119X(row.Texto_Base||row.Texto||row.texto||'')
+      text
     };
   }
   function eV119X(v){ return typeof esc==='function'?esc(v):String(v||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); }
@@ -32162,7 +32178,12 @@ window.addEventListener('load',()=>{
       .noti-note-v119x{font-size:12px;color:#667085;margin-top:6px}
       .noti-action-primary-v119x{background:#087443!important;color:#fff!important}
       .noti-action-pdf-v119x{background:#0b4e78!important;color:#fff!important}
-      @media(max-width:720px){.noti-toolbar-v119x{justify-content:stretch}.noti-toolbar-v119x button{flex:1}}
+      .extra-email-list-v119x{display:grid;gap:8px;margin:8px 0}
+      .extra-email-row-v119x{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+      .extra-email-row-v119x button{padding:8px 10px;white-space:nowrap}
+      .selected-pdfs-v119x{margin:7px 0 0;padding-left:20px;color:#344054}
+      .selected-pdfs-v119x li{margin:3px 0}
+      @media(max-width:720px){.noti-toolbar-v119x{justify-content:stretch}.noti-toolbar-v119x button{flex:1}.extra-email-row-v119x{grid-template-columns:1fr}.extra-email-row-v119x button{width:100%}}
     `;
     document.head.appendChild(style);
   }
@@ -32212,6 +32233,23 @@ window.addEventListener('load',()=>{
     renderEmailPreviewV119X();
     renderSientoPreviewV119X();
   };
+  window.updateAdditionalEmailV119X=function(index,value){
+    const n=ensureNotificationStateV119X();
+    while(n.correosAdicionales.length<=index) n.correosAdicionales.push('');
+    n.correosAdicionales[index]=String(value||'').trim();
+    renderSientoPreviewV119X();
+  };
+  window.addAdditionalEmailV119X=function(){
+    const n=ensureNotificationStateV119X();
+    n.correosAdicionales.push('');
+    renderNotificationTabV119X();
+    setTimeout(()=>document.querySelector('.extra-email-row-v119x:last-child input')?.focus(),0);
+  };
+  window.removeAdditionalEmailV119X=function(index){
+    const n=ensureNotificationStateV119X();
+    n.correosAdicionales.splice(index,1);
+    renderNotificationTabV119X();
+  };
   window.useRegisteredEmailV119X=function(){
     const n=ensureNotificationStateV119X();
     n.correoManual=false;
@@ -32221,17 +32259,23 @@ window.addEventListener('load',()=>{
     if(!n.correo && typeof msg==='function') msg('No se encontró un correo para el proyectista en el registro de profesionales. Puede escribirlo manualmente.');
   };
   window.selectNotificationBackupV119X=function(input){
-    const file=input?.files?.[0]||null;
-    if(file && !(file.type==='application/pdf'||/\.pdf$/i.test(file.name))){
-      input.value=''; respaldoPdfV119X=null;
-      if(typeof msg==='function') msg('Seleccione únicamente un archivo PDF como respaldo de la notificación.');
+    const files=[...(input?.files||[])];
+    const invalid=files.find(file=>!(file.type==='application/pdf'||/\.pdf$/i.test(file.name)));
+    if(invalid){
+      input.value=''; respaldoPdfsV119X=[];
+      if(typeof msg==='function') msg('Seleccione únicamente archivos PDF como respaldo de la notificación.');
       return;
     }
-    respaldoPdfV119X=file;
+    respaldoPdfsV119X=files;
     const n=ensureNotificationStateV119X();
-    n.respaldoNombre=file?.name||'';
+    n.respaldoNombres=files.map(file=>file.name);
+    n.respaldoNombre=n.respaldoNombres[0]||'';
     const status=document.getElementById('backupStatusV119X');
-    if(status) status.textContent=file?`Archivo seleccionado: ${file.name}`:'No se ha seleccionado un PDF.';
+    if(status){
+      status.innerHTML=files.length
+        ? `${files.length} PDF seleccionado(s):<ul class="selected-pdfs-v119x">${files.map(file=>`<li>${eV119X(file.name)}</li>`).join('')}</ul>`
+        : 'No se han seleccionado archivos PDF.';
+    }
   };
 
   async function copyTextV119X(text,success){
@@ -32254,13 +32298,14 @@ window.addEventListener('load',()=>{
   window.openInstitutionalMailV119X=function(){
     if(!eligibleV119X()) return;
     if(typeof collectTop==='function') collectTop();
-    const n=ensureNotificationStateV119X();
-    if(!validateEmailV119X(n.correo)){
-      if(typeof msg==='function') msg('Complete un correo electrónico válido antes de notificar.');
+    const emails=allNotificationEmailsV119X();
+    if(!emails.length || emails.some(email=>!validateEmailV119X(email))){
+      if(typeof msg==='function') msg('Revise que el correo principal y todos los correos adicionales sean válidos antes de notificar.');
       document.getElementById('correoNotificacionV119X')?.focus(); return;
     }
     const data=emailDataV119X();
-    const href=`mailto:${encodeURIComponent(n.correo)}?subject=${encodeURIComponent(data.subject)}&body=${encodeURIComponent(data.body.replace(/\n/g,'\r\n'))}`;
+    const recipients=emails.map(email=>encodeURIComponent(email)).join(',');
+    const href=`mailto:${recipients}?subject=${encodeURIComponent(data.subject)}&body=${encodeURIComponent(data.body.replace(/\n/g,'\r\n'))}`;
     window.location.href=href;
   };
 
@@ -32309,11 +32354,12 @@ window.addEventListener('load',()=>{
   window.generateSientoRazonPdfV119X=async function(){
     if(!eligibleV119X()) return;
     const n=ensureNotificationStateV119X();
-    if(!validateEmailV119X(n.correo)){
-      if(typeof msg==='function') msg('Complete un correo electrónico válido para generar el Siento Razón.'); return;
+    const emails=allNotificationEmailsV119X();
+    if(!emails.length || emails.some(email=>!validateEmailV119X(email))){
+      if(typeof msg==='function') msg('Revise que el correo principal y todos los correos adicionales sean válidos para generar el Siento Razón.'); return;
     }
-    if(!respaldoPdfV119X){
-      if(typeof msg==='function') msg('Seleccione el PDF de respaldo de la notificación por correo.'); return;
+    if(!respaldoPdfsV119X.length){
+      if(typeof msg==='function') msg('Seleccione uno o varios PDF de respaldo de la notificación por correo.'); return;
     }
     const btn=document.getElementById('generateSientoBtnV119X');
     if(btn){btn.disabled=true;btn.textContent='Generando…';}
@@ -32344,10 +32390,12 @@ window.addEventListener('load',()=>{
       const cargoW=font.widthOfTextAtSize(techCargo,9);
       page.drawText(techName,{x:(width-nameW)/2,y:signatureY-17,size:10,font:bold,color:rgb(0,0,0)});
       page.drawText(techCargo,{x:(width-cargoW)/2,y:signatureY-31,size:9,font,color:rgb(0,0,0)});
-      const evidenceBytes=await respaldoPdfV119X.arrayBuffer();
-      const evidence=await PDFDocument.load(evidenceBytes,{ignoreEncryption:false});
-      const copied=await pdf.copyPages(evidence,evidence.getPageIndices());
-      copied.forEach(p=>pdf.addPage(p));
+      for(const evidenceFile of respaldoPdfsV119X){
+        const evidenceBytes=await evidenceFile.arrayBuffer();
+        const evidence=await PDFDocument.load(evidenceBytes,{ignoreEncryption:false});
+        const copied=await pdf.copyPages(evidence,evidence.getPageIndices());
+        copied.forEach(p=>pdf.addPage(p));
+      }
       pdf.setTitle(`Siento Razón eGOB ${state?.egob||''}`);
       pdf.setSubject('Respaldo de notificación electrónica');
       pdf.setCreator('Generador Local de Informes GADMR');
@@ -32383,9 +32431,17 @@ window.addEventListener('load',()=>{
         <section class="noti-card-v119x">
           <div class="noti-title-v119x">1. Notificar</div>
           <div class="field">
-            <label>Correo electrónico *</label>
+            <label>Correo electrónico principal *</label>
             <input id="correoNotificacionV119X" type="email" autocomplete="email" value="${eV119X(n.correo)}" placeholder="correo@dominio.com" oninput="updateNotificationEmailV119X(this.value)">
             <div class="noti-note-v119x">Se autocompleta con el correo del proyectista registrado. Puede corregirlo o escribirlo manualmente.</div>
+          </div>
+          <div class="field">
+            <label>Correos electrónicos adicionales</label>
+            <div class="extra-email-list-v119x">
+              ${(n.correosAdicionales||[]).map((correo,index)=>`<div class="extra-email-row-v119x"><input type="email" value="${eV119X(correo)}" placeholder="correo adicional" oninput="updateAdditionalEmailV119X(${index},this.value)"><button type="button" class="danger" onclick="removeAdditionalEmailV119X(${index})">Quitar</button></div>`).join('')}
+            </div>
+            <button type="button" class="secondary" onclick="addAdditionalEmailV119X()">+ Agregar correo</button>
+            <div class="noti-note-v119x">Todos los correos registrados se abrirán como destinatarios del mensaje al presionar NOTIFICAR.</div>
           </div>
           <div class="noti-toolbar-v119x">
             <button type="button" class="secondary" onclick="useRegisteredEmailV119X()">Autocompletar desde registro</button>
@@ -32398,11 +32454,12 @@ window.addEventListener('load',()=>{
         <section class="noti-card-v119x">
           <div class="noti-title-v119x">2. Siento Razón eGOB</div>
           <div class="field">
-            <label>Respaldo Notificación Correo (PDF) *</label>
-            <input id="respaldoNotificacionV119X" type="file" accept="application/pdf,.pdf" onchange="selectNotificationBackupV119X(this)">
-            <div id="backupStatusV119X" class="file-status-v119x">${n.respaldoNombre?'El registro conserva el nombre «'+eV119X(n.respaldoNombre)+'», pero debe seleccionar nuevamente el PDF para generar el documento.':'No se ha seleccionado un PDF.'}</div>
+            <label>Respaldos de Notificación por Correo (PDF) *</label>
+            <input id="respaldoNotificacionV119X" type="file" accept="application/pdf,.pdf" multiple onchange="selectNotificationBackupV119X(this)">
+            <div class="noti-note-v119x">Puede seleccionar varios PDF en una sola carga. Se anexarán en el mismo orden en que aparecen seleccionados.</div>
+            <div id="backupStatusV119X" class="file-status-v119x">${n.respaldoNombres.length?'El registro conserva los nombres de '+n.respaldoNombres.length+' archivo(s), pero debe seleccionarlos nuevamente para generar el documento.<ul class="selected-pdfs-v119x">'+n.respaldoNombres.map(nombre=>'<li>'+eV119X(nombre)+'</li>').join('')+'</ul>':'No se han seleccionado archivos PDF.'}</div>
           </div>
-          <div class="siento-preview-v119x"><strong id="sientoTitlePreviewV119X">${eV119X(siento.title)}</strong><br><br><span id="sientoTextPreviewV119X">${eV119X(siento.text)}</span><br><br><em>El documento añadirá un espacio para la firma física y, a continuación, todas las páginas del PDF de respaldo.</em></div>
+          <div class="siento-preview-v119x"><strong id="sientoTitlePreviewV119X">${eV119X(siento.title)}</strong><br><br><span id="sientoTextPreviewV119X">${eV119X(siento.text)}</span><br><br><em>El documento añadirá un espacio para la firma física y, a continuación, todas las páginas de todos los PDF de respaldo seleccionados.</em></div>
           <div class="noti-toolbar-v119x"><button id="generateSientoBtnV119X" type="button" class="noti-action-pdf-v119x" onclick="generateSientoRazonPdfV119X()">Generar PDF</button></div>
         </section>
       </div>`;
@@ -32448,7 +32505,7 @@ window.addEventListener('load',()=>{
   const applyStateBaseV119X=typeof applyStateToUI==='function'?applyStateToUI:null;
   if(applyStateBaseV119X){
     applyStateToUI=function(){
-      ensureNotificationStateV119X(); respaldoPdfV119X=null;
+      ensureNotificationStateV119X(); respaldoPdfsV119X=[];
       const out=applyStateBaseV119X.apply(this,arguments);
       setTimeout(()=>{setupNotificationTabV119X();renderNotificationTabV119X();},0);
       return out;
@@ -32458,7 +32515,7 @@ window.addEventListener('load',()=>{
   if(newFormBaseV119X){
     nuevoFormulario=function(){
       const out=newFormBaseV119X.apply(this,arguments);
-      respaldoPdfV119X=null; ensureNotificationStateV119X();
+      respaldoPdfsV119X=[]; ensureNotificationStateV119X();
       setTimeout(renderNotificationTabV119X,0); return out;
     };
   }
